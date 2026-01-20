@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "myeshop"
+version = "0.1.0"
+description = ""
+authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.14"
+hello-world-service = { path = "src/services/hello_world_service", develop = true }
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.14.13"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "*.po",
+    "*.mo",
+    "*.pot",
+]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["B", "C", "E", "F", "I", "W"]
+ignore = ["E722", "B904", "B006", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*" = ["E501"]
