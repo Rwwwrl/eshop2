@@ -8,6 +8,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.14"
 hello-world-service = { path = "src/services/hello_world_service", develop = true }
+api-gateway = { path = "src/services/api_gateway", develop = true }
 
 
 [tool.poetry.group.dev.dependencies]
