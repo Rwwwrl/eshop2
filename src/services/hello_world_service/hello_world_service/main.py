@@ -1,3 +1,5 @@
+import socket
+
 from fastapi import FastAPI
 
 app = FastAPI(title="Hello World Service")
@@ -11,3 +13,8 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/host")
+async def get_host():
+    return {"host": socket.gethostname()}
