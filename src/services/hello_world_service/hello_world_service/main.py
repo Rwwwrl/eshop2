@@ -15,6 +15,11 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/readiness_check")
+async def readiness_check():
+    return {"status": "ok"}
+
+
 @app.get("/host")
 async def get_host():
     return {"host": socket.gethostname()}

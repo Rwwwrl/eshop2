@@ -16,6 +16,11 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/readiness_check")
+async def readiness_check():
+    return {"status": "ok"}
+
+
 @app.get("/hello-world/host")
 async def get_hello_world_host():
     async with httpx.AsyncClient() as client:
