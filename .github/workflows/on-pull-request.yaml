@@ -62,3 +62,30 @@ jobs:
             echo "Validating $file..."
             envsubst < "$file" | kubectl apply --dry-run=client -f -
           done
+
+  # NOTE @sosov: Conditional jobs (filtered by paths-filter) cannot be used as required
+  # status checks directly. If a job is skipped, GitHub treats it as "pending forever".
+  # This gate job always runs and aggregates results, allowing us to use a single
+  # required status check that works regardless of which services were modified.
+  pr-ready-to-merge:
+    name: PR Ready to Merge
+    runs-on: ubuntu-latest
+    needs: [on-api-gateway-pull-request, on-hello-world-pull-request, validate_manifests]
+    if: always()
+    steps:
+      - name: Verify all checks passed
+        run: |
+          results=(
+            "${{ needs.on-api-gateway-pull-request.result }}"
+            "${{ needs.on-hello-world-pull-request.result }}"
+            "${{ needs.validate_manifests.result }}"
+          )
+
+          for result in "${results[@]}"; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              echo "One or more checks failed"
+              exit 1
+            fi
+          done
+
+          echo "All checks passed or were skipped (not needed)"
