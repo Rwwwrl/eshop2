@@ -13,6 +13,7 @@ api-gateway = { path = "src/services/api_gateway", develop = true }
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.14.13"
+pre-commit = "^4.5.1"
 
 [build-system]
 requires = ["poetry-core"]
