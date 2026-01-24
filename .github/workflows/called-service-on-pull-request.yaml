@@ -18,24 +18,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if pyproject.toml was updated
+      - name: Check if VERSION was updated
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^${{ inputs.service_path }}/pyproject.toml$"; then
-            echo "PYPROJECT_CHANGED=true" >> $GITHUB_ENV
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^${{ inputs.service_path }}/VERSION$"; then
+            echo "VERSION_CHANGED=true" >> $GITHUB_ENV
           else
-            echo "::error::${{ inputs.service_name }} code changed but pyproject.toml was not updated"
+            echo "::error::${{ inputs.service_name }} code changed but VERSION was not updated"
             exit 1
           fi
 
       - name: Get version from base branch
         run: |
-          BASE_VERSION=$(git show origin/${{ github.base_ref }}:${{ inputs.service_path }}/pyproject.toml | grep '^version = ' | sed -E 's/version = "(.*)"/\1/')
+          BASE_VERSION=$(git show origin/${{ github.base_ref }}:${{ inputs.service_path }}/VERSION)
           echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
 
       - name: Get version from PR branch
         run: |
-          HEAD_VERSION=$(grep '^version = ' ${{ inputs.service_path }}/pyproject.toml | sed -E 's/version = "(.*)"/\1/')
+          HEAD_VERSION=$(cat ${{ inputs.service_path }}/VERSION)
           echo "HEAD_VERSION=$HEAD_VERSION" >> $GITHUB_ENV
 
       - name: Compare versions
@@ -43,7 +43,7 @@ jobs:
           echo "Base version: $BASE_VERSION"
           echo "PR version: $HEAD_VERSION"
           if [[ "$HEAD_VERSION" == "$BASE_VERSION" ]]; then
-            echo "::error::Version in ${{ inputs.service_name }}/pyproject.toml was not bumped!"
+            echo "::error::Version in ${{ inputs.service_name }}/VERSION was not bumped!"
             exit 1
           fi
           echo "Version bumped: $BASE_VERSION -> $HEAD_VERSION"
@@ -60,7 +60,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ inputs.service_path }}
-          target: ci
+          file: ${{ inputs.service_path }}/Dockerfile.ci
           load: true
           tags: ${{ inputs.service_name }}:ci
           cache-from: type=gha,scope=${{ inputs.service_name }}-ci
