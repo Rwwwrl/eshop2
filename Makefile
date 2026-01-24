@@ -17,10 +17,10 @@ dbuild_hello_world_service:
 # ------------------------------------------------------------------------------
 
 kapply:
-	kubectl apply --recursive -f deploy/k8s/
+	kubectl apply --recursive -f deploy/k8s/dev/
 
 krestartdeployments:
-	ls deploy/k8s/*/deployment.yaml | xargs -I {} kubectl rollout restart -f {}
+	ls deploy/k8s/dev/*/deployment.yaml | xargs -I {} kubectl rollout restart -f {}
 
 kdelete:
-	kubectl delete -f deploy/k8s/ --recursive
+	kubectl delete -f deploy/k8s/dev/ --recursive
