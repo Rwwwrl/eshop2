@@ -20,6 +20,13 @@ Microservice architecture with Kubernetes deployment.
 
 **Running Python:** Always use `poetry run python`, not `python` or `python3`
 
+**Adding dependencies:** Use `poetry add` command, never edit `pyproject.toml` directly:
+
+```bash
+poetry add fastapi              # Add main dependency
+poetry add --group dev pytest   # Add dev dependency
+```
+
 ## Linting & Formatting
 
 Uses **ruff** for both linting and formatting (line length: 120):

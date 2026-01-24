@@ -7,6 +7,7 @@ app = FastAPI(title="Hello World Service")
 
 @app.get("/")
 async def root():
+    print("Hello World from CI/CD test!")
     return {"message": "Hello World"}
 
 

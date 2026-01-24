@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hello-world-service"
-version = "0.1.0"
+version = "0.0.0"
 description = "Simple Hello World FastAPI microservice"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "hello_world_service" }]
@@ -10,6 +10,9 @@ python = "^3.14"
 fastapi = "^0.128.0"
 uvicorn = {extras = ["standard"], version = "^0.40.0"}
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+ruff = "^0.14.14"
 
 [build-system]
 requires = ["poetry-core"]
