@@ -1,7 +1,16 @@
+from pathlib import Path
+
 import httpx
 from fastapi import FastAPI
 
-app = FastAPI(title="API Gateway")
+VERSION_FILE = Path(__file__).parent.parent / "VERSION"
+VERSION = VERSION_FILE.read_text().strip()
+
+app = FastAPI(
+    title="API Gateway",
+    version=VERSION,
+    description="Public-facing API Gateway for the e-shop platform.",
+)
 
 HELLO_WORLD_SERVICE_URL = "http://hello-world-service:8000"
 
