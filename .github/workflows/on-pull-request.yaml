@@ -1,0 +1,64 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  get_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api_gateway: ${{ steps.filter.outputs.api_gateway }}
+      hello_world: ${{ steps.filter.outputs.hello_world }}
+      k8s_manifests: ${{ steps.filter.outputs.k8s_manifests }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api_gateway:
+              - 'src/services/api_gateway/**'
+            hello_world:
+              - 'src/services/hello_world_service/**'
+            k8s_manifests:
+              - 'deploy/k8s/**'
+
+  on-api-gateway-pull-request:
+    needs: get_changes
+    if: needs.get_changes.outputs.api_gateway == 'true'
+    uses: ./.github/workflows/called-service-on-pull-request.yaml
+    with:
+      service_name: api-gateway
+      service_path: src/services/api_gateway
+
+  on-hello-world-pull-request:
+    needs: get_changes
+    if: needs.get_changes.outputs.hello_world == 'true'
+    uses: ./.github/workflows/called-service-on-pull-request.yaml
+    with:
+      service_name: hello-world
+      service_path: src/services/hello_world_service
+
+  validate_manifests:
+    needs: get_changes
+    if: needs.get_changes.outputs.k8s_manifests == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-kubectl@v4
+
+      - name: Validate ${{ matrix.environment }} manifests
+        run: |
+          export IMAGE_REGISTRY="dummy"
+          export IMAGE_TAG="dummy"
+          export NAMESPACE="default"
+
+          for file in deploy/k8s/${{ matrix.environment }}/*/*.yaml; do
+            echo "Validating $file..."
+            envsubst < "$file" | kubectl apply --dry-run=client -f -
+          done
