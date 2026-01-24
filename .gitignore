@@ -171,3 +171,4 @@ cython_debug/
 
 Makefile.local
 .fzfignore
+.claude/settings.local.json
