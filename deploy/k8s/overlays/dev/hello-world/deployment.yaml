@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-service
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: hello-world-service
+          image: hello-world-service:latest
+          imagePullPolicy: Never

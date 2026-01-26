@@ -17,10 +17,13 @@ dbuild_hello_world_service:
 # ------------------------------------------------------------------------------
 
 kapply:
-	kubectl apply --recursive -f deploy/k8s/dev/
-
-krestartdeployments:
-	ls deploy/k8s/dev/*/deployment.yaml | xargs -I {} kubectl rollout restart -f {}
+	kubectl apply -k deploy/k8s/overlays/dev
 
 kdelete:
-	kubectl delete -f deploy/k8s/dev/ --recursive
+	kubectl delete -k deploy/k8s/overlays/dev
+
+krestartdeployments:
+	kubectl rollout restart deployment/api-gateway deployment/hello-world-service
+
+kbuild:
+	kubectl kustomize deploy/k8s/overlays/dev
