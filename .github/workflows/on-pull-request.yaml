@@ -24,7 +24,7 @@ jobs:
             api_gateway:
               - 'src/services/api_gateway/**'
             hello_world:
-              - 'src/services/hello_world_service/**'
+              - 'src/services/hello_world/**'
             k8s_manifests:
               - 'deploy/k8s/**'
 
@@ -42,7 +42,7 @@ jobs:
     uses: ./.github/workflows/called-service-on-pull-request.yaml
     with:
       service_name: hello-world
-      service_path: src/services/hello_world_service
+      service_path: src/services/hello_world
 
   validate_manifests:
     needs: get_changes

@@ -1,9 +1,9 @@
 [tool.poetry]
-name = "hello-world-service"
+name = "hello-world"
 version = "0.0.0"
 description = "Simple Hello World FastAPI microservice"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
-packages = [{ include = "hello_world_service" }]
+packages = [{ include = "hello_world" }]
 
 [tool.poetry.dependencies]
 python = "^3.14"

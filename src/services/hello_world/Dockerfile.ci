@@ -7,6 +7,6 @@ RUN pip install poetry==$POETRY_VERSION
 COPY pyproject.toml poetry.lock poetry.toml ./
 RUN poetry install --no-root
 
-COPY hello_world_service/ ./hello_world_service/
+COPY hello_world/ ./hello_world/
 COPY tests/ ./tests/
 COPY pytest.ini ./
