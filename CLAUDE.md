@@ -102,6 +102,34 @@ context_module/
 
 **Avoid defaults:** when callers should make explicit choices, or when values are context-dependent.
 
+## Commit Messages
+
+Format: `[scope] <type> <context> <description>`
+
+**Scope** (where changes were made):
+- `[root]` - root-level files (workflows, configs)
+- `[* services]` - changes across all services
+- `[<service-name>]` - specific service, e.g. `[api-gateway]`, `[hello-world]`
+
+**Type** (what kind of change):
+- `feat` - new functionality
+- `fix` - bug fix
+- `chore` - formatting, docs, refactoring
+
+**Context:** Main file or area affected (e.g. `routes.py`, `Dockerfile`, `VERSION`)
+
+**Description:** One line, concise. No detailed explanations.
+
+**Do not include** `Co-Authored-By` lines in commits.
+
+**Examples:**
+```
+[api-gateway] feat routes.py added /health and /readiness endpoints
+[* services] chore Dockerfile.ci switched to python:3.14-slim
+[root] fix on-pull-request.yaml added missing permissions
+[hello-world] fix main.py corrected startup error handling
+```
+
 ## Documentation
 
 | Topic                   | Location                                     |
