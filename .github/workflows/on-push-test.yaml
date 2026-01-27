@@ -5,6 +5,10 @@ on:
     branches:
       - "test/**"
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   deploy-api-gateway:
     uses: ./.github/workflows/called-deploy-to-gke.yaml
