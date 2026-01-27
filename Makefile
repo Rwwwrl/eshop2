@@ -16,14 +16,29 @@ dbuild_hello_world:
 # Kubernetes
 # ------------------------------------------------------------------------------
 
-kapply:
-	kubectl apply -k deploy/k8s/overlays/dev
+kapply: kapply_api_gateway kapply_hello_world
 
-kdelete:
-	kubectl delete -k deploy/k8s/overlays/dev
+kapply_api_gateway:
+	kubectl apply -k deploy/k8s/api-gateway/dev
+
+kapply_hello_world:
+	kubectl apply -k deploy/k8s/hello-world/dev
+
+kdelete: kdelete_api_gateway kdelete_hello_world
+
+kdelete_api_gateway:
+	kubectl delete -k deploy/k8s/api-gateway/dev
+
+kdelete_hello_world:
+	kubectl delete -k deploy/k8s/hello-world/dev
 
 krestartdeployments:
 	kubectl rollout restart deployment/api-gateway deployment/hello-world
 
-kbuild:
-	kubectl kustomize deploy/k8s/overlays/dev
+kbuild: kbuild_api_gateway kbuild_hello_world
+
+kbuild_api_gateway:
+	kubectl kustomize deploy/k8s/api-gateway/dev
+
+kbuild_hello_world:
+	kubectl kustomize deploy/k8s/hello-world/dev

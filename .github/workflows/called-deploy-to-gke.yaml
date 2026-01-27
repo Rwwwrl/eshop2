@@ -1,0 +1,70 @@
+name: Deploy Service to GKE
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      service_name:
+        required: true
+        type: string
+      service_path:
+        required: true
+        type: string
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Get version
+        id: version
+        run: echo "service_version=$(cat ${{ inputs.service_path }}/VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          IMAGE=${REGISTRY}/${{ inputs.service_name }}
+          docker build -t ${IMAGE}:${{ steps.version.outputs.service_version }} ${{ inputs.service_path }}
+          docker push ${IMAGE}:${{ steps.version.outputs.service_version }}
+
+      - name: Install gke-gcloud-auth-plugin
+        run: gcloud components install gke-gcloud-auth-plugin --quiet
+
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials ${{ vars.GKE_CLUSTER_NAME }} \
+            --region ${{ vars.GCP_REGION }} \
+            --project ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Deploy with kustomize
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          cd deploy/k8s/${{ inputs.service_name }}/${{ inputs.environment }}
+
+          kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/${{ inputs.service_name }} --timeout=300s

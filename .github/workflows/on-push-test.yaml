@@ -1,0 +1,23 @@
+name: Deploy to Test EU
+
+on:
+  push:
+    branches:
+      - "test/**"
+
+jobs:
+  deploy-api-gateway:
+    uses: ./.github/workflows/called-deploy-to-gke.yaml
+    with:
+      environment: test-eu
+      service_name: api-gateway
+      service_path: src/services/api_gateway
+    secrets: inherit
+
+  deploy-hello-world:
+    uses: ./.github/workflows/called-deploy-to-gke.yaml
+    with:
+      environment: test-eu
+      service_name: hello-world
+      service_path: src/services/hello_world
+    secrets: inherit

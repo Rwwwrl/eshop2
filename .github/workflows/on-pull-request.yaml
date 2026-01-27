@@ -50,22 +50,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        environment: [dev, test]
+        environment: [dev, test-eu]
+        service: [api-gateway, hello-world]
     steps:
       - uses: actions/checkout@v4
 
       - uses: azure/setup-kubectl@v4
 
-      - name: Validate ${{ matrix.environment }} manifests
+      - name: Validate ${{ matrix.environment }}/${{ matrix.service }} manifests
         run: |
-          export IMAGE_REGISTRY="dummy"
-          export IMAGE_TAG="dummy"
-          export NAMESPACE="default"
-
-          for file in deploy/k8s/${{ matrix.environment }}/*/*.yaml; do
-            echo "Validating $file..."
-            envsubst < "$file" | kubectl apply --dry-run=client -f -
-          done
+          echo "Validating ${{ matrix.environment }}/${{ matrix.service }}..."
+          kubectl kustomize deploy/k8s/overlays/${{ matrix.environment }}/${{ matrix.service }} | kubectl apply --dry-run=client -f -
 
   # NOTE @sosov: Conditional jobs (filtered by paths-filter) cannot be used as required
   # status checks directly. If a job is skipped, GitHub treats it as "pending forever".
