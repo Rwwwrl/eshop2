@@ -12,7 +12,7 @@ app = FastAPI(
     description="Public-facing API Gateway for the e-shop platform.",
 )
 
-HELLO_WORLD_SERVICE_URL = "http://hello-world-service:8000"
+HELLO_WORLD_SERVICE_URL = "http://hello-world:8000"
 
 
 @app.get("/")

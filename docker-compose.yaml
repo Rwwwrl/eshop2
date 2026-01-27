@@ -1,8 +1,0 @@
-services:
-  api-gateway:
-    build: ./src/services/api_gateway
-    ports:
-      - "8000:8000"
-
-  hello-world-service:
-    build: ./src/services/hello_world_service

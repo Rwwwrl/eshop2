@@ -24,7 +24,7 @@ jobs:
             api_gateway:
               - 'src/services/api_gateway/**'
             hello_world:
-              - 'src/services/hello_world_service/**'
+              - 'src/services/hello_world/**'
             k8s_manifests:
               - 'deploy/k8s/**'
 
@@ -42,30 +42,26 @@ jobs:
     uses: ./.github/workflows/called-service-on-pull-request.yaml
     with:
       service_name: hello-world
-      service_path: src/services/hello_world_service
+      service_path: src/services/hello_world
 
   validate_manifests:
     needs: get_changes
     if: needs.get_changes.outputs.k8s_manifests == 'true'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        environment: [dev, test]
+        environment: [dev, test-eu]
+        service: [api-gateway, hello-world]
     steps:
       - uses: actions/checkout@v4
 
-      - uses: azure/setup-kubectl@v4
+      - uses: bmuschko/setup-kubeconform@v1
 
-      - name: Validate ${{ matrix.environment }} manifests
+      - name: Validate ${{ matrix.environment }}/${{ matrix.service }} manifests
         run: |
-          export IMAGE_REGISTRY="dummy"
-          export IMAGE_TAG="dummy"
-          export NAMESPACE="default"
-
-          for file in deploy/k8s/${{ matrix.environment }}/*/*.yaml; do
-            echo "Validating $file..."
-            envsubst < "$file" | kubectl apply --dry-run=client -f -
-          done
+          echo "Validating ${{ matrix.environment }}/${{ matrix.service }}..."
+          kubectl kustomize deploy/k8s/${{ matrix.service }}/${{ matrix.environment }} | kubeconform -strict -summary
 
   # NOTE @sosov: Conditional jobs (filtered by paths-filter) cannot be used as required
   # status checks directly. If a job is skipped, GitHub treats it as "pending forever".

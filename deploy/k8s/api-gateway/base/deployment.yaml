@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: api-gateway
 spec:
-  replicas: 3
   strategy:
     type: Recreate
   selector:
@@ -16,8 +15,6 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: ${IMAGE_REGISTRY}/api-gateway:${IMAGE_TAG}
-          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           livenessProbe:

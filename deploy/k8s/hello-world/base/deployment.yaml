@@ -1,23 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-world-service
+  name: hello-world
 spec:
-  replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: hello-world-service
+      app: hello-world
   template:
     metadata:
       labels:
-        app: hello-world-service
+        app: hello-world
     spec:
       containers:
-        - name: hello-world-service
-          image: hello-world-service:latest
-          imagePullPolicy: Never
+        - name: hello-world
           ports:
             - containerPort: 8000
           livenessProbe:

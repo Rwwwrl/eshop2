@@ -102,13 +102,17 @@ context_module/
 
 **Avoid defaults:** when callers should make explicit choices, or when values are context-dependent.
 
+## Commit Messages & Pull Requests
+
+Use `/commit` and `/create-pr` slash commands. Rules are defined in `~/.claude/commands/`.
+
 ## Documentation
 
-| Topic                   | Location                                     |
-| ----------------------- | -------------------------------------------- |
-| System architecture     | [docs/architecture/](docs/architecture/)     |
-| Application concepts    | [docs/application/](docs/application/)       |
-| Handbook & playbooks    | [docs/handbook/](docs/handbook/)             |
-| Bounded contexts        | [docs/system/](docs/system/)                 |
+| Topic                | Location                                 |
+| -------------------- | ---------------------------------------- |
+| System architecture  | [docs/architecture/](docs/architecture/) |
+| Application concepts | [docs/application/](docs/application/)   |
+| Handbook & playbooks | [docs/handbook/](docs/handbook/)         |
+| Bounded contexts     | [docs/system/](docs/system/)             |
 
 See [docs/handbook/how-we-write-docs.md](docs/handbook/how-we-write-docs.md) for documentation standards.
