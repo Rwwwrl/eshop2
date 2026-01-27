@@ -49,6 +49,7 @@ jobs:
     if: needs.get_changes.outputs.k8s_manifests == 'true'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         environment: [dev, test-eu]
         service: [api-gateway, hello-world]
@@ -60,7 +61,7 @@ jobs:
       - name: Validate ${{ matrix.environment }}/${{ matrix.service }} manifests
         run: |
           echo "Validating ${{ matrix.environment }}/${{ matrix.service }}..."
-          kubectl kustomize deploy/k8s/overlays/${{ matrix.environment }}/${{ matrix.service }} | kubectl apply --dry-run=client -f -
+          kubectl kustomize deploy/k8s/${{ matrix.service }}/${{ matrix.environment }} | kubectl apply --dry-run=client -f -
 
   # NOTE @sosov: Conditional jobs (filtered by paths-filter) cannot be used as required
   # status checks directly. If a job is skipped, GitHub treats it as "pending forever".
