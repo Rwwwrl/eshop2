@@ -3,10 +3,10 @@ kind: Deployment
 metadata:
   name: hello-world
 spec:
-  replicas: 3
+  replicas: 1
   template:
     spec:
       containers:
         - name: hello-world
-          image: ${IMAGE_REGISTRY}/hello-world:${IMAGE_TAG}
+          image: hello-world
           imagePullPolicy: Always
