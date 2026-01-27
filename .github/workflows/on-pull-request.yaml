@@ -56,12 +56,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: azure/setup-kubectl@v4
+      - uses: bmuschko/setup-kubeconform@v1
 
       - name: Validate ${{ matrix.environment }}/${{ matrix.service }} manifests
         run: |
           echo "Validating ${{ matrix.environment }}/${{ matrix.service }}..."
-          kubectl kustomize deploy/k8s/${{ matrix.service }}/${{ matrix.environment }} | kubectl apply --dry-run=client -f -
+          kubectl kustomize deploy/k8s/${{ matrix.service }}/${{ matrix.environment }} | kubeconform -strict -summary
 
   # NOTE @sosov: Conditional jobs (filtered by paths-filter) cannot be used as required
   # status checks directly. If a job is skipped, GitHub treats it as "pending forever".
