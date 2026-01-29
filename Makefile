@@ -38,7 +38,7 @@ krestartdeployments:
 kbuild: kbuild_api_gateway kbuild_hello_world
 
 kbuild_api_gateway:
-	kubectl kustomize deploy/k8s/api-gateway/dev
+	kustomize build deploy/k8s/api-gateway/dev
 
 kbuild_hello_world:
-	kubectl kustomize deploy/k8s/hello-world/dev
+	kustomize build deploy/k8s/hello-world/dev

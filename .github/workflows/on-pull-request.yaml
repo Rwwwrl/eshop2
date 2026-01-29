@@ -61,7 +61,11 @@ jobs:
       - name: Validate ${{ matrix.environment }}/${{ matrix.service }} manifests
         run: |
           echo "Validating ${{ matrix.environment }}/${{ matrix.service }}..."
-          kubectl kustomize deploy/k8s/${{ matrix.service }}/${{ matrix.environment }} | kubeconform -strict -summary
+          kubectl kustomize deploy/k8s/${{ matrix.service }}/${{ matrix.environment }} | kubeconform \
+            -strict \
+            -summary \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 
   # NOTE @sosov: Conditional jobs (filtered by paths-filter) cannot be used as required
   # status checks directly. If a job is skipped, GitHub treats it as "pending forever".

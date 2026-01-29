@@ -3,6 +3,8 @@ kind: Kustomization
 
 resources:
   - ../base
+  - managed-certificate.yaml
+  - ingress.yaml
 
 patches:
   - path: deployment.yaml
