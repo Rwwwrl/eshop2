@@ -54,4 +54,4 @@ jobs:
 
       - name: Deploy cert-manager ClusterIssuer
         run: |
-          kubectl apply -f deploy/k8s/infrastructure/cert-manager/${{ inputs.environment }}/cluster-issuer.yaml
+          kubectl apply -f deploy/k8s/infrastructure/cert-manager/cluster-issuer.yaml
