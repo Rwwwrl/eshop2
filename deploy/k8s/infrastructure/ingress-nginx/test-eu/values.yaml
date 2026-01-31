@@ -1,4 +1,4 @@
 controller:
-  replicaCount: 3
+  replicaCount: 1
   service:
     loadBalancerIP: "34.159.106.171"
