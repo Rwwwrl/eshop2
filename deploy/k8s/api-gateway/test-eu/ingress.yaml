@@ -3,7 +3,6 @@ kind: Ingress
 metadata:
   name: api-gateway-ingress
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
     # Rate limiting (15r/s per IP, burst 30)
     nginx.org/limit-req-rate: "15r/s"
     nginx.org/limit-req-key: "${binary_remote_addr}"
