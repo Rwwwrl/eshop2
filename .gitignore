@@ -169,6 +169,6 @@ cython_debug/
 ######## CREDENTIALS ########
 /keys/*
 
-Makefile.local
-.fzfignore
+justfile.local
 .claude/settings.local.json
+.fzfignore
