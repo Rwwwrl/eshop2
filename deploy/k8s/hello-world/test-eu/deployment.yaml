@@ -6,6 +6,15 @@ spec:
   replicas: 2
   template:
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: hello-world
+                topologyKey: kubernetes.io/hostname
       containers:
         - name: hello-world
           image: hello-world
