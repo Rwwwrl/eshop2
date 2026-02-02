@@ -6,6 +6,12 @@ FastAPI backend for the e-shop platform.
 
 This is a learning project focused on building microservices architecture from scratch. The developer is new to Kubernetes and prioritizes understanding concepts deeply over fast feature delivery. Explanations and guidance are preferred over quick solutions.
 
+## Infrastructure
+
+**Cloud:** Google Cloud Platform (GCP)
+**Kubernetes:** GKE (Google Kubernetes Engine)
+**Environments:** test (GKE cluster)
+
 ## Current Goal
 
 Microservice architecture with Kubernetes deployment.
@@ -101,10 +107,6 @@ context_module/
 **Acceptable defaults:** pagination, logging levels, retry counts, optional boolean flags.
 
 **Avoid defaults:** when callers should make explicit choices, or when values are context-dependent.
-
-## Commit Messages & Pull Requests
-
-Use `/commit` and `/create-pr` slash commands. Rules are defined in `~/.claude/commands/`.
 
 ## Documentation
 
