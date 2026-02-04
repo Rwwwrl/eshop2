@@ -1,6 +1,6 @@
-# MyEshop Backend
+# MyEshop
 
-FastAPI backend for the e-shop platform.
+Microservices platform for learning Kubernetes and distributed systems.
 
 ## Learning Context
 
@@ -10,17 +10,44 @@ This is a learning project focused on building microservices architecture from s
 
 **Cloud:** Google Cloud Platform (GCP)
 **Kubernetes:** GKE (Google Kubernetes Engine)
-**Environments:** test (GKE cluster)
-
-## Current Goal
-
-Microservice architecture with Kubernetes deployment.
+**Environments:** test-eu (GKE cluster)
 
 **Services:**
-- `api_gateway` - receives user requests (public-facing)
-- `hello_world` - internal service (no public IP)
+- `api_gateway` — public-facing, receives user requests
+- `hello_world` — internal service (ClusterIP, no public IP)
 
-**Communication:** `api_gateway` -> HTTP -> `hello_world`
+**Communication:** `api_gateway` → HTTP → `hello_world`
+
+## Project Structure
+
+```
+myeshop/
+├── src/services/                 # Microservices (each is independent)
+│   ├── api_gateway/
+│   │   ├── api_gateway/          # Service code
+│   │   ├── tests/
+│   │   ├── pyproject.toml
+│   │   └── Dockerfile
+│   └── hello_world/
+│       ├── hello_world/          # Service code
+│       ├── tests/
+│       ├── pyproject.toml
+│       └── Dockerfile
+├── deploy/
+│   └── k8s/                      # Kubernetes manifests (Kustomize)
+│       ├── api-gateway/
+│       │   ├── base/
+│       │   └── test-eu/
+│       ├── hello-world/
+│       │   ├── base/
+│       │   └── test-eu/
+│       └── infrastructure/       # cert-manager, ingress-nginx
+├── docs/
+├── justfile                      # Task runner commands
+└── pyproject.toml                # Root workspace (dev tools)
+```
+
+## Development
 
 **Python version:** 3.14
 
@@ -33,60 +60,32 @@ poetry add fastapi              # Add main dependency
 poetry add --group dev pytest   # Add dev dependency
 ```
 
-## Linting & Formatting
-
-Uses **ruff** for both linting and formatting (line length: 120):
+**Linting & Formatting:** Uses **ruff** (line length: 120):
 
 ```bash
 poetry run ruff check --fix .
 poetry run ruff format .
 ```
 
-Ruff rules: B, C, E, F, I, W (see `pyproject.toml` for ignored rules)
-
-## Architecture
-
-**Tech-Sliced Architecture:** The codebase follows a context-based architecture where each feature folder groups related functionality around a business capability. Inside each context, code is organized by technical layers.
-
-**Context** = a feature folder inside `app/api/`. Each context groups related functionality (routes, services, models, etc.) around a business capability.
-
-### Project Structure
-
-```
-myeshop/
-├── app/
-│   ├── main.py                   # FastAPI app initialization
-│   ├── api/
-│   │   └── v1/                   # API version 1
-│   │       └── <context>/        # Feature contexts
-│   ├── core/                     # Core infrastructure
-│   └── tests/                    # Test suite
-├── docs/                         # Documentation
-├── pyproject.toml                # Dependencies (Poetry)
-└── docker-compose.yaml           # Local infrastructure
-```
-
-### Context Module Structure
-
-Each context follows this structure:
-
-```
-context_module/
-├── routes.py                 # API endpoints
-├── services/                 # Business logic
-├── repositories.py           # Data access
-├── models/                   # Database models
-├── schemas/
-│   ├── request_schemas.py
-│   ├── response_schemas.py
-│   ├── dtos.py
-│   └── nested_models.py
-├── dependencies.py           # DI providers
-├── exceptions.py             # Domain exceptions
-└── utils.py                  # Module utilities
-```
+**Task runner:** Uses `just` (see `justfile` for available commands).
 
 ## Coding Standards
+
+**Type annotations are mandatory.** All functions, methods, and class attributes must have type hints.
+
+### Named Arguments
+
+**Always use keyword arguments.** Never use positional arguments when calling functions or methods.
+
+```python
+# Bad - positional arguments
+user = create_user("John", "john@example.com", True)
+
+# Good - keyword arguments
+user = create_user(name="John", email="john@example.com", is_active=True)
+```
+
+**Exception:** Single-argument calls where the meaning is obvious (e.g., `len(items)`, `str(value)`).
 
 ### Code Comments
 
@@ -104,17 +103,32 @@ context_module/
 
 **Think twice before adding defaults.** They can hide bugs by silently accepting missing data.
 
+```python
+# Bad - caller should explicitly decide
+def send_notification(user: User, priority: str = "normal"): ...
+
+# Good - well-established convention
+def paginate(items: list, page: int = 1, page_size: int = 20): ...
+```
+
 **Acceptable defaults:** pagination, logging levels, retry counts, optional boolean flags.
 
 **Avoid defaults:** when callers should make explicit choices, or when values are context-dependent.
 
-## Documentation
+**Avoid fallbacks:** Don't use `value or default_value` patterns to silently handle missing data. If a value is required, let it fail explicitly rather than substituting a fallback that hides the real problem.
 
-| Topic                | Location                                 |
-| -------------------- | ---------------------------------------- |
-| System architecture  | [docs/architecture/](docs/architecture/) |
-| Application concepts | [docs/application/](docs/application/)   |
-| Handbook & playbooks | [docs/handbook/](docs/handbook/)         |
-| Bounded contexts     | [docs/system/](docs/system/)             |
+**New fields should be required by default.** When adding fields to models, schemas, or dataclasses, make them required unless there's a clear reason for optionality. Don't preemptively add `Optional`, `None` defaults, or `= Field(default=...)` just to avoid migration issues or "be safe."
 
-See [docs/handbook/how-we-write-docs.md](docs/handbook/how-we-write-docs.md) for documentation standards.
+```python
+# Bad - making fields optional "just in case"
+class User:
+    name: str
+    email: str
+    role: str | None = None  # Why optional? Every user needs a role.
+
+# Good - required unless truly optional
+class User:
+    name: str
+    email: str
+    role: str  # Required. Caller must provide it.
+```
