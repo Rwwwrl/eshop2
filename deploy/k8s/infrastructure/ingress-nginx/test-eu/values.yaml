@@ -1,7 +1,8 @@
 controller:
   replicaCount: 2
   config:
-    upstream-keepalive-timeout: "60"
+    entries:
+      upstream-keepalive-timeout: "60"
   service:
     loadBalancerIP: "34.159.106.171"
   affinity:
