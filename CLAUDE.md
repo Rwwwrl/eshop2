@@ -11,6 +11,8 @@ This is a learning project focused on building microservices architecture from s
 **Cloud:** Google Cloud Platform (GCP)
 **Kubernetes:** GKE (Google Kubernetes Engine)
 **Environments:** test-eu (GKE cluster)
+**Ingress Controller:** NGINX Inc (`nginx-stable/nginx-ingress` Helm chart) — test-eu only
+**TLS:** cert-manager with Let's Encrypt
 
 **Services:**
 - `api_gateway` — public-facing, receives user requests
