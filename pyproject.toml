@@ -9,6 +9,8 @@ package-mode = false
 python = "^3.14"
 hello-world = { path = "src/services/hello_world", develop = true }
 api-gateway = { path = "src/services/api_gateway", develop = true }
+wearables = { path = "src/services/wearables", develop = true }
+myeshop-libs = { path = "src/libs", develop = true }
 
 
 [tool.poetry.group.dev.dependencies]
