@@ -118,8 +118,8 @@ docker build -t hello-world:latest src/services/hello_world
 ### 2. Apply Kubernetes manifests
 
 ```bash
-kubectl apply -k deploy/k8s/api-gateway/dev
-kubectl apply -k deploy/k8s/hello-world/dev
+kubectl apply -k deploy/k8s/services/api-gateway/dev
+kubectl apply -k deploy/k8s/services/hello-world/dev
 ```
 
 ### 3. Verify deployment
@@ -336,7 +336,7 @@ controller:
 
 ### 4. Create service Kubernetes overlays
 
-Create overlay folder `deploy/k8s/<SERVICE>/<ENV>/` with:
+Create overlay folder `deploy/k8s/services/<SERVICE>/<ENV>/` with:
 - `kustomization.yaml`
 - `deployment.yaml`
 - `ingress.yaml` (for public services)

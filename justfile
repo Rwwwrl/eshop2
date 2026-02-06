@@ -13,13 +13,13 @@ dbuild:
 
 [group('kuber-dev')]
 kapply-dev:
-	kubectl apply -k deploy/k8s/hello-world/dev
-	kubectl apply -k deploy/k8s/api-gateway/dev
+	kubectl apply -k deploy/k8s/services/hello-world/dev
+	kubectl apply -k deploy/k8s/services/api-gateway/dev
 
 [group('kuber-dev')]
 kdelete-dev:
-	kubectl delete -k deploy/k8s/hello-world/dev
-	kubectl delete -k deploy/k8s/api-gateway/dev
+	kubectl delete -k deploy/k8s/services/hello-world/dev
+	kubectl delete -k deploy/k8s/services/api-gateway/dev
 
 [group('kuber-dev')]
 krestart-deployments-dev:

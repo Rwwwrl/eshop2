@@ -61,7 +61,7 @@ jobs:
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
         run: |
-          cd deploy/k8s/${{ inputs.service_name }}/${{ inputs.environment }}
+          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}
 
           kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
           kustomize build . | kubectl apply -f -
