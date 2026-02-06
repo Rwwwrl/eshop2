@@ -76,3 +76,5 @@ for product in response_content.items:
     # Work with typed objects
     ...
 ```
+
+See `references/patterns.md` for more examples.
