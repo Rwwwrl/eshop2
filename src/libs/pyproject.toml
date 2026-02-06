@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "myeshop-libs"
+version = "0.1.0"
+description = "Shared library for MyEshop microservices"
+authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
+packages = [{ include = "libs" }]
+
+[tool.poetry.dependencies]
+python = "^3.14"
+pydantic = "^2.11.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.2"
+ruff = "^0.14.14"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
