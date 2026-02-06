@@ -33,14 +33,3 @@ Bad — reaching into another context's internal file:
 ```python
 from webhooks.schemas.request_schemas import JunctionWebhookPayload
 ```
-
-## Exporting from a Context
-
-The owning context controls what is public by exporting from `schemas/__init__.py`:
-
-```python
-# webhooks/schemas/__init__.py
-from webhooks.schemas.request_schemas import JunctionWebhookPayload
-
-__all__ = ["JunctionWebhookPayload"]
-```

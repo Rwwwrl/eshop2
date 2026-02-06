@@ -7,9 +7,10 @@ description: This skill should be used when the user writes tests, creates test 
 
 ## File Structure
 
-Test files mirror source with `tests_` prefix:
-- **Source:** `service_name/context_name/services/my_service.py`
-- **Test:** `tests/tests_context_name/tests_services/test_my_service.py`
+Test files mirror source structure inside the service's `tests/` directory. Since each microservice is its own package, there is no `tests_context_name` nesting — tests are already scoped to the service.
+
+- **Source:** `service_name/services/my_service.py`
+- **Test:** `tests/tests_services/test_my_service.py`
 
 ## Test Naming
 
