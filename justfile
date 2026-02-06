@@ -1,5 +1,9 @@
 import 'justfile.local'
 
+[group('test')]
+test:
+    poetry run pytest -s -c pytest.ini
+
 [group('docker')]
 dbuild:
     docker build -t api-gateway:latest src/services/api_gateway
