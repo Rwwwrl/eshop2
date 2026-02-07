@@ -26,5 +26,7 @@ def setup_logging(settings: LoggingSettingsMixin) -> None:
 
     root_logger.addHandler(handler)
 
-    # NOTE @sosov: Suppressed because RequestResponseLoggingMiddleware logs requests with richer data.
+    # NOTE @sosov: Suppressing noisy third-party loggers to WARNING+.
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
