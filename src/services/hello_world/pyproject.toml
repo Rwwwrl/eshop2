@@ -9,7 +9,7 @@ packages = [{ include = "hello_world" }]
 python = "^3.14"
 fastapi = "^0.128.0"
 uvicorn = {extras = ["standard"], version = "^0.40.0"}
-myeshop-libs = "^0.1.0"
+myeshop-libs = "^0.2.0"
 pytest = "^9.0.2"
 ruff = "^0.14.14"
 
