@@ -242,6 +242,8 @@ develop = true
 
 [package.dependencies]
 pydantic = "^2.11.0"
+pytest = "^9.0.2"
+ruff = "^0.14.14"
 
 [package.source]
 type = "directory"
@@ -928,4 +930,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.14"
-content-hash = "7532a077743b24fc5b2150e377a7977348860f0de52d7ff1be60f2f0c6454b62"
+content-hash = "60aa46ae9da3e66eaaf45af6fb3ed8a6bb8282454d3cee9e2d2e89167682eb99"
