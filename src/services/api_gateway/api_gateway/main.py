@@ -2,6 +2,7 @@ from importlib.metadata import version
 
 import httpx
 from fastapi import FastAPI
+from libs.utils import print_hello_world
 
 app = FastAPI(
     title="API Gateway",
@@ -25,6 +26,11 @@ async def health():
 @app.get("/readiness_check")
 async def readiness_check():
     return {"status": "ok"}
+
+
+@app.get("/libs-hello")
+async def libs_hello():
+    return {"message": print_hello_world()}
 
 
 @app.get("/hello-world/host")
