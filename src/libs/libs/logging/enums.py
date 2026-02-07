@@ -7,3 +7,8 @@ class LogLevelEnum(str, Enum):
     WARNING = "WARNING"
     ERROR = "ERROR"
     CRITICAL = "CRITICAL"
+
+
+class ProcessTypeEnum(str, Enum):
+    FASTAPI = "fastapi"
+    CELERY = "celery"

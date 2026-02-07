@@ -1,6 +1,16 @@
-from enum import Enum
+from enum import Enum, auto
 
 
 class EnvironmentEnum(str, Enum):
     DEV = "dev"
     TEST = "test"
+
+
+class ServiceNameEnum(str, Enum):
+    @staticmethod
+    def _generate_next_value_(name: str, start: int, count: int, last_values: list[str]) -> str:
+        return name.lower().replace("_", "-")
+
+    API_GATEWAY = auto()
+    HELLO_WORLD = auto()
+    WEARABLES = auto()

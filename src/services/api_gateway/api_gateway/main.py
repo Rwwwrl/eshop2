@@ -1,13 +1,15 @@
 from importlib.metadata import version
 
 from fastapi import FastAPI
+from libs.common.enums import ServiceNameEnum
 from libs.fastapi_ext.middlewares import RequestResponseLoggingMiddleware, UnhandledExceptionMiddleware
 from libs.logging import setup_logging
+from libs.logging.enums import ProcessTypeEnum
 
 from api_gateway.routes import router
 from api_gateway.settings import settings
 
-setup_logging(settings=settings)
+setup_logging(settings=settings, service_name=ServiceNameEnum.API_GATEWAY, process_type=ProcessTypeEnum.FASTAPI)
 
 app = FastAPI(
     title="API Gateway",

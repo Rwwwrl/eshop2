@@ -1,12 +1,14 @@
 import logging
 
 from fastapi import FastAPI
+from libs.common.enums import ServiceNameEnum
 from libs.logging import setup_logging
+from libs.logging.enums import ProcessTypeEnum
 
 from hello_world.routes import router
 from hello_world.settings import settings
 
-setup_logging(settings=settings)
+setup_logging(settings=settings, service_name=ServiceNameEnum.HELLO_WORLD, process_type=ProcessTypeEnum.FASTAPI)
 
 logger = logging.getLogger(__name__)
 
