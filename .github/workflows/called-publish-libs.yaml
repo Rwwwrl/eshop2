@@ -39,7 +39,7 @@ jobs:
       - name: Configure Poetry repository
         working-directory: src/libs
         run: |
-          REGISTRY_URL="https://${{ vars.GCP_REGION }}-python.pkg.dev/${{ vars.GCP_PROJECT_ID }}/myeshop-python/simple/"
+          REGISTRY_URL="https://${{ vars.GCP_REGION }}-python.pkg.dev/${{ vars.GCP_PROJECT_ID }}/myeshop-python/"
           poetry config repositories.myeshop-python "$REGISTRY_URL"
           TOKEN=$(gcloud auth print-access-token)
           echo "::add-mask::$TOKEN"
@@ -47,5 +47,11 @@ jobs:
 
       - name: Build and publish
         working-directory: src/libs
-        run: poetry publish --build --repository myeshop-python
-        continue-on-error: true
+        run: |
+          OUTPUT=$(poetry publish --build --repository myeshop-python 2>&1) && exit 0
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "409"; then
+            echo "Version already exists in registry, skipping"
+            exit 0
+          fi
+          exit 1
