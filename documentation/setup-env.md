@@ -189,6 +189,9 @@ gcloud container clusters create <CLUSTER_NAME> \
   --project <PROJECT_ID> \
   --region <REGION> \
   --node-locations <ZONE> \
+  --machine-type e2-standard-2 \
+  --disk-type pd-standard \
+  --disk-size 30 \
   --num-nodes 3 \
   --enable-autoscaling \
   --total-min-nodes 3 --total-max-nodes 4 \
@@ -276,6 +279,15 @@ Click default-pool in the left sidebar.
 | --------------- | -------------- |
 | Name            | `default-pool` |
 | Number of nodes | `3`            |
+
+Node configuration (click Nodes in the left sidebar under default-pool):
+
+| Field          | Value                                      |
+| -------------- | ------------------------------------------ |
+| Series         | E2                                         |
+| Machine type   | `e2-standard-2` (2 vCPU, 1 core, 8 GB)    |
+| Boot disk type | Standard persistent disk                   |
+| Boot disk size | 30 GB                                      |
 
 Cluster autoscaler:
 

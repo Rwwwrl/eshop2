@@ -12,6 +12,9 @@ gcloud container clusters create "$CLUSTER" \
     --project "$PROJECT" \
     --region "$REGION" \
     --node-locations "$ZONE" \
+    --machine-type e2-standard-2 \
+    --disk-type pd-standard \
+    --disk-size 30 \
     --num-nodes 3 \
     --enable-autoscaling \
     --total-min-nodes 3 --total-max-nodes 4 \
