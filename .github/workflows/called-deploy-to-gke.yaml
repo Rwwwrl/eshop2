@@ -42,6 +42,12 @@ jobs:
           service_version=$(grep '^version = ' ${{ inputs.service_path }}/pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
           echo "service_version=${service_version}" >> $GITHUB_OUTPUT
 
+      - name: Download env config
+        run: |
+          gsutil cp \
+            gs://${{ vars.GCS_CONFIG_BUCKET }}/services/${{ inputs.service_name }}/env.yaml \
+            ${{ inputs.service_path }}/env.yaml
+
       - name: Build and push
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}

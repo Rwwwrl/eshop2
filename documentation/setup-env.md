@@ -245,8 +245,61 @@ Create a GitHub environment (e.g., `test-eu`) with these variables:
 | `GCP_SERVICE_ACCOUNT`            | `github-actions@my-eshop-123.iam.gserviceaccount.com`                                    |
 | `GKE_CLUSTER_NAME`               | `my-cluster`                                                                             |
 | `GCP_ARTIFACT_REGISTRY_NAME`     | `myeshop`                                                                                |
+| `GCS_CONFIG_BUCKET`              | `myeshop-config`                                                                         |
 
 Path: GitHub repo -> Settings -> Environments -> New environment
+
+### 7. Create GCS Config Bucket
+
+Each service reads its configuration from an `env.yaml` file. Per-environment config files are stored in a GCS bucket and downloaded during CI/CD deployment.
+
+#### Console UI
+
+1. Navigation Menu -> Cloud Storage -> Buckets
+2. Click CREATE
+3. Configure:
+   - Name: `<PROJECT_NAME>-config` (e.g., `eshop-test-config`)
+   - Location type: Region
+   - Region: same as your GKE cluster (e.g., `europe-west3`)
+   - Storage class: Standard
+   - Access control: Uniform
+4. Click CREATE
+
+#### gcloud CLI
+
+```bash
+gsutil mb -l <REGION> -b on gs://<PROJECT_NAME>-config
+```
+
+#### Folder structure
+
+Create a folder per environment and service:
+
+```
+gs://<PROJECT_NAME>-config/
+  services/
+    api-gateway/env.yaml
+    hello-world/env.yaml
+    wearables/env.yaml
+```
+
+Upload config files:
+
+```bash
+gsutil cp env.yaml gs://<PROJECT_NAME>-config/services/api-gateway/env.yaml
+gsutil cp env.yaml gs://<PROJECT_NAME>-config/services/hello-world/env.yaml
+gsutil cp env.yaml gs://<PROJECT_NAME>-config/services/wearables/env.yaml
+```
+
+#### IAM
+
+Grant the `github-actions` service account read access to the bucket:
+
+```bash
+gsutil iam ch \
+  serviceAccount:github-actions@<PROJECT_ID>.iam.gserviceaccount.com:roles/storage.objectViewer \
+  gs://<PROJECT_NAME>-config
+```
 
 ---
 

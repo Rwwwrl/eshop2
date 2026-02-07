@@ -13,6 +13,7 @@ RUN --mount=type=secret,id=gcp_token \
     poetry install --no-root --only main
 
 COPY api_gateway/ ./api_gateway/
+COPY env.yaml ./
 RUN poetry install --only main
 
 EXPOSE 8000
