@@ -4,8 +4,13 @@ WORKDIR /app
 ENV POETRY_VERSION=1.8.3
 RUN pip install poetry==$POETRY_VERSION
 
+ARG REGISTRY_URL
 COPY pyproject.toml poetry.lock poetry.toml ./
-RUN poetry install --no-root --only main
+
+RUN --mount=type=secret,id=gcp_token \
+    poetry source add --priority=supplemental myeshop-python "$REGISTRY_URL" && \
+    poetry config http-basic.myeshop-python oauth2accesstoken "$(cat /run/secrets/gcp_token)" && \
+    poetry install --no-root --only main
 
 COPY wearables/ ./wearables/
 RUN poetry install --only main

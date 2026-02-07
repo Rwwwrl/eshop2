@@ -1,0 +1,51 @@
+name: Publish myeshop-libs
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Configure Poetry repository
+        working-directory: src/libs
+        run: |
+          REGISTRY_URL="https://${{ vars.GCP_REGION }}-python.pkg.dev/${{ vars.GCP_PROJECT_ID }}/myeshop-python/simple/"
+          poetry config repositories.myeshop-python "$REGISTRY_URL"
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          poetry config http-basic.myeshop-python oauth2accesstoken "$TOKEN"
+
+      - name: Build and publish
+        working-directory: src/libs
+        run: poetry publish --build --repository myeshop-python
+        continue-on-error: true
