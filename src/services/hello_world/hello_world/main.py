@@ -1,26 +1,17 @@
-import socket
+import logging
 
 from fastapi import FastAPI
+from libs.logging import setup_logging
+
+from hello_world.routes import router
+from hello_world.settings import settings
+
+setup_logging(settings=settings)
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Hello World Service")
 
+app.include_router(router=router)
 
-@app.get("/")
-async def root():
-    print("Hello World from CI/CD test!")
-    return {"message": "Hello World"}
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-
-@app.get("/readiness_check")
-async def readiness_check():
-    return {"status": "ok"}
-
-
-@app.get("/host")
-async def get_host():
-    return {"host": socket.gethostname()}
+logger.info("Hello World service started")
