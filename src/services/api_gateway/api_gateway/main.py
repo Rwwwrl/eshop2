@@ -1,14 +1,12 @@
-from pathlib import Path
+from importlib.metadata import version
 
 import httpx
 from fastapi import FastAPI
-
-VERSION_FILE = Path(__file__).parent.parent / "VERSION"
-VERSION = VERSION_FILE.read_text().strip()
+from libs.utils import print_hello_world
 
 app = FastAPI(
     title="API Gateway",
-    version=VERSION,
+    version=version("api-gateway"),
     description="Public-facing API Gateway for the e-shop platform.",
 )
 
@@ -28,6 +26,11 @@ async def health():
 @app.get("/readiness_check")
 async def readiness_check():
     return {"status": "ok"}
+
+
+@app.get("/libs-hello")
+async def libs_hello():
+    return {"message": print_hello_world()}
 
 
 @app.get("/hello-world/host")

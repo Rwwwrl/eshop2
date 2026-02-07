@@ -1,5 +1,9 @@
 import 'justfile.local'
 
+[group('test')]
+test:
+    poetry run pytest -s -c pytest.ini
+
 [group('docker')]
 dbuild:
     docker build -t api-gateway:latest src/services/api_gateway
@@ -9,13 +13,13 @@ dbuild:
 
 [group('kuber-dev')]
 kapply-dev:
-	kubectl apply -k deploy/k8s/hello-world/dev
-	kubectl apply -k deploy/k8s/api-gateway/dev
+	kubectl apply -k deploy/k8s/services/hello-world/dev
+	kubectl apply -k deploy/k8s/services/api-gateway/dev
 
 [group('kuber-dev')]
 kdelete-dev:
-	kubectl delete -k deploy/k8s/hello-world/dev
-	kubectl delete -k deploy/k8s/api-gateway/dev
+	kubectl delete -k deploy/k8s/services/hello-world/dev
+	kubectl delete -k deploy/k8s/services/api-gateway/dev
 
 [group('kuber-dev')]
 krestart-deployments-dev:

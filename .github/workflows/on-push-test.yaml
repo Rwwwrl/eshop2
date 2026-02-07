@@ -10,6 +10,12 @@ permissions:
   id-token: write
 
 jobs:
+  publish-libs:
+    uses: ./.github/workflows/called-publish-libs.yaml
+    with:
+      environment: test-eu
+    secrets: inherit
+
   deploy-infrastructure:
     uses: ./.github/workflows/called-deploy-infrastructure.yaml
     with:
@@ -17,7 +23,7 @@ jobs:
     secrets: inherit
 
   deploy-api-gateway:
-    needs: deploy-infrastructure
+    needs: [deploy-infrastructure, publish-libs]
     uses: ./.github/workflows/called-deploy-to-gke.yaml
     with:
       environment: test-eu
@@ -26,7 +32,7 @@ jobs:
     secrets: inherit
 
   deploy-hello-world:
-    needs: deploy-infrastructure
+    needs: [deploy-infrastructure, publish-libs]
     uses: ./.github/workflows/called-deploy-to-gke.yaml
     with:
       environment: test-eu

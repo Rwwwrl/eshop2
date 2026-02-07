@@ -12,8 +12,8 @@ RUN --mount=type=secret,id=gcp_token \
     poetry config http-basic.myeshop-python oauth2accesstoken "$(cat /run/secrets/gcp_token)" && \
     poetry install --no-root --only main
 
-COPY api_gateway/ ./api_gateway/
+COPY wearables/ ./wearables/
 RUN poetry install --only main
 
 EXPOSE 8000
-CMD ["poetry", "run", "uvicorn", "api_gateway.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]
+CMD ["poetry", "run", "uvicorn", "wearables.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]

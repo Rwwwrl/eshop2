@@ -14,40 +14,53 @@ This is a learning project focused on building microservices architecture from s
 **Ingress Controller:** NGINX Inc (`nginx-stable/nginx-ingress` Helm chart) — test-eu only
 **TLS:** cert-manager with Let's Encrypt
 
-**Services:**
-- `api_gateway` — public-facing, receives user requests
-- `hello_world` — internal service (ClusterIP, no public IP)
+## Service Internal Architecture
 
-**Communication:** `api_gateway` → HTTP → `hello_world`
+Every microservice follows **vertical slice architecture**. Code is organized by **context** (feature/domain area), not by technical layer. Each context groups related functionality around a business capability, with technical layers inside.
 
-## Project Structure
+**Context** = a feature folder inside the service package. A context is a boundary of meaning (DDD Bounded Context) — it owns its routes, services, models, schemas, and data access.
+
+### Context Module Structure
 
 ```
-myeshop/
-├── src/services/                 # Microservices (each is independent)
-│   ├── api_gateway/
-│   │   ├── api_gateway/          # Service code
-│   │   ├── tests/
-│   │   ├── pyproject.toml
-│   │   └── Dockerfile
-│   └── hello_world/
-│       ├── hello_world/          # Service code
-│       ├── tests/
-│       ├── pyproject.toml
-│       └── Dockerfile
-├── deploy/
-│   └── k8s/                      # Kubernetes manifests (Kustomize)
-│       ├── api-gateway/
-│       │   ├── base/
-│       │   └── test-eu/
-│       ├── hello-world/
-│       │   ├── base/
-│       │   └── test-eu/
-│       └── infrastructure/       # cert-manager, ingress-nginx
-├── docs/
-├── justfile                      # Task runner commands
-└── pyproject.toml                # Root workspace (dev tools)
+context_name/
+    routes.py                 # API endpoints (FastAPI router)
+    services.py               # Business logic (or services/ directory for multiple)
+    repositories.py           # Data access layer
+    models.py                 # Database models (or models/ directory)
+    schemas/
+        request_schemas.py    # Pydantic request validation schemas
+        response_schemas.py   # Pydantic response schemas
+        dtos.py               # Data Transfer Objects (internal, between layers)
+        nested_models.py      # Embedded sub-models for documents/DTOs
+    serializers.py            # DTO → response schema conversion
+    exceptions.py             # Domain-specific exceptions
 ```
+
+Additional common files (add as needed): `enums.py`, `utils.py`.
+
+Not every context needs every file. Smaller contexts may only have `routes.py`, `services.py`, and `schemas/`. Add files as the context grows.
+
+### Layer Dependency Direction
+
+```
+routes.py  →  services.py  →  repositories.py  →  models.py
+    |              |                  |
+    v              v                  v
+schemas/        schemas/           schemas/
+  request         dtos               dtos
+  response                           nested_models
+    |
+    v
+serializers.py  (DTO → response_schemas)
+```
+
+Routes depend on services, services depend on repositories, repositories depend on models. Schemas are used across layers. Never import routes from services or repositories.
+
+### Shared Library
+
+`src/libs/` is a separate Poetry package (`myeshop-libs`) with shared code used across all services. Services depend on it via path dependency: `myeshop-libs = { path = "../../libs", develop = true }`
+
 
 ## Development
 
@@ -73,7 +86,9 @@ poetry run ruff format .
 
 ## Coding Standards
 
-**Type annotations are mandatory.** All functions, methods, and class attributes must have type hints.
+- **Async first.** Every microservice is async. Use `async def` for endpoints, service methods, and I/O operations. Sync code is the exception, not the rule.
+- **Pydantic for data models.** Use Pydantic (`BaseModel`) when defining data containers, schemas, configs, or anything that benefits from validation and serialization. Plain classes are fine when Pydantic adds no value — not everything needs to be a Pydantic model.
+- **Type annotations are mandatory.** All functions, methods, and class attributes must have type hints.
 
 ### Named Arguments
 

@@ -9,12 +9,9 @@ package-mode = false
 python = "^3.14"
 hello-world = { path = "src/services/hello_world", develop = true }
 api-gateway = { path = "src/services/api_gateway", develop = true }
-
-
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.14.13"
+wearables = { path = "src/services/wearables", develop = true }
+myeshop-libs = { path = "src/libs", develop = true }
 pre-commit = "^4.5.1"
-pytest = "^9.0.2"
 
 [build-system]
 requires = ["poetry-core"]

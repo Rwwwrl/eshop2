@@ -1,14 +1,13 @@
 [tool.poetry]
-name = "hello-world"
-version = "0.2.3"
-description = "Simple Hello World FastAPI microservice"
+name = "myeshop-libs"
+version = "0.1.0"
+description = "Shared library for MyEshop microservices"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
-packages = [{ include = "hello_world" }]
+packages = [{ include = "libs" }]
 
 [tool.poetry.dependencies]
 python = "^3.14"
-fastapi = "^0.128.0"
-uvicorn = {extras = ["standard"], version = "^0.40.0"}
+pydantic = "^2.11.0"
 pytest = "^9.0.2"
 ruff = "^0.14.14"
 
