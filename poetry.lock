@@ -41,7 +41,7 @@ trio = ["trio (>=0.31.0)", "trio (>=0.32.0)"]
 
 [[package]]
 name = "api-gateway"
-version = "0.2.4"
+version = "0.4.0"
 description = "API Gateway FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -51,7 +51,7 @@ develop = true
 [package.dependencies]
 fastapi = "^0.128.0"
 httpx = "^0.28.0"
-myeshop-libs = "^0.1.0"
+myeshop-libs = "^0.3.0"
 pytest = "^9.0.2"
 ruff = "^0.14.14"
 uvicorn = {version = "^0.40.0", extras = ["standard"]}
@@ -165,7 +165,7 @@ files = [
 
 [[package]]
 name = "hello-world"
-version = "0.2.3"
+version = "0.3.0"
 description = "Simple Hello World FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -174,7 +174,7 @@ develop = true
 
 [package.dependencies]
 fastapi = "^0.128.0"
-myeshop-libs = "^0.1.0"
+myeshop-libs = "^0.3.0"
 pytest = "^9.0.2"
 ruff = "^0.14.14"
 uvicorn = {version = "^0.40.0", extras = ["standard"]}
@@ -321,7 +321,7 @@ files = [
 
 [[package]]
 name = "myeshop-libs"
-version = "0.1.0"
+version = "0.3.0"
 description = "Shared library for MyEshop microservices"
 optional = false
 python-versions = "^3.14"
@@ -1038,7 +1038,7 @@ anyio = ">=3.0.0"
 
 [[package]]
 name = "wearables"
-version = "0.1.1"
+version = "0.3.0"
 description = "Wearables webhook ingestion microservice"
 optional = false
 python-versions = "^3.14"
@@ -1048,7 +1048,7 @@ develop = true
 [package.dependencies]
 fastapi = "^0.128.0"
 httpx = "^0.28.0"
-myeshop-libs = "0.1.0"
+myeshop-libs = "^0.3.0"
 pydantic = "^2.11.0"
 pytest = "^9.0.2"
 pytest-asyncio = "^1.3.0"

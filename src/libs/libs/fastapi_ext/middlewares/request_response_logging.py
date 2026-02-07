@@ -55,7 +55,7 @@ class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
             request.url.path,
             extra={
                 "http_method": request.method,
-                "http_path": str(request.url),
+                "http_url": str(request.url),
                 "http_headers": _sanitize_headers(dict(request.headers)),
                 "http_body": request_body_str[:_MAX_BODY_LOG_SIZE],
             },
@@ -78,7 +78,7 @@ class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
             duration_ms,
             extra={
                 "http_method": request.method,
-                "http_path": str(request.url),
+                "http_url": str(request.url),
                 "http_status": response.status_code,
                 "http_duration_ms": round(duration_ms, 1),
                 "http_response_body": response_body.decode("utf-8", errors="replace")[:_MAX_BODY_LOG_SIZE],

@@ -27,6 +27,11 @@ async def libs_hello() -> dict[str, str]:
     return {"message": print_hello_world()}
 
 
+@router.get("/debug/error")
+async def debug_error() -> None:
+    raise RuntimeError("Test unhandled exception")
+
+
 @router.get("/hello-world/host")
 async def get_hello_world_host() -> dict:
     async with httpx.AsyncClient() as client:

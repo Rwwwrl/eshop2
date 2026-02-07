@@ -1,1 +1,2 @@
 from libs.fastapi_ext.middlewares.request_response_logging import RequestResponseLoggingMiddleware
+from libs.fastapi_ext.middlewares.unhandled_exception import UnhandledExceptionMiddleware
