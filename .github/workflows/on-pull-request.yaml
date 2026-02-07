@@ -58,7 +58,11 @@ jobs:
               exit 1
             fi
 
-            BASE_VERSION=$(git show origin/${{ github.base_ref }}:${service_path}/VERSION)
+            if ! BASE_VERSION=$(git show origin/${{ github.base_ref }}:${service_path}/VERSION 2>/dev/null); then
+              echo "${service_dir}: new service, skipping version comparison"
+              continue
+            fi
+
             HEAD_VERSION=$(cat ${service_path}/VERSION)
 
             if [[ "$HEAD_VERSION" == "$BASE_VERSION" ]]; then
