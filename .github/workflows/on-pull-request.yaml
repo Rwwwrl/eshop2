@@ -53,20 +53,21 @@ jobs:
           for service_dir in $changed_services; do
             service_path="src/services/$service_dir"
 
-            if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^${service_path}/VERSION$"; then
-              echo "::error::${service_dir} code changed but VERSION was not updated"
+            if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^${service_path}/pyproject.toml$"; then
+              echo "::error::${service_dir} code changed but pyproject.toml version was not updated"
               exit 1
             fi
 
-            if ! BASE_VERSION=$(git show origin/${{ github.base_ref }}:${service_path}/VERSION 2>/dev/null); then
+            if ! BASE_TOML=$(git show origin/${{ github.base_ref }}:${service_path}/pyproject.toml 2>/dev/null); then
               echo "${service_dir}: new service, skipping version comparison"
               continue
             fi
 
-            HEAD_VERSION=$(cat ${service_path}/VERSION)
+            BASE_VERSION=$(echo "$BASE_TOML" | grep '^version = ' | head -1 | sed 's/version = "\(.*\)"/\1/')
+            HEAD_VERSION=$(grep '^version = ' ${service_path}/pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
 
             if [[ "$HEAD_VERSION" == "$BASE_VERSION" ]]; then
-              echo "::error::${service_dir}/VERSION was not bumped ($BASE_VERSION -> $HEAD_VERSION)"
+              echo "::error::${service_dir}/pyproject.toml version was not bumped ($BASE_VERSION -> $HEAD_VERSION)"
               exit 1
             fi
 

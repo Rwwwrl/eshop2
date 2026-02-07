@@ -8,7 +8,7 @@ COPY pyproject.toml poetry.lock poetry.toml ./
 RUN poetry install --no-root --only main
 
 COPY api_gateway/ ./api_gateway/
-COPY VERSION ./
+RUN poetry install --only main
 
 EXPOSE 8000
 CMD ["poetry", "run", "uvicorn", "api_gateway.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]

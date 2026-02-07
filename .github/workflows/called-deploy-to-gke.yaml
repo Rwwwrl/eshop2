@@ -38,7 +38,9 @@ jobs:
 
       - name: Get version
         id: version
-        run: echo "service_version=$(cat ${{ inputs.service_path }}/VERSION)" >> $GITHUB_OUTPUT
+        run: |
+          service_version=$(grep '^version = ' ${{ inputs.service_path }}/pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          echo "service_version=${service_version}" >> $GITHUB_OUTPUT
 
       - name: Build and push
         env:

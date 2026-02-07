@@ -1,18 +1,15 @@
 import logging
-from pathlib import Path
+from importlib.metadata import version
 
 from fastapi import FastAPI
 
 from wearables.routes import router
 
-VERSION_FILE = Path(__file__).parent.parent / "VERSION"
-VERSION = VERSION_FILE.read_text().strip()
-
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
     title="Wearables Service",
-    version=VERSION,
+    version=version("wearables"),
     description="Wearable data webhook ingestion service.",
 )
 

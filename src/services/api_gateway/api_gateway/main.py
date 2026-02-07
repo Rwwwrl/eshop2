@@ -1,14 +1,11 @@
-from pathlib import Path
+from importlib.metadata import version
 
 import httpx
 from fastapi import FastAPI
 
-VERSION_FILE = Path(__file__).parent.parent / "VERSION"
-VERSION = VERSION_FILE.read_text().strip()
-
 app = FastAPI(
     title="API Gateway",
-    version=VERSION,
+    version=version("api-gateway"),
     description="Public-facing API Gateway for the e-shop platform.",
 )
 
