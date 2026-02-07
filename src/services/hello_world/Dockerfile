@@ -5,7 +5,7 @@ ENV POETRY_VERSION=1.8.3
 RUN pip install poetry==$POETRY_VERSION
 
 ARG REGISTRY_URL
-COPY pyproject.toml poetry.lock poetry.toml ./
+COPY pyproject.toml poetry.toml ./
 
 RUN --mount=type=secret,id=gcp_token \
     poetry source add --priority=supplemental myeshop-python "$REGISTRY_URL" && \
