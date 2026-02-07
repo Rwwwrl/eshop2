@@ -24,6 +24,22 @@
 
 - [TLS Bootstrap Problem Explained](tls-bootstrap-problem.md) - Understanding the chicken-egg problem with TLS certificates
 
+## Cluster Lifecycle Scripts
+
+To save costs, the GKE cluster can be deleted when not in use and recreated on demand.
+
+```bash
+# Create cluster with full infrastructure (NGINX Ingress, cert-manager, TLS)
+just gke-up
+
+# Delete cluster
+just gke-down
+```
+
+Scripts: `scripts/gke-up.sh`, `scripts/gke-down.sh`
+
+The static IP and Workload Identity Federation (pools, providers, service account bindings) are GCP project-level resources and persist across cluster deletions. DNS records also remain unchanged.
+
 ---
 
 ## Prerequisites
@@ -170,9 +186,18 @@ gcloud artifacts repositories create <REGISTRY_NAME> \
 
 ```bash
 gcloud container clusters create <CLUSTER_NAME> \
-  --region=<REGION> \
-  --num-nodes=1
+  --project <PROJECT_ID> \
+  --region <REGION> \
+  --node-locations <ZONE> \
+  --num-nodes 3 \
+  --enable-autoscaling \
+  --total-min-nodes 3 --total-max-nodes 4 \
+  --enable-autorepair \
+  --enable-autoupgrade \
+  --workload-pool=<PROJECT_ID>.svc.id.goog
 ```
+
+The `--workload-pool` flag enables Workload Identity, which is required for CI/CD (GitHub Actions) to authenticate to the cluster.
 
 ### 5. Set up Workload Identity Federation for GitHub Actions
 
@@ -250,7 +275,7 @@ Click default-pool in the left sidebar.
 | Field           | Value          |
 | --------------- | -------------- |
 | Name            | `default-pool` |
-| Number of nodes | `2`            |
+| Number of nodes | `3`            |
 
 Cluster autoscaler:
 
@@ -259,8 +284,8 @@ Cluster autoscaler:
 | Enable cluster autoscaler   | Enabled      |
 | Location policy             | Balanced     |
 | Size limits type            | Total limits |
-| Minimum number of all nodes | `0`          |
-| Maximum number of all nodes | `2`          |
+| Minimum number of all nodes | `3`          |
+| Maximum number of all nodes | `4`          |
 
 Automation:
 
