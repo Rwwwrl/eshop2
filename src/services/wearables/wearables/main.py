@@ -1,11 +1,12 @@
-import logging
 from importlib.metadata import version
 
 from fastapi import FastAPI
+from libs.logging import setup_logging
 
 from wearables.routes import router
+from wearables.settings import settings
 
-logging.basicConfig(level=logging.INFO)
+setup_logging(settings=settings)
 
 app = FastAPI(
     title="Wearables Service",

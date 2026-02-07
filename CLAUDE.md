@@ -37,7 +37,7 @@ context_name/
     exceptions.py             # Domain-specific exceptions
 ```
 
-Additional common files (add as needed): `enums.py`, `utils.py`.
+Additional common files (add as needed): `enums.py`, `utils.py`, `settings.py`.
 
 Not every context needs every file. Smaller contexts may only have `routes.py`, `services.py`, and `schemas/`. Add files as the context grows.
 
@@ -89,6 +89,7 @@ poetry run ruff format .
 - **Async first.** Every microservice is async. Use `async def` for endpoints, service methods, and I/O operations. Sync code is the exception, not the rule.
 - **Pydantic for data models.** Use Pydantic (`BaseModel`) when defining data containers, schemas, configs, or anything that benefits from validation and serialization. Plain classes are fine when Pydantic adds no value — not everything needs to be a Pydantic model.
 - **Type annotations are mandatory.** All functions, methods, and class attributes must have type hints.
+- **Enum naming.** All enum classes must use the `Enum` suffix (e.g., `EnvironmentEnum`, `LogLevelEnum`, `OrderStatusEnum`).
 
 ### Named Arguments
 
