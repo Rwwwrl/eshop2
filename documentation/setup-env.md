@@ -557,3 +557,38 @@ kubectl get pods
 kubectl get certificate
 curl https://<YOUR_DOMAIN>/health
 ```
+
+---
+
+## GCloud Logging - Custom Indexed Fields
+
+Structured logs include identity fields (`app`, `service`, `process_type`) for filtering. To enable autocomplete in the Logs Explorer, add custom indexed fields on the log bucket.
+
+### Add indexed fields
+
+1. Navigation Menu -> Logging -> Log Storage
+2. Click the `_Default` bucket
+3. Under "Custom indexed fields", click EDIT
+4. Add:
+   - `jsonPayload.app` (string)
+   - `jsonPayload.service` (string)
+   - `jsonPayload.process_type` (string)
+5. Click DONE, then SAVE
+
+Indexed fields only apply to logs ingested **after** the field is added.
+
+### Filter examples
+
+```
+# All app logs
+jsonPayload.app="eshop"
+
+# All FastAPI processes
+jsonPayload.app="eshop" AND jsonPayload.process_type="fastapi"
+
+# Specific service
+jsonPayload.app="eshop" AND jsonPayload.service="api-gateway"
+
+# Specific service + process type
+jsonPayload.app="eshop" AND jsonPayload.service="api-gateway" AND jsonPayload.process_type="fastapi"
+```
