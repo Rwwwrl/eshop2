@@ -2,7 +2,11 @@ from importlib.metadata import version
 
 from fastapi import FastAPI
 from libs.common.enums import ServiceNameEnum
-from libs.fastapi_ext.middlewares import RequestResponseLoggingMiddleware, UnhandledExceptionMiddleware
+from libs.fastapi_ext.middlewares import (
+    RequestIdMiddleware,
+    RequestResponseLoggingMiddleware,
+    UnhandledExceptionMiddleware,
+)
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 
@@ -19,4 +23,5 @@ app = FastAPI(
 
 app.add_middleware(UnhandledExceptionMiddleware)
 app.add_middleware(RequestResponseLoggingMiddleware)
+app.add_middleware(RequestIdMiddleware)
 app.include_router(router=router)
