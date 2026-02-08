@@ -58,3 +58,33 @@ async def test_uses_provided_header_value(async_client: AsyncClient) -> None:
 
     body = response.json()
     assert body["request_id"] == provided_id
+
+
+@pytest.mark.asyncio
+async def test_accepts_valid_non_uuid_format(async_client: AsyncClient) -> None:
+    provided_id = "trace-abc-123"
+    response = await async_client.get("/echo-request-id", headers={REQUEST_ID_HEADER: provided_id})
+
+    assert response.status_code == 200
+    assert response.headers[REQUEST_ID_HEADER] == provided_id
+
+    body = response.json()
+    assert body["request_id"] == provided_id
+
+
+@pytest.mark.asyncio
+async def test_rejects_overly_long_request_id(async_client: AsyncClient) -> None:
+    long_id = "A" * 300
+    response = await async_client.get("/echo-request-id", headers={REQUEST_ID_HEADER: long_id})
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid X-Request-ID header"}
+
+
+@pytest.mark.asyncio
+async def test_rejects_request_id_with_control_characters(async_client: AsyncClient) -> None:
+    malicious_id = "request-id\x00injected"
+    response = await async_client.get("/echo-request-id", headers={REQUEST_ID_HEADER: malicious_id})
+
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Invalid X-Request-ID header"}

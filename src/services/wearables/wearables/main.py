@@ -3,8 +3,10 @@ from importlib.metadata import version
 from fastapi import FastAPI
 from libs.common.enums import ServiceNameEnum
 from libs.fastapi_ext.middlewares import (
+    RequestBodyLimitMiddleware,
     RequestIdMiddleware,
     RequestResponseLoggingMiddleware,
+    SecurityHeadersMiddleware,
     UnhandledExceptionMiddleware,
 )
 from libs.logging import setup_logging
@@ -21,7 +23,9 @@ app = FastAPI(
     description="Wearable data webhook ingestion service.",
 )
 
+app.add_middleware(RequestBodyLimitMiddleware, max_body_size=1_048_576)
 app.add_middleware(UnhandledExceptionMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestResponseLoggingMiddleware)
 app.add_middleware(RequestIdMiddleware)
 app.include_router(router=router)
