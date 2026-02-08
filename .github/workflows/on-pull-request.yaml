@@ -30,7 +30,7 @@ jobs:
         run: poetry run ruff format --check .
 
       - name: Run tests
-        run: poetry run pytest
+        run: poetry run pytest -c pytest.ini
 
   check_versions:
     runs-on: ubuntu-latest
