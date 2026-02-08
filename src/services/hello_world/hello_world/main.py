@@ -15,7 +15,7 @@ from hello_world.settings import settings
 
 setup_logging(settings=settings, service_name=ServiceNameEnum.HELLO_WORLD, process_type=ProcessTypeEnum.FASTAPI)
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Hello World Service")
 
@@ -24,4 +24,4 @@ app.add_middleware(RequestResponseLoggingMiddleware)
 app.add_middleware(RequestIdMiddleware)
 app.include_router(router=router)
 
-logger.info("Hello World service started")
+_logger.info("Hello World service started")

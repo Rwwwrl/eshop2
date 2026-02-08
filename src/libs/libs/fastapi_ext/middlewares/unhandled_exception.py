@@ -5,7 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-logger = logging.getLogger("middleware.unhandled_exception")
+_logger = logging.getLogger("middleware.unhandled_exception")
 
 
 class UnhandledExceptionMiddleware(BaseHTTPMiddleware):
@@ -17,7 +17,7 @@ class UnhandledExceptionMiddleware(BaseHTTPMiddleware):
         try:
             return await call_next(request)
         except Exception as exc:
-            logger.exception(
+            _logger.exception(
                 "Unhandled exception on %s %s",
                 request.method,
                 request.url.path,

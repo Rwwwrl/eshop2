@@ -38,16 +38,16 @@ async def _send_413(send: Send) -> None:
 
 class RequestBodyLimitMiddleware:
     def __init__(self, app: ASGIApp, max_body_size: int) -> None:
-        self.app = app
-        self.max_body_size = max_body_size
+        self._app = app
+        self._max_body_size = max_body_size
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
-            await self.app(scope, receive, send)
+            await self._app(scope, receive, send)
             return
 
         content_length = _get_content_length(headers=scope.get("headers", []))
-        if content_length is not None and content_length > self.max_body_size:
+        if content_length is not None and content_length > self._max_body_size:
             await _send_413(send=send)
             return
 
@@ -63,7 +63,7 @@ class RequestBodyLimitMiddleware:
                 chunk = message.get("body", b"")
                 bytes_received += len(chunk)
 
-                if bytes_received > self.max_body_size:
+                if bytes_received > self._max_body_size:
                     raise _BodyTooLargeError
 
             return message
@@ -77,7 +77,7 @@ class RequestBodyLimitMiddleware:
             await send(message)
 
         try:
-            await self.app(scope, limited_receive, tracking_send)
+            await self._app(scope, limited_receive, tracking_send)
         except _BodyTooLargeError:
             if not response_started:
                 await _send_413(send=send)

@@ -117,6 +117,39 @@ user = create_user(name="John", email="john@example.com", is_active=True)
 
 **Never comment:** obvious code, variable names, standard operations.
 
+### Encapsulation
+
+**Prefix everything internal with `_`.** If it's not part of the public API, it gets an underscore. Encapsulation brings clarity — readers instantly know what's internal and what's meant to be used externally. This applies to:
+
+- **Class attributes** — internal state set in `__init__`
+- **Class methods** — helpers not called from outside the class
+- **Module-level functions** — helpers used only within the module
+- **Module-level classes** — implementation details not imported elsewhere
+- **Module-level constants** — values used only within the module
+
+```python
+# Module-level internals are private
+_TOO_LARGE_BODY = json.dumps({"detail": "Request body too large"}).encode()
+
+
+class _BodyTooLargeError(Exception):
+    pass
+
+
+def _get_content_length(headers: list[tuple[bytes, bytes]]) -> int | None:
+    for name, value in headers:
+        if name == b"content-length":
+            return int(value)
+    return None
+
+
+# Class internals are private
+class RequestBodyLimitMiddleware:
+    def __init__(self, app: ASGIApp, max_body_size: int) -> None:
+        self._app = app
+        self._max_body_size = max_body_size
+```
+
 ### Default Arguments and Fallbacks
 
 **Think twice before adding defaults.** They can hide bugs by silently accepting missing data.

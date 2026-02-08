@@ -6,7 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-logger = logging.getLogger("middleware.request_response")
+_logger = logging.getLogger("middleware.request_response")
 
 _SAFE_HEADERS: frozenset[str] = frozenset(
     {
@@ -49,7 +49,7 @@ class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
         request_body = await request.body()
         request_body_str = request_body.decode("utf-8", errors="replace") if request_body else ""
 
-        logger.info(
+        _logger.info(
             "Incoming request %s %s",
             request.method,
             request.url.path,
@@ -70,7 +70,7 @@ class RequestResponseLoggingMiddleware(BaseHTTPMiddleware):
         response_body = b"".join(response_body_parts)
         duration_ms = (time.monotonic() - start_time) * 1000
 
-        logger.info(
+        _logger.info(
             "Response %s %s %d %.1fms",
             request.method,
             request.url.path,

@@ -4,7 +4,7 @@ from fastapi import APIRouter
 
 from wearables.schemas import request_schemas
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ async def readiness_check() -> dict[str, str]:
 
 @router.post("/webhook")
 async def handle_webhook(payload: request_schemas.JunctionWebhookPayload) -> dict[str, str]:
-    logger.info(
+    _logger.info(
         "Received webhook event_type=%s user_id=%s client_user_id=%s",
         payload.event_type,
         payload.user_id,

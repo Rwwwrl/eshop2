@@ -6,7 +6,7 @@ from libs.utils import print_hello_world
 
 router = APIRouter()
 
-HELLO_WORLD_SERVICE_URL = "http://hello-world"
+_HELLO_WORLD_SERVICE_URL = "http://hello-world"
 
 
 @router.get("/")
@@ -38,5 +38,5 @@ async def debug_error() -> None:
 async def get_hello_world_host() -> dict:
     headers = {REQUEST_ID_HEADER: request_id_var.get()}
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{HELLO_WORLD_SERVICE_URL}/host", headers=headers)
+        response = await client.get(f"{_HELLO_WORLD_SERVICE_URL}/host", headers=headers)
         return response.json()

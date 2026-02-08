@@ -6,7 +6,7 @@ from libs.common.enums import ServiceNameEnum
 from libs.context_vars import request_id_var
 from libs.logging.enums import ProcessTypeEnum
 
-APP_NAME = "eshop"
+_APP_NAME = "eshop"
 
 
 class GKEJsonFormatter(logging.Formatter):
@@ -39,17 +39,17 @@ class GKEJsonFormatter(logging.Formatter):
 
     def __init__(self, service_name: ServiceNameEnum, process_type: ProcessTypeEnum) -> None:
         super().__init__()
-        self.service_name = service_name
-        self.process_type = process_type
+        self._service_name = service_name
+        self._process_type = process_type
 
     def format(self, record: logging.LogRecord) -> str:
         log_entry: dict[str, object] = {
             "severity": record.levelname,
             "message": record.getMessage(),
             "time": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
-            "app": APP_NAME,
-            "service": self.service_name.value,
-            "process_type": self.process_type.value,
+            "app": _APP_NAME,
+            "service": self._service_name.value,
+            "process_type": self._process_type.value,
             "request_id": request_id_var.get(),
             "logger": record.name,
             "logging.googleapis.com/sourceLocation": {
@@ -71,7 +71,7 @@ class GKEJsonFormatter(logging.Formatter):
 
 class DevFormatter(logging.Formatter):
     def __init__(self, service_name: ServiceNameEnum, process_type: ProcessTypeEnum) -> None:
-        identity = f"{APP_NAME} | {service_name.value}/{process_type.value}"
+        identity = f"{_APP_NAME} | {service_name.value}/{process_type.value}"
         fmt = f"%(asctime)s | %(levelname)-8s | {identity} | %(request_id)s | %(name)s | %(message)s"
         super().__init__(fmt=fmt, datefmt="%H:%M:%S")
 
