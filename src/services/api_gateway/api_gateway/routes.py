@@ -1,5 +1,7 @@
 import httpx
 from fastapi import APIRouter
+from libs.consts import REQUEST_ID_HEADER
+from libs.context_vars import request_id_var
 from libs.utils import print_hello_world
 
 router = APIRouter()
@@ -34,6 +36,7 @@ async def debug_error() -> None:
 
 @router.get("/hello-world/host")
 async def get_hello_world_host() -> dict:
+    headers = {REQUEST_ID_HEADER: request_id_var.get()}
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{HELLO_WORLD_SERVICE_URL}/host")
+        response = await client.get(f"{HELLO_WORLD_SERVICE_URL}/host", headers=headers)
         return response.json()

@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timezone
 
 from libs.common.enums import ServiceNameEnum
+from libs.context_vars import request_id_var
 from libs.logging.enums import ProcessTypeEnum
 
 APP_NAME = "eshop"
@@ -49,6 +50,7 @@ class GKEJsonFormatter(logging.Formatter):
             "app": APP_NAME,
             "service": self.service_name.value,
             "process_type": self.process_type.value,
+            "request_id": request_id_var.get(),
             "logger": record.name,
             "logging.googleapis.com/sourceLocation": {
                 "file": record.pathname,
@@ -70,5 +72,9 @@ class GKEJsonFormatter(logging.Formatter):
 class DevFormatter(logging.Formatter):
     def __init__(self, service_name: ServiceNameEnum, process_type: ProcessTypeEnum) -> None:
         identity = f"{APP_NAME} | {service_name.value}/{process_type.value}"
-        fmt = f"%(asctime)s | %(levelname)-8s | {identity} | %(name)s | %(message)s"
+        fmt = f"%(asctime)s | %(levelname)-8s | {identity} | %(request_id)s | %(name)s | %(message)s"
         super().__init__(fmt=fmt, datefmt="%H:%M:%S")
+
+    def format(self, record: logging.LogRecord) -> str:
+        record.request_id = request_id_var.get()
+        return super().format(record=record)
