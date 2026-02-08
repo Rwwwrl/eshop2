@@ -12,3 +12,27 @@ description: Detailed code conventions and style rules for MyEshop. Use when wri
 - **Exporting:** the owning context controls what is public via `schemas/__init__.py` with `__all__`.
 
 See `references/schema_imports.md` for full examples.
+
+## `__init__.py` Convention
+
+- `__init__.py` should be **empty by default**.
+- Only re-export symbols that are truly part of the module's **public API** — things used by other packages or services.
+- Internal helpers, utilities, and implementation details must **NOT** be re-exported. Consumers import them directly from their source file (e.g., `from libs.datetime_ext.utils import utc_now`).
+- When re-exporting, use `__all__` to make the public surface explicit.
+
+```python
+# Good — public API re-exported with __all__
+# libs/sqlmodel_ext/__init__.py
+from libs.sqlmodel_ext.base_model import BaseSqlModel
+from libs.sqlmodel_ext.session import Session
+
+__all__ = ("BaseSqlModel", "Session")
+
+# Good — internal module, empty __init__.py
+# libs/datetime_ext/__init__.py
+# (empty)
+
+# Bad — re-exporting internal helpers
+# libs/datetime_ext/__init__.py
+from libs.datetime_ext.utils import utc_now  # utc_now is internal, don't re-export
+```
