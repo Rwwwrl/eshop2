@@ -21,15 +21,13 @@ class CompressAfterEnum(str, Enum):
     NINETY_DAYS = "90 days"
 
 
-# NOTE @sosov: Table/column names are interpolated via f-string because PostgreSQL
-# does not support bind parameters for identifiers. Safe — only called from Alembic migrations.
+# NOTE @sosov: All values are interpolated via f-string because asyncpg does not support
+# bind parameters in DDL statements. Safe — values come from controlled enums and Alembic migrations.
 
 
 def create_hypertable(table_name: str, time_column: str, chunk_interval: ChunkIntervalEnum) -> None:
     op.execute(
-        text(f"SELECT create_hypertable('{table_name}', by_range('{time_column}', INTERVAL :interval))").bindparams(
-            interval=chunk_interval.value
-        )
+        text(f"SELECT create_hypertable('{table_name}', by_range('{time_column}', INTERVAL '{chunk_interval.value}'))")
     )
 
 
@@ -45,8 +43,4 @@ def set_compression(table_name: str, segment_by: str, order_by: str) -> None:
 
 
 def add_compression_policy(table_name: str, compress_after: CompressAfterEnum) -> None:
-    op.execute(
-        text(f"SELECT add_compression_policy('{table_name}', INTERVAL :interval)").bindparams(
-            interval=compress_after.value
-        )
-    )
+    op.execute(text(f"SELECT add_compression_policy('{table_name}', INTERVAL '{compress_after.value}')"))
