@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wearables-postgres-migration
+  labels:
+    app: wearables-postgres-migration
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  activeDeadlineSeconds: 120
+  template:
+    metadata:
+      labels:
+        app: wearables-postgres-migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migration
+          command: ["poetry", "run", "alembic", "upgrade", "head"]
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "96Mi"
+            limits:
+              memory: "160Mi"

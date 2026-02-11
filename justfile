@@ -20,17 +20,12 @@ test:
 
 [group('infra')]
 infra-up:
-    docker compose -p eshop2 up -d
+    docker compose -f docker-compose.yaml -p eshop2 up -d
 
 [group('infra')]
 infra-down:
-    docker compose -p eshop2 down
+    docker compose -f docker-compose.yaml -p eshop2 down
 
 [group('infra')]
 infra-restart:
-    docker compose -p eshop2 restart
-
-
-[group('db')]
-alembic-autogenerate message:
-    cd src/services/wearables && poetry run alembic revision --autogenerate -m "{{message}}"
+    docker compose -f docker-compose.yaml -p eshop2 restart
