@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import APIRouter
+from libs.sqlmodel_ext.utils import health_check
 
 from wearables.schemas import request_schemas
 
@@ -16,6 +17,7 @@ async def health() -> dict[str, str]:
 
 @router.get("/readiness_check")
 async def readiness_check() -> dict[str, str]:
+    await health_check()
     return {"status": "ok"}
 
 
