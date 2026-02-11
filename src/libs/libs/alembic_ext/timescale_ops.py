@@ -21,10 +21,14 @@ class CompressAfterEnum(str, Enum):
     NINETY_DAYS = "90 days"
 
 
+# NOTE @sosov: Table/column names are interpolated via f-string because PostgreSQL
+# does not support bind parameters for identifiers. Safe — only called from Alembic migrations.
+
+
 def create_hypertable(table_name: str, time_column: str, chunk_interval: ChunkIntervalEnum) -> None:
     op.execute(
-        text("SELECT create_hypertable(:table, by_range(:column, INTERVAL :interval))").bindparams(
-            table=table_name, column=time_column, interval=chunk_interval.value
+        text(f"SELECT create_hypertable('{table_name}', by_range('{time_column}', INTERVAL :interval))").bindparams(
+            interval=chunk_interval.value
         )
     )
 
@@ -34,16 +38,15 @@ def set_compression(table_name: str, segment_by: str, order_by: str) -> None:
         text(
             f"ALTER TABLE {table_name} SET ("
             f" timescaledb.compress,"
-            f" timescaledb.compress_segmentby = :segment_by,"
-            f" timescaledb.compress_orderby = :order_by"
-            f")"
-        ).bindparams(segment_by=segment_by, order_by=order_by)
+            f" timescaledb.compress_segmentby = '{segment_by}',"
+            f" timescaledb.compress_orderby = '{order_by}')"
+        )
     )
 
 
 def add_compression_policy(table_name: str, compress_after: CompressAfterEnum) -> None:
     op.execute(
-        text("SELECT add_compression_policy(:table, INTERVAL :interval)").bindparams(
-            table=table_name, interval=compress_after.value
+        text(f"SELECT add_compression_policy('{table_name}', INTERVAL :interval)").bindparams(
+            interval=compress_after.value
         )
     )
