@@ -73,7 +73,7 @@ async with Session() as session, session.begin():
 ## Alembic Migrations
 
 ```bash
-just alembic-autogenerate "message"                                    # Create with autogenerate
+cd src/services/<service> && poetry run alembic revision --autogenerate -m "message"  # Create with autogenerate
 cd src/services/wearables && poetry run alembic upgrade head           # Apply
 cd src/services/wearables && poetry run alembic current                # Show current
 cd src/services/wearables && poetry run alembic downgrade -1           # Rollback
@@ -82,7 +82,7 @@ cd src/services/wearables && poetry run alembic downgrade -1           # Rollbac
 **Adding new models:**
 1. Create model in `src/services/<service>/<service>/<context>/models.py`
 2. Import in `src/services/<service>/migrations/env.py` (so BaseSqlModel.metadata is populated)
-3. Run `just alembic-autogenerate "description"` and review migration
+3. Run `cd src/services/<service> && poetry run alembic revision --autogenerate -m "description"` and review migration
 
 ## TimescaleDB Quick Reference
 

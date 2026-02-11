@@ -12,6 +12,10 @@ on:
       service_path:
         required: true
         type: string
+      run_alembic_migrations:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-and-deploy:
@@ -75,6 +79,18 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --project ${{ vars.GCP_PROJECT_ID }}
 
+      - name: Run Alembic migrations
+        if: ${{ inputs.run_alembic_migrations }}
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}/postgres-migration
+
+          kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
+          kustomize build . | kubectl apply -f -
+
+          kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-migration --timeout=120s
+
       - name: Deploy with kustomize
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
@@ -86,3 +102,7 @@ jobs:
 
       - name: Wait for rollout
         run: kubectl rollout status deployment/${{ inputs.service_name }} --timeout=300s
+
+      - name: Show migration logs on failure
+        if: failure() && inputs.run_alembic_migrations
+        run: kubectl logs job/${{ inputs.service_name }}-postgres-migration 2>/dev/null || echo "No migration logs available"
