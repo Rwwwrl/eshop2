@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator
 
+import pytest
 import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
@@ -39,8 +40,14 @@ async def sqlmodel_engine(settings: PostgresSettingsMixin) -> AsyncGenerator[Asy
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def _clear_sqlmodel_tables(autocleared_sqlmodel_tables: list[type[BaseSqlModel]]) -> AsyncGenerator[None]:
+async def _clear_sqlmodel_tables(request: pytest.FixtureRequest) -> AsyncGenerator[None]:
     yield
+
+    try:
+        tables: list[type[BaseSqlModel]] = request.getfixturevalue("autocleared_sqlmodel_tables")
+    except pytest.FixtureLookupError:
+        return
+
     async with Session() as session, session.begin():
-        for table in autocleared_sqlmodel_tables:
+        for table in tables:
             await session.execute(text(f"TRUNCATE TABLE {table.__tablename__}"))

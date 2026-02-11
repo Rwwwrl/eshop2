@@ -15,7 +15,7 @@ run-wearables:
 
 [group('test')]
 test:
-    poetry run pytest -s -c pytest.ini
+    poetry run pytest -s
 
 
 [group('infra')]
