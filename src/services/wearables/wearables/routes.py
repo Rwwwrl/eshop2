@@ -1,13 +1,9 @@
-import logging
-
 from fastapi import APIRouter, Response, status
 from libs.sqlmodel_ext import Session
 from libs.sqlmodel_ext.utils import health_check
 
 from wearables import repositories
 from wearables.schemas import dtos, request_schemas
-
-_logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

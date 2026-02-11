@@ -50,4 +50,4 @@ async def _clear_sqlmodel_tables(request: pytest.FixtureRequest) -> AsyncGenerat
 
     async with Session() as session, session.begin():
         for table in tables:
-            await session.execute(text(f"TRUNCATE TABLE {table.__tablename__}"))
+            await session.execute(text(f"TRUNCATE TABLE {table.__tablename__} CASCADE"))
