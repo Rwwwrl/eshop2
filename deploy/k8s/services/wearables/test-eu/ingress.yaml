@@ -1,34 +1,35 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: api-gateway-ingress
+  name: wearables-ingress
   annotations:
-    # Rate limiting (15r/s per IP, burst 30)
-    nginx.org/limit-req-rate: "15r/s"
+    # Rate limiting (200r/s per IP, burst 500, dry-run mode)
+    nginx.org/limit-req-rate: "200r/s"
     nginx.org/limit-req-key: "${binary_remote_addr}"
     nginx.org/limit-req-zone-size: "10M"
-    nginx.org/limit-req-scale: "true"
-    nginx.org/limit-req-burst: "30"
+    nginx.org/limit-req-burst: "500"
     nginx.org/limit-req-no-delay: "true"
     nginx.org/limit-req-reject-code: "429"
+    nginx.org/limit-req-dry-run: "true"
+    nginx.org/limit-req-log-level: "warn"
     # Timeout configuration
     nginx.org/proxy-connect-timeout: "10s"
-    nginx.org/proxy-send-timeout: "60s"
-    nginx.org/proxy-read-timeout: "60s"
+    nginx.org/proxy-send-timeout: "20s"
+    nginx.org/proxy-read-timeout: "20s"
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - test.eshop-test.com
+        - wearables-test.eshop-test.com
       secretName: eshop-test-wildcard-tls
   rules:
-    - host: test.eshop-test.com
+    - host: wearables-test.eshop-test.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: api-gateway
+                name: wearables
                 port:
                   number: 80

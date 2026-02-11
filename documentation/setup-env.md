@@ -199,7 +199,26 @@ gcloud container clusters create <CLUSTER_NAME> \
 
 The `--workload-pool` flag enables Workload Identity, which is required for CI/CD (GitHub Actions) to authenticate to the cluster.
 
-### 5. Set up Workload Identity Federation for GitHub Actions
+### 5. Create wearables node pool
+
+```bash
+gcloud container node-pools create wearables-pool \
+  --cluster=<CLUSTER_NAME> \
+  --project=<PROJECT_ID> \
+  --region=<REGION> \
+  --node-locations=<ZONE> \
+  --machine-type=e2-standard-2 \
+  --disk-type=pd-standard \
+  --disk-size=30 \
+  --num-nodes=2 \
+  --enable-autoscaling \
+  --total-min-nodes=2 \
+  --total-max-nodes=4 \
+  --enable-autorepair \
+  --enable-autoupgrade
+```
+
+### 6. Set up Workload Identity Federation for GitHub Actions
 
 ```bash
 gcloud iam service-accounts create github-actions \
@@ -230,7 +249,7 @@ gcloud iam service-accounts add-iam-policy-binding \
   --member="principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github/attribute.repository/<GITHUB_ORG>/<GITHUB_REPO>"
 ```
 
-### 6. Configure GitHub Environment Variables
+### 7. Configure GitHub Environment Variables
 
 Create a GitHub environment (e.g., `test-eu`) with these variables:
 
@@ -246,7 +265,7 @@ Create a GitHub environment (e.g., `test-eu`) with these variables:
 
 Path: GitHub repo -> Settings -> Environments -> New environment
 
-### 7. Create GCS Config Bucket
+### 8. Create GCS Config Bucket
 
 Each service reads its configuration from an `env.yaml` file. Per-environment config files are stored in a GCS bucket and downloaded during CI/CD deployment.
 

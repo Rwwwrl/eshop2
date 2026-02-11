@@ -27,6 +27,22 @@ gcloud container clusters create "$CLUSTER" \
     --enable-autoupgrade \
     --workload-pool="$PROJECT.svc.id.goog"
 
+echo "=== Creating wearables node pool ==="
+gcloud container node-pools create wearables-pool \
+    --cluster "$CLUSTER" \
+    --project "$PROJECT" \
+    --region "$REGION" \
+    --node-locations "$ZONE" \
+    --machine-type e2-standard-2 \
+    --disk-type pd-standard \
+    --disk-size 30 \
+    --num-nodes 2 \
+    --enable-autoscaling \
+    --total-min-nodes 2 \
+    --total-max-nodes 4 \
+    --enable-autorepair \
+    --enable-autoupgrade
+
 echo "=== Getting cluster credentials ==="
 gcloud container clusters get-credentials "$CLUSTER" \
     --region "$REGION" \
