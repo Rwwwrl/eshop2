@@ -713,7 +713,7 @@ test = ["flake8", "nbdime", "nbval", "notebook", "pytest"]
 
 [[package]]
 name = "myeshop-libs"
-version = "0.9.0"
+version = "0.9.1"
 description = "Shared library for MyEshop microservices"
 optional = false
 python-versions = "^3.14"
