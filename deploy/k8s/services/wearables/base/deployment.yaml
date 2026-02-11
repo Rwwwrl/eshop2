@@ -1,20 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-world
+  name: wearables
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: hello-world
+      app: wearables
   template:
     metadata:
       labels:
-        app: hello-world
+        app: wearables
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: wearables
       containers:
-        - name: hello-world
+        - name: wearables
           ports:
             - containerPort: 8000
           resources:

@@ -20,16 +20,13 @@
 6. [GKE Standard Cluster Setup (Console UI)](#gke-standard-cluster-setup-console-ui)
 7. [Deploy via CI/CD](#deploy-via-cicd)
 
-## Related Documentation
-
-- [TLS Bootstrap Problem Explained](tls-bootstrap-problem.md) - Understanding the chicken-egg problem with TLS certificates
-
 ## Cluster Lifecycle Scripts
 
 To save costs, the GKE cluster can be deleted when not in use and recreated on demand.
 
 ```bash
 # Create cluster with full infrastructure (NGINX Ingress, cert-manager, TLS)
+export CLOUDFLARE_API_TOKEN="<your-token>"
 just gke-up
 
 # Delete cluster
@@ -202,7 +199,26 @@ gcloud container clusters create <CLUSTER_NAME> \
 
 The `--workload-pool` flag enables Workload Identity, which is required for CI/CD (GitHub Actions) to authenticate to the cluster.
 
-### 5. Set up Workload Identity Federation for GitHub Actions
+### 5. Create wearables node pool
+
+```bash
+gcloud container node-pools create wearables-pool \
+  --cluster=<CLUSTER_NAME> \
+  --project=<PROJECT_ID> \
+  --region=<REGION> \
+  --node-locations=<ZONE> \
+  --machine-type=e2-standard-2 \
+  --disk-type=pd-standard \
+  --disk-size=30 \
+  --num-nodes=2 \
+  --enable-autoscaling \
+  --total-min-nodes=2 \
+  --total-max-nodes=4 \
+  --enable-autorepair \
+  --enable-autoupgrade
+```
+
+### 6. Set up Workload Identity Federation for GitHub Actions
 
 ```bash
 gcloud iam service-accounts create github-actions \
@@ -233,7 +249,7 @@ gcloud iam service-accounts add-iam-policy-binding \
   --member="principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github/attribute.repository/<GITHUB_ORG>/<GITHUB_REPO>"
 ```
 
-### 6. Configure GitHub Environment Variables
+### 7. Configure GitHub Environment Variables
 
 Create a GitHub environment (e.g., `test-eu`) with these variables:
 
@@ -249,7 +265,7 @@ Create a GitHub environment (e.g., `test-eu`) with these variables:
 
 Path: GitHub repo -> Settings -> Environments -> New environment
 
-### 7. Create GCS Config Bucket
+### 8. Create GCS Config Bucket
 
 Each service reads its configuration from an `env.yaml` file. Per-environment config files are stored in a GCS bucket and downloaded during CI/CD deployment.
 
@@ -395,25 +411,19 @@ Path: GitHub repo -> Settings -> Secrets and variables -> Actions -> Variables
 
 CI/CD deploys infrastructure (NGINX Ingress, ClusterIssuer) and services automatically.
 
-### 1. Install cert-manager
+### 1. Create Cloudflare API Token
 
-```bash
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.2/cert-manager.yaml
-kubectl get pods -n cert-manager
-```
+Create a scoped API token at Cloudflare dashboard (My Profile > API Tokens > Create Token):
 
-Wait for all pods to be `Running` before proceeding.
+| Permission | Value |
+|------------|-------|
+| Zone - DNS | Edit |
+| Zone - Zone | Read |
+| Zone Resources | Include - Specific zone - `eshop-test.com` |
 
-### 2. Apply ClusterIssuer
+This token is used by cert-manager to create/delete DNS TXT records for Let's Encrypt DNS-01 challenges. Set it as `CLOUDFLARE_API_TOKEN` before running `gke-up.sh`.
 
-```bash
-kubectl apply -f deploy/k8s/infrastructure/cert-manager/cluster-issuer.yaml
-kubectl get clusterissuers
-```
-
-The ClusterIssuer is environment-agnostic and only needs to be applied once per cluster.
-
-### 3. Create infrastructure config files
+### 2. Create infrastructure config files
 
 Create `deploy/k8s/infrastructure/ingress-nginx/<ENV>/values.yaml`:
 
@@ -484,73 +494,14 @@ Create an A record pointing to the static IP:
 | IPv4 address | `<STATIC_IP>` |
 | Proxy status | DNS only      |
 
-### 7. TLS Bootstrap
-
-On a new environment, the TLS certificate must be issued BEFORE deploying services. See [TLS Bootstrap Problem Explained](tls-bootstrap-problem.md) for details.
-
-#### 7.1 Deploy bootstrap NGINX
-
-Deploy NGINX Ingress in a separate namespace with `ssl-redirect` disabled to allow HTTP-01 challenge:
-
-```bash
-helm repo add nginx-stable https://helm.nginx.com/stable
-helm repo update
-helm install nginx-ingress nginx-stable/nginx-ingress \
-  --namespace ingress-nginx-bootstrap \
-  --create-namespace \
-  --set controller.replicaCount=1 \
-  --set controller.service.loadBalancerIP="<STATIC_IP>" \
-  --set controller.config.ssl-redirect="false"
-```
-
-Wait for LoadBalancer IP assignment:
-
-```bash
-kubectl get svc -n ingress-nginx-bootstrap
-```
-
-#### 7.2 Create and apply Certificate
-
-Create `deploy/k8s/infrastructure/cert-manager/certificates/<ENV>/certificate.yaml`:
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: api-gateway-tls
-spec:
-  secretName: api-gateway-tls
-  issuerRef:
-    name: letsencrypt
-    kind: ClusterIssuer
-  dnsNames:
-    - <YOUR_DOMAIN>
-```
-
-Apply and wait for certificate:
-
-```bash
-kubectl apply -f deploy/k8s/infrastructure/cert-manager/certificates/<ENV>/certificate.yaml
-kubectl get certificate --watch
-```
-
-Wait until `READY` shows `True`.
-
-#### 7.3 Delete bootstrap NGINX
-
-```bash
-helm uninstall nginx-ingress --namespace ingress-nginx-bootstrap
-kubectl delete namespace ingress-nginx-bootstrap
-```
-
-### 8. Trigger deployment
+### 7. Trigger deployment
 
 ```bash
 git checkout -b <ENV>/initial-deploy
 git push -u origin <ENV>/initial-deploy
 ```
 
-### 9. Verify deployment
+### 8. Verify deployment
 
 ```bash
 kubectl get pods

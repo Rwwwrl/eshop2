@@ -13,6 +13,8 @@ RUN --mount=type=secret,id=gcp_token \
     poetry install --no-root --only main
 
 COPY wearables/ ./wearables/
+COPY alembic.ini ./
+COPY migrations/ ./migrations/
 COPY env.yaml ./
 RUN poetry install --only main
 

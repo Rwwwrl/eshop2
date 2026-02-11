@@ -1,11 +1,12 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: api-gateway-tls
+  name: eshop-test-wildcard-tls
 spec:
-  secretName: api-gateway-tls
+  secretName: eshop-test-wildcard-tls
   issuerRef:
     name: letsencrypt
     kind: ClusterIssuer
   dnsNames:
-    - test.eshop-test.com
+    - "*.eshop-test.com"
+    - "eshop-test.com"
