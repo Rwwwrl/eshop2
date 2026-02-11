@@ -1,9 +1,11 @@
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response, status
+from libs.sqlmodel_ext import Session
 from libs.sqlmodel_ext.utils import health_check
 
-from wearables.schemas import request_schemas
+from wearables import repositories
+from wearables.schemas import dtos, request_schemas
 
 _logger = logging.getLogger(__name__)
 
@@ -21,12 +23,15 @@ async def readiness_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@router.post("/webhook")
-async def handle_webhook(payload: request_schemas.JunctionWebhookPayload) -> dict[str, str]:
-    _logger.info(
-        "Received webhook event_type=%s user_id=%s client_user_id=%s",
-        payload.event_type,
-        payload.user_id,
-        payload.client_user_id,
+@router.post("/webhook", status_code=status.HTTP_201_CREATED)
+async def handle_webhook(payload: request_schemas.WebhookEventPayload) -> Response:
+    event = dtos.BaseWearableEventDTO(
+        id=None,
+        user_id=payload.user_id,
+        biomarker_name=payload.biomarker_name,
+        value=payload.value,
+        timestamp=payload.timestamp,
     )
-    return {"status": "ok"}
+    async with Session() as session, session.begin():
+        await repositories.WearableEventRepository.save(session=session, event=event)
+    return Response(status_code=status.HTTP_201_CREATED)

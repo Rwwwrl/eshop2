@@ -13,6 +13,34 @@ description: Detailed code conventions and style rules for MyEshop. Use when wri
 
 See `references/schema_imports.md` for full examples.
 
+## DTO Naming and Factory Method
+
+- The **base DTO** that mirrors a database table is named `Base<TableName>DTO` (e.g., `BaseWearableEventDTO` for the `WearableEvent` model).
+- It must have a `from_sqlmodel` class method that converts a SQLModel instance to the DTO via `model_dump()`:
+
+```python
+from datetime import datetime
+from typing import Self
+
+from libs.common.schemas.dto import DTO
+
+from wearables.models import WearableEvent
+
+
+class BaseWearableEventDTO(DTO):
+    id: int | None
+    user_id: int
+    biomarker_name: str
+    value: float
+    timestamp: datetime
+
+    @classmethod
+    def from_sqlmodel(cls, model: WearableEvent) -> Self:
+        return cls(**model.model_dump())
+```
+
+- `id` is `int | None` (no default) — callers pass `None` explicitly for creation, gets populated when reading from DB.
+
 ## `__init__.py` Convention
 
 - `__init__.py` should be **empty by default**.

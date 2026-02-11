@@ -45,7 +45,40 @@ class MyModel(BaseSqlModel, table=True):
 **Key patterns:**
 - `DateTime(timezone=True)` for all datetime fields
 - Enums must be stored as strings in DB: use `sa_type=String` (e.g., `status: StatusEnum = Field(sa_type=String)`)
-- Indexes in `__table_args__` using SQLAlchemy `Index`
+- Indexes and primary key constraints in `__table_args__` using SQLAlchemy `Index` / `PrimaryKeyConstraint`
+
+### Hypertable Model Example
+
+```python
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, Identity, Integer, PrimaryKeyConstraint
+from sqlmodel import Field
+
+from libs.sqlmodel_ext import BaseSqlModel
+
+
+class WearableEvent(BaseSqlModel, table=True):
+    __tablename__ = "wearable_event"
+
+    # NOTE @sosov: TimescaleDB requires the time column in the primary key.
+    # ix_wearable_event_timestamp is auto-created by create_hypertable — defined
+    # explicitly to keep the model in sync with the DB.
+    __table_args__ = (
+        PrimaryKeyConstraint("id", "timestamp"),
+        Index("ix_wearable_event_timestamp", "timestamp"),
+    )
+
+    id: int | None = Field(default=None, sa_column=Column(Integer, Identity()))
+    timestamp: datetime = Field(sa_type=DateTime(timezone=True))
+    user_id: int
+    biomarker_name: str
+    value: float
+```
+
+- Composite PK via `PrimaryKeyConstraint` in `__table_args__` — never use field-level `primary_key=True`
+- `id` uses `Column(Integer, Identity())` for auto-increment
+- Time column index defined explicitly to match what `create_hypertable` creates
 
 ## Session Usage
 
@@ -62,13 +95,36 @@ async with Session() as session, session.begin():
 
 | Layer | Responsibility |
 |-------|---------------|
-| **Service** | Creates session, manages transaction (`begin()`) |
-| **Repository** | Receives session, calls `flush()` after writes |
+| **Route/Service** | Creates session, manages transaction (`begin()`) |
+| **Repository** | Receives session per method, calls `flush()` after writes |
 
 **Rules:**
+- Repositories are **classes with `@classmethod` methods** (stateless, no `__init__`)
+- Repositories accept and return **DTOs** (not SQLModel instances) — model ↔ DTO conversion happens inside the repository
+- Session is passed as argument to each method (not stored in `__init__`)
 - Repositories never create sessions or call `commit()`
 - Call `flush()` after `add()` / `add_all()`
 - `execute()` for UPDATE/DELETE doesn't need flush
+
+```python
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from wearables.models import WearableEvent
+from wearables.schemas import dtos
+
+
+class WearableEventRepository:
+    @classmethod
+    async def save(cls, session: AsyncSession, event: dtos.BaseWearableEventDTO) -> None:
+        model = WearableEvent(
+            user_id=event.user_id,
+            biomarker_name=event.biomarker_name,
+            value=event.value,
+            timestamp=event.timestamp,
+        )
+        session.add(model)
+        await session.flush()
+```
 
 ## Alembic Migrations
 
