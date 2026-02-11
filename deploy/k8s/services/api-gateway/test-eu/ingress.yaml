@@ -19,7 +19,7 @@ spec:
   tls:
     - hosts:
         - test.eshop-test.com
-      secretName: api-gateway-tls
+      secretName: eshop-test-wildcard-tls
   rules:
     - host: test.eshop-test.com
       http:
