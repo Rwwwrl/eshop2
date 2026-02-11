@@ -20,6 +20,16 @@ ipython = "^9.10.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "session"
+addopts = "--import-mode=importlib -p libs.tests_ext.sqlmodel_fixtures"
+testpaths = [
+    "src/libs/tests",
+    "src/services/hello_world/tests",
+    "src/services/api_gateway/tests",
+    "src/services/wearables/tests",
+]
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
