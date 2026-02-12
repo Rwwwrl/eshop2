@@ -29,7 +29,7 @@ jobs:
       environment: test-eu
       service_name: api-gateway
       service_path: src/services/api_gateway
-      run_alembic_migrations: false
+      run_postgres_migrations: false
     secrets: inherit
 
   deploy-hello-world:
@@ -39,7 +39,7 @@ jobs:
       environment: test-eu
       service_name: hello-world
       service_path: src/services/hello_world
-      run_alembic_migrations: false
+      run_postgres_migrations: false
     secrets: inherit
 
   deploy-wearables:
@@ -49,5 +49,5 @@ jobs:
       environment: test-eu
       service_name: wearables
       service_path: src/services/wearables
-      run_alembic_migrations: true
+      run_postgres_migrations: true
     secrets: inherit

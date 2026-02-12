@@ -12,7 +12,7 @@ on:
       service_path:
         required: true
         type: string
-      run_alembic_migrations:
+      run_postgres_migrations:
         required: false
         type: boolean
         default: false
@@ -79,9 +79,9 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --project ${{ vars.GCP_PROJECT_ID }}
 
-      - name: Run expand migrations
+      - name: Run postgres expand migrations
         id: expand_migrations
-        if: ${{ inputs.run_alembic_migrations }}
+        if: ${{ inputs.run_postgres_migrations }}
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
         run: |
@@ -103,9 +103,9 @@ jobs:
       - name: Wait for rollout
         run: kubectl rollout status deployment/${{ inputs.service_name }} --timeout=300s
 
-      - name: Run contract migrations
+      - name: Run postgres contract migrations
         id: contract_migrations
-        if: ${{ inputs.run_alembic_migrations }}
+        if: ${{ inputs.run_postgres_migrations }}
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
         run: |
@@ -115,10 +115,10 @@ jobs:
           kustomize build . | kubectl apply -f -
           kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-contract-migration --timeout=120s
 
-      - name: Show expand migration logs on failure
+      - name: Show postgres expand migration logs on failure
         if: failure() && steps.expand_migrations.outcome == 'failure'
         run: kubectl logs job/${{ inputs.service_name }}-postgres-expand-migration 2>/dev/null || echo "No expand migration logs available"
 
-      - name: Show contract migration logs on failure
+      - name: Show postgres contract migration logs on failure
         if: failure() && steps.contract_migrations.outcome == 'failure'
         run: kubectl logs job/${{ inputs.service_name }}-postgres-contract-migration 2>/dev/null || echo "No contract migration logs available"
