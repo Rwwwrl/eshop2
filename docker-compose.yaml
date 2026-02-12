@@ -1,6 +1,7 @@
 services:
   postgresdb:
     image: timescale/timescaledb:latest-pg17
+    container_name: postgresdb
     ports:
       - "15432:5432"
     environment:
