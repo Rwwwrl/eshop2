@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "api-gateway"
-version = "0.7.2"
+version = "0.8.0"
 description = "API Gateway FastAPI microservice"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "api_gateway" }]

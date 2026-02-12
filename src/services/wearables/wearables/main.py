@@ -13,6 +13,7 @@ from libs.fastapi_ext.middlewares import (
 )
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
+from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 
 from wearables.routes import router
@@ -20,6 +21,8 @@ from wearables.settings import settings
 from wearables.utils import init_sqlmodel_engine
 
 setup_logging(settings=settings, service_name=ServiceNameEnum.WEARABLES, process_type=ProcessTypeEnum.FASTAPI)
+
+setup_sentry(settings=settings, release=version("wearables"))
 
 
 @asynccontextmanager

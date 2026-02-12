@@ -1,6 +1,11 @@
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, YamlConfigSettingsSource
 
+from libs.common.enums import EnvironmentEnum
 from libs.logging.settings import LoggingSettingsMixin
+
+
+def is_stand_env(environment: EnvironmentEnum) -> bool:
+    return environment in [EnvironmentEnum.TEST]
 
 
 class BaseAppSettings(LoggingSettingsMixin, BaseSettings):
@@ -8,6 +13,8 @@ class BaseAppSettings(LoggingSettingsMixin, BaseSettings):
         yaml_file="env.yaml",
         extra="ignore",
     )
+
+    environment: EnvironmentEnum
 
     @classmethod
     def settings_customise_sources(
