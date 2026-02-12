@@ -13,21 +13,24 @@ class _TestSettings(SentrySettingsMixin):
 
 
 @pytest.mark.parametrize("env", _STAND_ENVS)
-def test_validate_sentry_settings_when_stand_env_and_dsn_is_none(env: EnvironmentEnum) -> None:
-    with pytest.raises(ValidationError, match="sentry_dsn is required for stand environments"):
-        _TestSettings(environment=env, sentry_dsn=None, sentry_send_pii=None, sentry_traces_sample_rate=None)
+def test_validate_sentry_settings_when_stand_env_and_all_fields_none(env: EnvironmentEnum) -> None:
+    with pytest.raises(
+        ValidationError,
+        match="sentry_dsn is required.*sentry_send_pii is required.*sentry_traces_sample_rate is required",
+    ):
+        _TestSettings(environment=env)
 
 
 @pytest.mark.parametrize("env", _STAND_ENVS)
 def test_validate_sentry_settings_when_stand_env_and_send_pii_is_none(env: EnvironmentEnum) -> None:
     with pytest.raises(ValidationError, match="sentry_send_pii is required for stand environments"):
-        _TestSettings(environment=env, sentry_dsn=_DSN, sentry_send_pii=None, sentry_traces_sample_rate=1.0)
+        _TestSettings(environment=env, sentry_dsn=_DSN, sentry_traces_sample_rate=1.0)
 
 
 @pytest.mark.parametrize("env", _STAND_ENVS)
 def test_validate_sentry_settings_when_stand_env_and_traces_sample_rate_is_none(env: EnvironmentEnum) -> None:
     with pytest.raises(ValidationError, match="sentry_traces_sample_rate is required for stand environments"):
-        _TestSettings(environment=env, sentry_dsn=_DSN, sentry_send_pii=False, sentry_traces_sample_rate=None)
+        _TestSettings(environment=env, sentry_dsn=_DSN, sentry_send_pii=False)
 
 
 @pytest.mark.parametrize("env", _STAND_ENVS)
@@ -41,24 +44,24 @@ def test_validate_sentry_settings_when_stand_env_and_all_fields_set(env: Environ
 @pytest.mark.parametrize("env", _NON_STAND_ENVS)
 def test_validate_sentry_settings_when_non_stand_env_and_dsn_is_set(env: EnvironmentEnum) -> None:
     with pytest.raises(ValidationError, match="sentry_dsn must not be set for non-stand environments"):
-        _TestSettings(environment=env, sentry_dsn=_DSN, sentry_send_pii=None, sentry_traces_sample_rate=None)
+        _TestSettings(environment=env, sentry_dsn=_DSN)
 
 
 @pytest.mark.parametrize("env", _NON_STAND_ENVS)
 def test_validate_sentry_settings_when_non_stand_env_and_send_pii_is_set(env: EnvironmentEnum) -> None:
     with pytest.raises(ValidationError, match="sentry_send_pii must not be set for non-stand environments"):
-        _TestSettings(environment=env, sentry_dsn=None, sentry_send_pii=False, sentry_traces_sample_rate=None)
+        _TestSettings(environment=env, sentry_send_pii=False)
 
 
 @pytest.mark.parametrize("env", _NON_STAND_ENVS)
 def test_validate_sentry_settings_when_non_stand_env_and_traces_sample_rate_is_set(env: EnvironmentEnum) -> None:
     with pytest.raises(ValidationError, match="sentry_traces_sample_rate must not be set for non-stand environments"):
-        _TestSettings(environment=env, sentry_dsn=None, sentry_send_pii=None, sentry_traces_sample_rate=0.5)
+        _TestSettings(environment=env, sentry_traces_sample_rate=0.5)
 
 
 @pytest.mark.parametrize("env", _NON_STAND_ENVS)
-def test_validate_sentry_settings_when_non_stand_env_and_all_fields_none(env: EnvironmentEnum) -> None:
-    settings = _TestSettings(environment=env, sentry_dsn=None, sentry_send_pii=None, sentry_traces_sample_rate=None)
+def test_validate_sentry_settings_when_non_stand_env_and_defaults(env: EnvironmentEnum) -> None:
+    settings = _TestSettings(environment=env)
     assert settings.sentry_dsn is None
     assert settings.sentry_send_pii is None
     assert settings.sentry_traces_sample_rate is None

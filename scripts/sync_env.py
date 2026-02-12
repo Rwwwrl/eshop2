@@ -16,6 +16,7 @@ from pathlib import Path
 
 import yaml
 from google.cloud import storage
+from google.cloud.exceptions import NotFound
 
 _BUCKET_MAP = {
     "test": "eshop-test-config",
@@ -38,7 +39,10 @@ def _download_env(client: storage.Client, bucket_name: str, service_name: str) -
     bucket = client.bucket(bucket_name=bucket_name)
     blob_path = f"{_BASE_PATH}/{service_name}/env.yaml"
     blob = bucket.blob(blob_name=blob_path)
-    content = blob.download_as_text()
+    try:
+        content = blob.download_as_text()
+    except NotFound:
+        return {}
     return yaml.safe_load(stream=content) or {}
 
 
