@@ -172,6 +172,7 @@ cython_debug/
 justfile.local
 .claude/settings.local.json
 .fzfignore
+.mcp.json
 
 ######## SERVICE CONFIG ########
 env.yaml
