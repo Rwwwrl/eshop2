@@ -1,5 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
-  - job.yaml
+  - ../../../base/postgres-migration/expand
+patches:
+  - path: patch.yaml

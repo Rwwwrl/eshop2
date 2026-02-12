@@ -1,0 +1,10 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migration
+spec:
+  template:
+    spec:
+      containers:
+        - name: migration
+          command: ["poetry", "run", "alembic", "upgrade", "expand@head"]

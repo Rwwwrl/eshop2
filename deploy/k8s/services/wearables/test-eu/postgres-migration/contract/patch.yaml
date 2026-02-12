@@ -1,12 +1,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: wearables-postgres-migration
+  name: wearables-postgres-contract-migration
 spec:
   template:
     spec:
-      nodeSelector:
-        cloud.google.com/gke-nodepool: wearables-pool
       containers:
         - name: migration
           image: wearables
