@@ -127,7 +127,7 @@ await engine.dispose()
 
 ## Alembic
 
-See [references/alembic.md](references/alembic.md) for scaffolding, commands, and env.py template.
+Migrations use **expand/contract branches** for zero-downtime deployments. Expand (additive changes) runs before deploy, contract (destructive changes) runs after. See [references/alembic.md](references/alembic.md) for branch setup, commands, and scaffolding.
 
 ## TimescaleDB
 
