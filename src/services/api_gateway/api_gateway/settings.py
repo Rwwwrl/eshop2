@@ -1,7 +1,8 @@
+from libs.sentry_ext import SentrySettingsMixin
 from libs.settings import BaseAppSettings
 
 
-class Settings(BaseAppSettings):
+class Settings(SentrySettingsMixin, BaseAppSettings):
     pass
 
 

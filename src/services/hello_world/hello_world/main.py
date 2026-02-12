@@ -9,11 +9,14 @@ from libs.fastapi_ext.middlewares import (
 )
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
+from libs.sentry_ext import setup_sentry
 
 from hello_world.routes import router
 from hello_world.settings import settings
 
 setup_logging(settings=settings, service_name=ServiceNameEnum.HELLO_WORLD, process_type=ProcessTypeEnum.FASTAPI)
+
+setup_sentry(settings=settings, release="hello-world")
 
 _logger = logging.getLogger(__name__)
 

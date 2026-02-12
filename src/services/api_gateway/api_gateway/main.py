@@ -11,11 +11,14 @@ from libs.fastapi_ext.middlewares import (
 )
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
+from libs.sentry_ext import setup_sentry
 
 from api_gateway.routes import router
 from api_gateway.settings import settings
 
 setup_logging(settings=settings, service_name=ServiceNameEnum.API_GATEWAY, process_type=ProcessTypeEnum.FASTAPI)
+
+setup_sentry(settings=settings, release=version("api-gateway"))
 
 app = FastAPI(
     title="API Gateway",
