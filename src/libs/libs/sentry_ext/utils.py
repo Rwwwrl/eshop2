@@ -12,5 +12,5 @@ def setup_sentry(settings: SentrySettingsMixin, release: str) -> None:
         environment=settings.environment.value,
         release=release,
         traces_sample_rate=1.0,
-        send_default_pii=True,
+        send_default_pii=settings.sentry_send_pii,
     )
