@@ -13,6 +13,13 @@ async def test_health(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio(loop_scope="session")
+async def test_readiness_check(async_client: AsyncClient) -> None:
+    response = await async_client.get(url="/readiness_check")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+@pytest.mark.asyncio(loop_scope="session")
 async def test_handle_webhook_when_valid_payload(async_client: AsyncClient) -> None:
     payload = {
         "user_id": 1,

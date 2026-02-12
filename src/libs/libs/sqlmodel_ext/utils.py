@@ -8,5 +8,5 @@ async def health_check() -> None:
 
     Raises sqlalchemy.exc.SQLAlchemyError on failure.
     """
-    async with Session() as session:
+    async with Session() as session, session.begin():
         await session.execute(text("SELECT 1"))
