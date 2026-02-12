@@ -1,4 +1,5 @@
 import logging
+from importlib.metadata import version
 
 from fastapi import FastAPI
 from libs.common.enums import ServiceNameEnum
@@ -16,7 +17,7 @@ from hello_world.settings import settings
 
 setup_logging(settings=settings, service_name=ServiceNameEnum.HELLO_WORLD, process_type=ProcessTypeEnum.FASTAPI)
 
-setup_sentry(settings=settings, release="hello-world")
+setup_sentry(settings=settings, release=version("hello-world"))
 
 _logger = logging.getLogger(__name__)
 

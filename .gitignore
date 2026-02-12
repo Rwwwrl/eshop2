@@ -173,6 +173,7 @@ justfile.local
 .claude/settings.local.json
 .fzfignore
 .mcp.json
+scripts/sync_env.yaml
 
 ######## SERVICE CONFIG ########
 env.yaml

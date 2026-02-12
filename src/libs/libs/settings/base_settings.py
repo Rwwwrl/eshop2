@@ -4,10 +4,6 @@ from libs.common.enums import EnvironmentEnum
 from libs.logging.settings import LoggingSettingsMixin
 
 
-def is_stand_env(environment: EnvironmentEnum) -> bool:
-    return environment in [EnvironmentEnum.TEST]
-
-
 class BaseAppSettings(LoggingSettingsMixin, BaseSettings):
     model_config = SettingsConfigDict(
         yaml_file="env.yaml",

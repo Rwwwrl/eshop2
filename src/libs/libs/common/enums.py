@@ -4,6 +4,7 @@ from enum import Enum, auto
 class EnvironmentEnum(str, Enum):
     DEV = "dev"
     TEST = "test"
+    PROD = "prod"
     CICD = "cicd"
 
 
