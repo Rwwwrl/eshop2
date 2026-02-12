@@ -79,17 +79,17 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --project ${{ vars.GCP_PROJECT_ID }}
 
-      - name: Run Alembic migrations
+      - name: Run expand migrations
+        id: expand_migrations
         if: ${{ inputs.run_alembic_migrations }}
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
         run: |
-          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}/postgres-migration
-
+          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}/postgres-migration/expand
           kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
+          kubectl delete job/${{ inputs.service_name }}-postgres-expand-migration --ignore-not-found
           kustomize build . | kubectl apply -f -
-
-          kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-migration --timeout=120s
+          kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-expand-migration --timeout=120s
 
       - name: Deploy with kustomize
         env:
@@ -103,6 +103,22 @@ jobs:
       - name: Wait for rollout
         run: kubectl rollout status deployment/${{ inputs.service_name }} --timeout=300s
 
-      - name: Show migration logs on failure
-        if: failure() && inputs.run_alembic_migrations
-        run: kubectl logs job/${{ inputs.service_name }}-postgres-migration 2>/dev/null || echo "No migration logs available"
+      - name: Run contract migrations
+        id: contract_migrations
+        if: ${{ inputs.run_alembic_migrations }}
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}/postgres-migration/contract
+          kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
+          kubectl delete job/${{ inputs.service_name }}-postgres-contract-migration --ignore-not-found
+          kustomize build . | kubectl apply -f -
+          kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-contract-migration --timeout=120s
+
+      - name: Show expand migration logs on failure
+        if: failure() && steps.expand_migrations.outcome == 'failure'
+        run: kubectl logs job/${{ inputs.service_name }}-postgres-expand-migration 2>/dev/null || echo "No expand migration logs available"
+
+      - name: Show contract migration logs on failure
+        if: failure() && steps.contract_migrations.outcome == 'failure'
+        run: kubectl logs job/${{ inputs.service_name }}-postgres-contract-migration 2>/dev/null || echo "No contract migration logs available"
