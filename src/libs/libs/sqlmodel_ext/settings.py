@@ -1,5 +1,7 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
 class PostgresSettingsMixin(BaseSettings):
-    postgres_db_url: str
+    postgres_direct_db_url: str
+    postgres_pooler_db_url: str | None = Field(description="URL to postgres connection pooler.")

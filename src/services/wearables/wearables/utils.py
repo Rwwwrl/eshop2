@@ -10,5 +10,6 @@ def init_sqlmodel_engine(db_url: str) -> AsyncEngine:
         pool_timeout=30,
         connect_args={
             "command_timeout": 15,
+            "statement_cache_size": 0,
         },
     )
