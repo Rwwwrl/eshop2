@@ -86,7 +86,7 @@ jobs:
 
       - name: Apply PgCat secret
         run: >-
-          gsutil cp -q
+          gsutil -q cp
           gs://${{ vars.GCS_CONFIG_BUCKET }}/infrastructure/pgcat/pgcat-secret.yaml -
           | kubectl apply -f -
 
