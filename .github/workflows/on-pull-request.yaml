@@ -27,7 +27,8 @@ jobs:
 
     env:
       ENVIRONMENT: cicd
-      POSTGRES_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/wearables
+      POSTGRES_DIRECT_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/wearables
+      POSTGRES_POOLER_DB_URL: null
 
     steps:
       - uses: actions/checkout@v6

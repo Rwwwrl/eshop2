@@ -27,7 +27,8 @@ setup_sentry(settings=settings, release=version("wearables"))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    engine = init_sqlmodel_engine(db_url=settings.postgres_db_url)
+    db_url = settings.postgres_pooler_db_url or settings.postgres_direct_db_url
+    engine = init_sqlmodel_engine(db_url=db_url)
     Session.configure(bind=engine)
     app.state.sqlmodel_engine = engine
 

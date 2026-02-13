@@ -1173,7 +1173,7 @@ test = ["flake8", "nbdime", "nbval", "notebook", "pytest"]
 
 [[package]]
 name = "myeshop-libs"
-version = "0.9.4"
+version = "0.9.5"
 description = "Shared library for MyEshop microservices"
 optional = false
 python-versions = "^3.14"
@@ -2306,7 +2306,7 @@ files = [
 
 [[package]]
 name = "wearables"
-version = "0.9.0"
+version = "0.9.1"
 description = "Wearables webhook ingestion microservice"
 optional = false
 python-versions = "^3.14"

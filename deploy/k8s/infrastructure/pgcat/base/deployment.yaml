@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgcat
+  labels:
+    app: pgcat
+spec:
+  selector:
+    matchLabels:
+      app: pgcat
+  template:
+    metadata:
+      labels:
+        app: pgcat
+    spec:
+      containers:
+        - name: pgcat
+          image: ghcr.io/postgresml/pgcat:1.2.0
+          command: ["pgcat", "/etc/pgcat/pgcat.toml"]
+          ports:
+            - containerPort: 6432
+          volumeMounts:
+            - name: pgcat-config
+              mountPath: /etc/pgcat
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 6432
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: pgcat-config
+          secret:
+            secretName: pgcat-config

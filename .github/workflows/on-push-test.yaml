@@ -24,7 +24,7 @@ jobs:
 
   deploy-api-gateway:
     needs: [deploy-infrastructure, publish-libs]
-    uses: ./.github/workflows/called-deploy-to-gke.yaml
+    uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
       service_name: api-gateway
@@ -34,7 +34,7 @@ jobs:
 
   deploy-hello-world:
     needs: [deploy-infrastructure, publish-libs]
-    uses: ./.github/workflows/called-deploy-to-gke.yaml
+    uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
       service_name: hello-world
@@ -44,7 +44,7 @@ jobs:
 
   deploy-wearables:
     needs: [deploy-infrastructure, publish-libs]
-    uses: ./.github/workflows/called-deploy-to-gke.yaml
+    uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
       service_name: wearables
