@@ -174,6 +174,8 @@ justfile.local
 .fzfignore
 .mcp.json
 scripts/sync_env.yaml
+scripts/sync_env/test-eu/**
+!scripts/sync_env/test-eu/.gitkeep
 
 ######## SERVICE CONFIG ########
 env.yaml
