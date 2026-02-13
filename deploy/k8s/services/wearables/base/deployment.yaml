@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: wearables
 spec:
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: wearables
@@ -13,13 +11,6 @@ spec:
       labels:
         app: wearables
     spec:
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app: wearables
       containers:
         - name: wearables
           ports:

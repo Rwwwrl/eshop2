@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: api-gateway
 spec:
-  strategy:
-    type: Recreate
   selector:
     matchLabels:
       app: api-gateway
