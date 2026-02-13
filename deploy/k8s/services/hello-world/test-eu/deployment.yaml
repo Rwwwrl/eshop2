@@ -4,6 +4,8 @@ metadata:
   name: hello-world
 spec:
   replicas: 2
+  strategy:
+    type: Recreate
   template:
     spec:
       nodeSelector:

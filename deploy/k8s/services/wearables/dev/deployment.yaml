@@ -4,6 +4,8 @@ metadata:
   name: wearables
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   template:
     spec:
       containers:

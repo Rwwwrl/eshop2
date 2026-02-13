@@ -4,6 +4,8 @@ metadata:
   name: hello-world
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   template:
     spec:
       containers:
