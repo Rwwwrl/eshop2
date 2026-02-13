@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: pgcat
-          image: ghcr.io/postgresml/pgcat:1.2.0
+          image: ghcr.io/postgresml/pgcat:v1.2.0
           command: ["pgcat", "/etc/pgcat/pgcat.toml"]
           ports:
             - containerPort: 6432
