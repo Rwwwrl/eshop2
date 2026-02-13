@@ -27,7 +27,7 @@ Run these checks in parallel:
 | Check | Command | Expected |
 |-------|---------|----------|
 | cert-manager running | `kubectl get pods -n cert-manager` | All pods Running, containers ready |
-| ingress-nginx running | `kubectl get pods -n nginx-ingress` | 2 controller pods Running |
+| ingress-nginx running | `kubectl get pods -n ingress-nginx` | 2 controller pods Running |
 | ClusterIssuer ready | `kubectl get clusterissuer letsencrypt -o jsonpath='{.status.conditions[0].status}'` | `True` |
 | Wildcard certificate ready | `kubectl get certificate eshop-test-wildcard-tls -o jsonpath='{.status.conditions[0].status}'` | `True` |
 | Certificate not expired | `kubectl get certificate eshop-test-wildcard-tls -o jsonpath='{.status.notAfter}'` | Date is in the future |
@@ -69,7 +69,7 @@ For each service, verify replica count and scheduling:
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | 3 Running pods | `kubectl get deployment wearables -o jsonpath='{.status.readyReplicas}'` = 3 |
+| Replicas | 2 Running pods | `kubectl get deployment wearables -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables -o wide` — NODE column must be wearables-pool nodes |
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
 | Health endpoints | Probes passing | No restart count incrementing |
@@ -89,8 +89,8 @@ Run: `kubectl get ingress`
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| LoadBalancer IP | External IP = `34.159.106.171` | `kubectl get svc -n nginx-ingress` — EXTERNAL-IP column |
-| Controller replicas | 2 pods on different nodes (required anti-affinity) | `kubectl get pods -n nginx-ingress -o wide` — check NODE column |
+| LoadBalancer IP | External IP = `34.159.106.171` | `kubectl get svc -n ingress-nginx` — EXTERNAL-IP column |
+| Controller replicas | 2 pods on different nodes (required anti-affinity) | `kubectl get pods -n ingress-nginx -o wide` — check NODE column |
 | Controller node pool | All on `default-pool` | Same command — verify nodes are default-pool nodes |
 
 ### HTTP to HTTPS redirect
