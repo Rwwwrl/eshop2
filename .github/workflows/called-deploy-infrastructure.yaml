@@ -95,5 +95,11 @@ jobs:
           kustomize build deploy/k8s/infrastructure/pgcat/${{ inputs.environment }} \
             | kubectl apply -f -
 
+      # TODO @sosov: Restarts pods every deploy even if secret didn't change. PgCat reads pgcat.toml
+      # only at startup, so a restart is needed to pick up secret changes. Consider config hash
+      # annotation to restart only when the secret actually changes.
+      - name: Restart PgCat pods to pick up secret changes
+        run: kubectl rollout restart deployment/pgcat
+
       - name: Wait for rollout
         run: kubectl rollout status deployment/pgcat --timeout=120s

@@ -10,6 +10,8 @@ def init_sqlmodel_engine(db_url: str) -> AsyncEngine:
         pool_timeout=30,
         connect_args={
             "command_timeout": 15,
+            # NOTE @sosov: Required when using a connection pooler in transaction mode — prepared statements
+            # break across pooled connections because each transaction may use a different backend connection.
             "statement_cache_size": 0,
         },
     )
