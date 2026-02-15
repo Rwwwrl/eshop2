@@ -9,11 +9,43 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - postgresdb_data:/var/lib/postgresql/data
+    configs:
+      - source: init_sql
+        target: /docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.25.1-p0
+    container_name: pgbouncer
+    ports:
+      - "15433:5432"
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgresdb
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: wearables
+      POOL_MODE: transaction
+      MAX_PREPARED_STATEMENTS: "20"
+      AUTH_TYPE: scram-sha-256
+      IGNORE_STARTUP_PARAMETERS: extra_float_digits
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgresdb_data:
+
+configs:
+  init_sql:
+    content: |
+      CREATE DATABASE wearables;

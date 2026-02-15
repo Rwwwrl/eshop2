@@ -11,10 +11,5 @@ def init_sqlmodel_engine(db_url: str) -> AsyncEngine:
         pool_pre_ping=True,
         connect_args={
             "command_timeout": 15,
-            # NOTE @sosov: Both caches must be disabled for transaction-mode poolers (PgCat/PgBouncer).
-            # statement_cache_size=0 disables asyncpg's client-side named statement cache.
-            # prepared_statement_cache_size=0 disables SQLAlchemy's prepared statement cache.
-            "statement_cache_size": 0,
-            "prepared_statement_cache_size": 0,
         },
     )

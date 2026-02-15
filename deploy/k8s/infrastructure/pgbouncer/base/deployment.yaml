@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pgcat
+  name: pgbouncer
   labels:
-    app: pgcat
+    app: pgbouncer
 spec:
   selector:
     matchLabels:
-      app: pgcat
+      app: pgbouncer
   template:
     metadata:
       labels:
-        app: pgcat
+        app: pgbouncer
     spec:
       containers:
-        - name: pgcat
-          image: ghcr.io/postgresml/pgcat:v1.2.0
-          command: ["pgcat", "/etc/pgcat/pgcat.toml"]
+        - name: pgbouncer
+          image: edoburu/pgbouncer:v1.25.1-p0
+          command: ["pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
           ports:
-            - containerPort: 6432
+            - containerPort: 5432
           volumeMounts:
-            - name: pgcat-config
-              mountPath: /etc/pgcat
+            - name: pgbouncer-config
+              mountPath: /etc/pgbouncer
               readOnly: true
           resources:
             requests:
@@ -32,15 +32,15 @@ spec:
               memory: 128Mi
           livenessProbe:
             tcpSocket:
-              port: 6432
+              port: 5432
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: 6432
+              port: 5432
             initialDelaySeconds: 3
             periodSeconds: 5
       volumes:
-        - name: pgcat-config
+        - name: pgbouncer-config
           secret:
-            secretName: pgcat-config
+            secretName: pgbouncer-config
