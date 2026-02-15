@@ -28,6 +28,8 @@ async def handle_webhook(payload: request_schemas.WebhookEventPayload) -> Respon
         value=payload.value,
         timestamp=payload.timestamp,
     )
+
     async with Session() as session, session.begin():
         await repositories.WearableEventRepository.save(session=session, event=event)
+
     return Response(status_code=status.HTTP_201_CREATED)
