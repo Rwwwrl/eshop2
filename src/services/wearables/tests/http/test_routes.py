@@ -20,6 +20,13 @@ async def test_readiness_check(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio(loop_scope="session")
+async def test_kiq_hello_world(async_client: AsyncClient) -> None:
+    response = await async_client.post(url="/debug/kiq-hello-world")
+    assert response.status_code == 202
+    assert "task_id" in response.json()
+
+
+@pytest.mark.asyncio(loop_scope="session")
 async def test_handle_webhook_when_valid_payload(async_client: AsyncClient) -> None:
     payload = {
         "user_id": 1,

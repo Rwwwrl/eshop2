@@ -2,7 +2,6 @@ import httpx
 from fastapi import APIRouter
 from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
-from libs.utils import print_hello_world
 
 router = APIRouter()
 
@@ -22,11 +21,6 @@ async def health() -> dict[str, str]:
 @router.get("/readiness_check")
 async def readiness_check() -> dict[str, str]:
     return {"status": "ok"}
-
-
-@router.get("/libs-hello")
-async def libs_hello() -> dict[str, str]:
-    return {"message": print_hello_world()}
 
 
 @router.get("/debug/error")

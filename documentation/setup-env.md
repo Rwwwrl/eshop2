@@ -317,6 +317,12 @@ gsutil iam ch \
   gs://<PROJECT_NAME>-config
 ```
 
+### 9. Create Google Cloud Memorystore (Redis)
+
+- Create a Redis instance in Memorystore (console or gcloud)
+- Note the connection string
+- Add `taskiq_redis_url` to the wearables env.yaml in GCS
+
 ---
 
 ## GKE Standard Cluster Setup (Console UI)

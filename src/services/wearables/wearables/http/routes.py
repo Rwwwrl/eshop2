@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Response, status
+from libs.redis_ext.utils import health_check as redis_health_check
 from libs.sqlmodel_ext import Session
-from libs.sqlmodel_ext.utils import health_check
+from libs.sqlmodel_ext.utils import health_check as postgres_health_check
 
 from wearables import repositories
-from wearables.schemas import dtos, request_schemas
+from wearables.http.schemas import request_schemas
+from wearables.messaging.handlers import hello_world_task
+from wearables.schemas import dtos
+from wearables.settings import settings
 
 router = APIRouter()
 
@@ -15,8 +19,15 @@ async def health() -> dict[str, str]:
 
 @router.get("/readiness_check")
 async def readiness_check() -> dict[str, str]:
-    await health_check()
+    await postgres_health_check()
+    await redis_health_check(redis_url=settings.taskiq_redis_url)
     return {"status": "ok"}
+
+
+@router.post("/debug/kiq-hello-world", status_code=status.HTTP_202_ACCEPTED)
+async def kiq_hello_world() -> dict[str, str]:
+    result = await hello_world_task.kiq()
+    return {"task_id": result.task_id}
 
 
 @router.post("/webhook", status_code=status.HTTP_201_CREATED)

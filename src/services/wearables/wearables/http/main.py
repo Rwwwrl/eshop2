@@ -16,24 +16,27 @@ from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 
-from wearables.routes import router
+from wearables.http.routes import router
+from wearables.messaging.main import broker
 from wearables.settings import settings
 from wearables.utils import init_sqlmodel_engine
-
-setup_logging(settings=settings, service_name=ServiceNameEnum.WEARABLES, process_type=ProcessTypeEnum.FASTAPI)
-
-setup_sentry(settings=settings, release=version("wearables"))
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    setup_logging(settings=settings, service_name=ServiceNameEnum.WEARABLES, process_type=ProcessTypeEnum.FASTAPI)
+    setup_sentry(settings=settings, release=version("wearables"))
+
     db_url = settings.postgres_pooler_db_url or settings.postgres_direct_db_url
     engine = init_sqlmodel_engine(db_url=db_url)
     Session.configure(bind=engine)
     app.state.sqlmodel_engine = engine
 
+    await broker.startup()
+
     yield
 
+    await broker.shutdown()
     await engine.dispose()
 
 

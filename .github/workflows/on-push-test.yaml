@@ -50,4 +50,5 @@ jobs:
       service_name: wearables
       service_path: src/services/wearables
       run_postgres_migrations: true
+      run_messaging_deployment: true
     secrets: inherit
