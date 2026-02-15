@@ -56,7 +56,7 @@ jobs:
         run: |
           kubectl apply -f deploy/k8s/infrastructure/cert-manager/cluster-issuer.yaml
 
-  deploy-pgcat:
+  deploy-pgbouncer:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -84,22 +84,22 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --project ${{ vars.GCP_PROJECT_ID }}
 
-      - name: Apply PgCat secret
+      - name: Apply PgBouncer secret
         run: >-
           gsutil -q cp
-          gs://${{ vars.GCS_CONFIG_BUCKET }}/infrastructure/pgcat/pgcat-secret.yaml -
+          gs://${{ vars.GCS_CONFIG_BUCKET }}/infrastructure/pgbouncer/pgbouncer-secret.yaml -
           | kubectl apply -f -
 
-      - name: Deploy PgCat
+      - name: Deploy PgBouncer
         run: |
-          kustomize build deploy/k8s/infrastructure/pgcat/${{ inputs.environment }} \
+          kustomize build deploy/k8s/infrastructure/pgbouncer/${{ inputs.environment }} \
             | kubectl apply -f -
 
-      # TODO @sosov: Restarts pods every deploy even if secret didn't change. PgCat reads pgcat.toml
+      # TODO @sosov: Restarts pods every deploy even if secret didn't change. PgBouncer reads pgbouncer.ini
       # only at startup, so a restart is needed to pick up secret changes. Consider config hash
       # annotation to restart only when the secret actually changes.
-      - name: Restart PgCat pods to pick up secret changes
-        run: kubectl rollout restart deployment/pgcat
+      - name: Restart PgBouncer pods to pick up secret changes
+        run: kubectl rollout restart deployment/pgbouncer
 
       - name: Wait for rollout
-        run: kubectl rollout status deployment/pgcat --timeout=120s
+        run: kubectl rollout status deployment/pgbouncer --timeout=120s

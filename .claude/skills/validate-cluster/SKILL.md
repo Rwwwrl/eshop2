@@ -31,6 +31,10 @@ Run these checks in parallel:
 | ClusterIssuer ready | `kubectl get clusterissuer letsencrypt -o jsonpath='{.status.conditions[0].status}'` | `True` |
 | Wildcard certificate ready | `kubectl get certificate eshop-test-wildcard-tls -o jsonpath='{.status.conditions[0].status}'` | `True` |
 | Certificate not expired | `kubectl get certificate eshop-test-wildcard-tls -o jsonpath='{.status.notAfter}'` | Date is in the future |
+| PgBouncer running | `kubectl get pods -l app=pgbouncer` | 2 pods Running, containers ready |
+| PgBouncer node pool | `kubectl get pods -l app=pgbouncer -o wide` | All pods on `default-pool` nodes |
+| PgBouncer strategy | `kubectl get deployment pgbouncer -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
+| PgBouncer probes | `kubectl get deployment pgbouncer -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | TCP socket on port 5432 |
 
 ## 3. Pod Health (all namespaces)
 
@@ -133,6 +137,7 @@ curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/hea
 | api-gateway ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc api-gateway` |
 | hello-world ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc hello-world` |
 | wearables ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc wearables` |
+| pgbouncer ClusterIP service exists | Port 5432 -> 5432 | `kubectl get svc pgbouncer` |
 | Internal DNS resolution | Services resolvable within cluster | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup api-gateway.default.svc.cluster.local` (skip if impractical) |
 
 ## 7. Resource Requests & Limits
@@ -144,6 +149,7 @@ For each deployment, verify resource configuration matches manifests:
 | api-gateway | 50m | 128Mi | 200m | 256Mi |
 | hello-world | 50m | 128Mi | 200m | 256Mi |
 | wearables | 50m | 128Mi | 200m | 256Mi |
+| pgbouncer | 50m | 64Mi | 200m | 128Mi |
 
 Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
 
