@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-world
+  name: hello-world-http
 spec:
   replicas: 2
   strategy:
@@ -17,7 +17,7 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app: hello-world
+                    app: hello-world-http
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: hello-world

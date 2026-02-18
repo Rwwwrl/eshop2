@@ -29,6 +29,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: api-gateway
+                name: api-gateway-http
                 port:
                   number: 80

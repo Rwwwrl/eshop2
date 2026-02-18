@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-gateway
+  name: api-gateway-http
 spec:
   replicas: 2
   strategy:
@@ -15,7 +15,7 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  app: api-gateway
+                  app: api-gateway-http
               topologyKey: kubernetes.io/hostname
       containers:
         - name: api-gateway
