@@ -38,14 +38,14 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
 
 
 @pytest.mark.asyncio
-async def test_successful_request_passes_through(async_client: AsyncClient) -> None:
+async def test_unhandled_exception_middleware_when_request_succeeds(async_client: AsyncClient) -> None:
     response = await async_client.get("/ok")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
 @pytest.mark.asyncio
-async def test_unhandled_exception_returns_500_json(async_client: AsyncClient) -> None:
+async def test_unhandled_exception_middleware_when_unhandled_exception(async_client: AsyncClient) -> None:
     response = await async_client.get("/fail")
     assert response.status_code == 500
     assert response.json() == {"detail": "Internal Server Error"}

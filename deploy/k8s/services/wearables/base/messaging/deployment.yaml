@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wearables-messaging
+spec:
+  selector:
+    matchLabels:
+      app: wearables-messaging
+  template:
+    metadata:
+      labels:
+        app: wearables-messaging
+    spec:
+      containers:
+        - name: wearables-messaging
+          command: ["poetry", "run", "taskiq", "worker", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
+          livenessProbe:
+            exec:
+              command: ["poetry", "run", "python", "-c", "from libs.taskiq_ext.liveness_check import check_liveness; check_liveness()"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"

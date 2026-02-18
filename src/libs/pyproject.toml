@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "myeshop-libs"
-version = "0.9.5"
+version = "0.11.0"
 description = "Shared library for MyEshop microservices"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "libs" }]
@@ -18,6 +18,8 @@ alembic = "^1.18.1"
 asyncpg = "^0.31.0"
 greenlet = "^3.3.1"
 sentry-sdk = "^2.35"
+taskiq = "^0.12.1"
+redis = "^7.1.1"
 
 [build-system]
 requires = ["poetry-core"]

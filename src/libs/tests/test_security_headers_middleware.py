@@ -30,7 +30,7 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
 
 
 @pytest.mark.asyncio
-async def test_adds_x_content_type_options_header(async_client: AsyncClient) -> None:
+async def test_security_headers_middleware_when_success_adds_x_content_type_options(async_client: AsyncClient) -> None:
     response = await async_client.get("/test")
 
     assert response.status_code == 200
@@ -38,7 +38,9 @@ async def test_adds_x_content_type_options_header(async_client: AsyncClient) -> 
 
 
 @pytest.mark.asyncio
-async def test_adds_strict_transport_security_header(async_client: AsyncClient) -> None:
+async def test_security_headers_middleware_when_success_adds_strict_transport_security(
+    async_client: AsyncClient,
+) -> None:
     response = await async_client.get("/test")
 
     assert response.status_code == 200
@@ -46,7 +48,7 @@ async def test_adds_strict_transport_security_header(async_client: AsyncClient) 
 
 
 @pytest.mark.asyncio
-async def test_adds_security_headers_on_error_responses(async_client: AsyncClient) -> None:
+async def test_security_headers_middleware_when_error_response(async_client: AsyncClient) -> None:
     response = await async_client.get("/nonexistent")
 
     assert response.status_code == 404

@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wearables-messaging
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: wearables-pool
+      containers:
+        - name: wearables-messaging
+          image: wearables
+          imagePullPolicy: Always

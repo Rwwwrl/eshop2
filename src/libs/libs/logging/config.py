@@ -18,12 +18,10 @@ def setup_logging(settings: LoggingSettingsMixin, service_name: ServiceNameEnum,
     handler.setLevel(log_level)
 
     match settings.environment:
-        case EnvironmentEnum.DEV:
+        case EnvironmentEnum.DEV | EnvironmentEnum.CICD:
             handler.setFormatter(DevFormatter(service_name=service_name, process_type=process_type))
-        case EnvironmentEnum.TEST:
+        case EnvironmentEnum.TEST | EnvironmentEnum.PROD:
             handler.setFormatter(GKEJsonFormatter(service_name=service_name, process_type=process_type))
-        case _:
-            raise ValueError(f"Unknown environment: {settings.environment}")
 
     root_logger.addHandler(handler)
 

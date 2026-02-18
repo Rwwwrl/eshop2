@@ -25,10 +25,21 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       ENVIRONMENT: cicd
       POSTGRES_DIRECT_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/wearables
       POSTGRES_POOLER_DB_URL: null
+      TASKIQ_REDIS_URL: redis://localhost:6379
 
     steps:
       - uses: actions/checkout@v6
@@ -50,7 +61,7 @@ jobs:
         run: poetry run ruff format --check .
 
       - name: Run tests
-        run: poetry run pytest
+        run: poetry run pytest --cov --cov-fail-under=90
 
   check_versions:
     runs-on: ubuntu-latest
@@ -127,16 +138,12 @@ jobs:
 
       - name: Validate manifests
         run: |
-          for service_dir in deploy/k8s/services/*/; do
-            for env_dir in "$service_dir"*/; do
-              env=$(basename "$env_dir")
-              [[ "$env" == "base" ]] && continue
-
-              echo "Validating $service/$env..."
-              kubectl kustomize "$env_dir" | kubeconform \
-                -strict \
-                -summary \
-                -schema-location default \
-                -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
-            done
+          for kustomization in $(find deploy/k8s/services -name kustomization.yaml -not -path "*/base/*" -not -path "*/postgres-migration/*"); do
+            dir=$(dirname "$kustomization")
+            echo "Validating $dir..."
+            kubectl kustomize "$dir" | kubeconform \
+              -strict \
+              -summary \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
           done

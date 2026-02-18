@@ -16,6 +16,10 @@ on:
         required: false
         type: boolean
         default: false
+      run_messaging_deployment:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-and-deploy:
@@ -91,17 +95,29 @@ jobs:
           kustomize build . | kubectl apply -f -
           kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-expand-migration --timeout=120s
 
-      - name: Deploy with kustomize
+      - name: Deploy http with kustomize
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
         run: |
-          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}
-
+          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}/http
           kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
           kustomize build . | kubectl apply -f -
 
-      - name: Wait for rollout
+      - name: Wait for http rollout
         run: kubectl rollout status deployment/${{ inputs.service_name }} --timeout=300s
+
+      - name: Deploy messaging with kustomize
+        if: ${{ inputs.run_messaging_deployment }}
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}/messaging
+          kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for messaging rollout
+        if: ${{ inputs.run_messaging_deployment }}
+        run: kubectl rollout status deployment/${{ inputs.service_name }}-messaging --timeout=300s
 
       - name: Run postgres contract migrations
         id: contract_migrations

@@ -17,4 +17,4 @@ COPY env.yaml ./
 RUN poetry install --only main
 
 EXPOSE 8000
-CMD ["poetry", "run", "uvicorn", "hello_world.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["poetry", "run", "uvicorn", "hello_world.http.main:app", "--host", "0.0.0.0", "--port", "8000"]

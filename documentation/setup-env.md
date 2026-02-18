@@ -86,11 +86,11 @@ poetry install
 ```bash
 # Run api-gateway
 cd src/services/api_gateway
-poetry run uvicorn api_gateway.main:app --host 0.0.0.0 --port 8000
+poetry run uvicorn api_gateway.http.main:app --host 0.0.0.0 --port 8000
 
 # Run hello-world (in separate terminal)
 cd src/services/hello_world
-poetry run uvicorn hello_world.main:app --host 0.0.0.0 --port 8001
+poetry run uvicorn hello_world.http.main:app --host 0.0.0.0 --port 8001
 ```
 
 ### 4. Lint and format
@@ -316,6 +316,12 @@ gsutil iam ch \
   serviceAccount:github-actions@<PROJECT_ID>.iam.gserviceaccount.com:roles/storage.objectViewer \
   gs://<PROJECT_NAME>-config
 ```
+
+### 9. Create Google Cloud Memorystore (Redis)
+
+- Create a Redis instance in Memorystore (console or gcloud)
+- Note the connection string
+- Add `taskiq_redis_url` to the wearables env.yaml in GCS
 
 ---
 

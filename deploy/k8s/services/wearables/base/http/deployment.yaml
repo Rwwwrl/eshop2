@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wearables
+spec:
+  selector:
+    matchLabels:
+      app: wearables
+  template:
+    metadata:
+      labels:
+        app: wearables
+    spec:
+      containers:
+        - name: wearables
+          command: ["poetry", "run", "uvicorn", "wearables.http.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /readiness_check
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 5
