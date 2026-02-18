@@ -12,6 +12,32 @@ deploy/k8s/services/<service>/
         kustomization.yaml
 ```
 
+## Process Model
+
+TaskIQ always spawns a main orchestrator + N child worker processes (even with `--workers 1` = 2 OS processes). The main process does NOT process tasks — it only manages children.
+
+Use `--workers 1` in k8s. One worker process per pod, scale horizontally with replicas. This follows the Kubernetes "one process per container" principle:
+- Liveness probe accurately reflects the single worker's health
+- No silent worker death hidden behind a healthy sibling process
+- Resource limits map 1:1 to actual worker consumption
+- HPA/KEDA scaling granularity is per-worker
+
+## Memory Budgeting
+
+Formula: `idle_memory + max_async_tasks × per_task_memory`
+
+| Component | Measured (macOS) | Estimated (Linux slim) |
+|-----------|-----------------|----------------------|
+| Main process (orchestrator) | ~63 MB | ~50 MB |
+| Worker child process | ~103 MB | ~80 MB |
+| **Idle total (`--workers 1`)** | **~166 MB** | **~130 MB** |
+
+Resource calculation (using 75Mi per task estimate, 4 max async tasks):
+- `requests.memory` = idle + 1 × per_task = 130 + 75 = **205Mi** (guaranteed minimum)
+- `limits.memory` = idle + max_async_tasks × per_task = 130 + 4 × 75 = **430Mi** (worst case)
+
+Add a NOTE comment above resources in the deployment manifest explaining the budget formula.
+
 ## Base Deployment (wearables example)
 
 ```yaml
@@ -30,7 +56,7 @@ spec:
     spec:
       containers:
         - name: wearables-messaging
-          command: ["poetry", "run", "taskiq", "worker", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
+          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
           livenessProbe:
             exec:
               command:
@@ -46,19 +72,24 @@ spec:
             periodSeconds: 10
             failureThreshold: 3
             timeoutSeconds: 5
+          # NOTE @sosov: memory budget: ~130Mi idle (main + 1 worker) + 75Mi per async task.
+          # requests = 130 idle + 75 × 1 task = 205Mi (guaranteed minimum).
+          # limits = 130 idle + 75 × 4 tasks (--max-async-tasks) = 430Mi (worst case).
           resources:
             requests:
               cpu: "50m"
-              memory: "128Mi"
+              memory: "205Mi"
             limits:
               cpu: "200m"
-              memory: "256Mi"
+              memory: "430Mi"
 ```
 
 Rules:
 - Deployment name: `<service>-messaging`
 - Same Docker image as HTTP deployment (no CMD in Dockerfile — command in manifest)
-- Worker command format: `taskiq worker <service>.messaging.main:broker <service>.messaging.handlers`
+- Worker command: `taskiq worker --workers 1 --max-async-tasks 4 <service>.messaging.main:broker <service>.messaging.handlers`
+- Always use `--workers 1` — scale with k8s replicas, not in-process workers
+- Always set `--max-async-tasks` to bound memory usage
 - No Service resource needed (worker doesn't receive traffic)
 
 ## Liveness Probe

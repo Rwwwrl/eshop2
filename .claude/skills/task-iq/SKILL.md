@@ -32,6 +32,7 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 ## Architecture
 
 - Worker runs as a **separate process** — same Docker image, different k8s Deployment
+- One worker process per pod (`--workers 1`), scale horizontally with k8s replicas
 - `messaging/main.py` configures the real Redis broker and worker lifecycle
 - `messaging/handlers.py` defines tasks via `@async_shared_broker.task()` — decoupled from concrete broker
 - HTTP routes enqueue tasks by importing handlers and calling `.kiq()`
@@ -174,7 +175,7 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for Kubernetes 
 | Context injection | `context: Annotated[Context, TaskiqDepends()]` |
 | Retry count access | `context.message.labels.get("_retries", 0)` |
 | Enqueue method | `.kiq()` returns awaitable with `.task_id` |
-| Worker command | `taskiq worker <service>.messaging.main:broker <service>.messaging.handlers` |
+| Worker command | `taskiq worker --workers 1 --max-async-tasks 4 <service>.messaging.main:broker <service>.messaging.handlers` |
 | Deployment name | `<service>-messaging` |
 | Liveness probe | Heartbeat file at `/tmp/taskiq_heartbeat` |
 | Test broker | `InMemoryBroker` via `async_shared_broker.default_broker()` |
