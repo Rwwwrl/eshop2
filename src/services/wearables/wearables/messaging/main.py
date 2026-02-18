@@ -7,6 +7,7 @@ from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop
+from libs.taskiq_ext.middlewares import TimeLimitMiddleware
 from taskiq import InMemoryBroker, TaskiqEvents, TaskiqState
 from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
 
@@ -20,6 +21,8 @@ else:
     broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
         result_backend=RedisAsyncResultBackend(redis_url=settings.taskiq_redis_url)
     )
+
+broker.add_middlewares(TimeLimitMiddleware(default_timeout_seconds=60))
 
 
 @broker.on_event(TaskiqEvents.WORKER_STARTUP)
