@@ -11,9 +11,10 @@ spec:
       labels:
         app: wearables-messaging
     spec:
+      terminationGracePeriodSeconds: 80
       containers:
         - name: wearables-messaging
-          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
+          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
           livenessProbe:
             exec:
               command:

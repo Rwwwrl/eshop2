@@ -54,9 +54,10 @@ spec:
       labels:
         app: wearables-messaging
     spec:
+      terminationGracePeriodSeconds: 80
       containers:
         - name: wearables-messaging
-          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
+          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
           livenessProbe:
             exec:
               command:
@@ -87,10 +88,44 @@ spec:
 Rules:
 - Deployment name: `<service>-messaging`
 - Same Docker image as HTTP deployment (no CMD in Dockerfile — command in manifest)
-- Worker command: `taskiq worker --workers 1 --max-async-tasks 4 <service>.messaging.main:broker <service>.messaging.handlers`
+- Worker command: `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.messaging.main:broker <service>.messaging.handlers`
 - Always use `--workers 1` — scale with k8s replicas, not in-process workers
 - Always set `--max-async-tasks` to bound memory usage
 - No Service resource needed (worker doesn't receive traffic)
+- Always set `terminationGracePeriodSeconds` to cover full shutdown (wait-tasks + shutdown + buffer)
+- Always set `--wait-tasks-timeout` and `--shutdown-timeout` explicitly
+
+## Graceful Shutdown
+
+K8s pod termination sends exactly **one SIGTERM**, then **one SIGKILL** when `terminationGracePeriodSeconds` expires. No retries, no second SIGTERM.
+
+TaskIQ shutdown sequence after SIGTERM:
+
+```
+SIGTERM
+  ↓
+1. Process manager sends SIGINT to worker child process
+2. Worker sets shutdown_event → prefetcher stops pulling from Redis
+3. Prefetched-but-unstarted messages stay in Redis (picked up by other workers)
+4. QUEUE_DONE sentinel placed on internal queue
+5. Runner calls: asyncio.wait(tasks, timeout=wait_tasks_timeout)  ← Phase 1
+6. broker.shutdown() called with asyncio.wait_for(timeout=shutdown_timeout)  ← Phase 2
+   - WORKER_SHUTDOWN event handlers (engine dispose, heartbeat stop)
+   - Middleware shutdown
+   - Result backend close (Redis)
+7. Process exits
+```
+
+Timeout alignment:
+
+```
+terminationGracePeriodSeconds (80s)
+├── wait-tasks-timeout (65s)  ← in-flight task drain
+├── shutdown-timeout (10s)    ← broker cleanup
+└── 5s buffer                 ← process overhead
+```
+
+No `preStop` hook needed — messaging workers pull from Redis, there's no ingress endpoint removal to wait for (unlike HTTP pods)
 
 ## Liveness Probe
 
