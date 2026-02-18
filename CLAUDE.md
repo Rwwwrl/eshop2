@@ -18,44 +18,61 @@ This is a learning project focused on building microservices architecture from s
 
 Every microservice follows **vertical slice architecture**. Code is organized by **context** (feature/domain area), not by technical layer. Each context groups related functionality around a business capability, with technical layers inside.
 
-**Context** = a feature folder inside the service package. A context is a boundary of meaning (DDD Bounded Context) — it owns its routes, services, models, schemas, and data access.
+The top-level split within each service is by **communication protocol** (`http/`, `grpc/`, `messaging/`), not by technical layer. Each protocol folder has its own `main.py` with protocol-specific setup (FastAPI app, broker config, etc.). Shared domain code — models, repositories, schemas, settings — lives at the service root and is accessible from all protocol folders.
 
-### Context Module Structure
+Not every service needs all protocol folders. Simpler services may only have `http/`. The `grpc/` folder is planned but not yet in use.
+
+**Context** = a feature folder inside a protocol directory or at the service root. A context is a boundary of meaning (DDD Bounded Context) — it owns its routes, services, models, schemas, and data access. Contexts (vertical slices) still apply *within* each protocol folder as the service grows.
+
+### Service Module Structure
 
 ```
-context_name/
-    routes.py                 # API endpoints (FastAPI router)
-    services.py               # Business logic (or services/ directory for multiple)
-    repositories.py           # Data access layer
-    models.py                 # Database models (or models/ directory)
+service_name/
+    settings.py              # Service configuration (shared across protocols)
+    utils.py                 # Shared utilities (e.g., engine init)
+    models.py                # Database models (shared)
+    repositories.py          # Data access layer (shared)
     schemas/
-        request_schemas.py    # Pydantic request validation schemas
-        response_schemas.py   # Pydantic response schemas
-        dtos.py               # Data Transfer Objects (internal, between layers)
-        nested_models.py      # Embedded sub-models for documents/DTOs
-    serializers.py            # DTO → response schema conversion
-    exceptions.py             # Domain-specific exceptions
+        dtos.py              # Shared DTOs
+    http/
+        __init__.py
+        main.py              # FastAPI app, lifespan, middleware
+        routes.py            # API endpoints (FastAPI router)
+        schemas/
+            request_schemas.py
+            response_schemas.py
+    grpc/                    # Future — gRPC protocol support
+        __init__.py
+        main.py
+    messaging/               # Async communication (TaskIQ + Redis)
+        __init__.py
+        main.py              # Broker setup, worker lifecycle
+        handlers.py          # Task handlers
 ```
 
-Additional common files (add as needed): `enums.py`, `utils.py`, `settings.py`.
+Additional common files (add as needed): `enums.py`, `serializers.py`, `exceptions.py`.
 
-Not every context needs every file. Smaller contexts may only have `routes.py`, `services.py`, and `schemas/`. Add files as the context grows.
+Not every context needs every file. Smaller contexts may only have `http/routes.py`, `services.py`, and `schemas/`. Add files as the context grows.
 
 ### Layer Dependency Direction
 
 ```
-routes.py  →  services.py  →  repositories.py  →  models.py
-    |              |                  |
-    v              v                  v
-schemas/        schemas/           schemas/
-  request         dtos               dtos
-  response                           nested_models
+http/routes.py  →  services.py  →  repositories.py  →  models.py
+    |                  |                  |
+    v                  v                  v
+http/schemas/       schemas/           schemas/
+  request            dtos               dtos
+  response                              nested_models
     |
     v
 serializers.py  (DTO → response_schemas)
 ```
 
 Routes depend on services, services depend on repositories, repositories depend on models. Schemas are used across layers. Never import routes from services or repositories.
+
+### Kubernetes Deployment Mirroring
+
+The k8s manifest structure mirrors the code protocol split: `deploy/k8s/services/<service>/base/http/`, `base/messaging/`, etc. Services with multiple process types (e.g., HTTP server + async worker) share one Docker image but have no `CMD` in the Dockerfile — the command is specified per-deployment in k8s manifests.
 
 ### Shared Library
 

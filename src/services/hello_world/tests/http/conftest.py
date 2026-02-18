@@ -2,8 +2,8 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from api_gateway.http.routes import router
 from fastapi import FastAPI
+from hello_world.http.routes import router
 from httpx import ASGITransport, AsyncClient
 from libs.fastapi_ext.middlewares import UnhandledExceptionMiddleware
 

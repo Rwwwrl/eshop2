@@ -52,4 +52,5 @@ app.add_middleware(UnhandledExceptionMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestResponseLoggingMiddleware)
 app.add_middleware(RequestIdMiddleware)
+
 app.include_router(router=router)
