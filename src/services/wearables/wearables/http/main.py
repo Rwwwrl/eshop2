@@ -15,6 +15,7 @@ from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
+from taskiq.brokers.shared_broker import async_shared_broker
 
 from wearables.http.routes import router
 from wearables.messaging.main import broker
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.sqlmodel_engine = engine
 
     await broker.startup()
+    async_shared_broker.default_broker(broker)
 
     yield
 
