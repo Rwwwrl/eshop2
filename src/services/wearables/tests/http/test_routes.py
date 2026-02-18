@@ -6,21 +6,21 @@ from wearables.models import WearableEvent
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_health(async_client: AsyncClient) -> None:
+async def test_health_when_service_running(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_readiness_check(async_client: AsyncClient) -> None:
+async def test_readiness_check_when_service_running(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/readiness_check")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_kiq_hello_world(async_client: AsyncClient) -> None:
+async def test_kiq_hello_world_when_called(async_client: AsyncClient) -> None:
     response = await async_client.post(url="/debug/kiq-hello-world")
     assert response.status_code == 202
     assert "task_id" in response.json()

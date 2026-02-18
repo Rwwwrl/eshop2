@@ -30,14 +30,14 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
 
 
 @pytest.mark.asyncio
-async def test_allows_request_within_limit(async_client: AsyncClient) -> None:
+async def test_request_body_limit_when_within_limit(async_client: AsyncClient) -> None:
     response = await async_client.post("/test", content=b"x" * 512)
 
     assert response.status_code == 200
 
 
 @pytest.mark.asyncio
-async def test_rejects_request_exceeding_limit(async_client: AsyncClient) -> None:
+async def test_request_body_limit_when_exceeding_limit(async_client: AsyncClient) -> None:
     response = await async_client.post(
         "/test",
         content=b"x" * 2048,
@@ -49,14 +49,14 @@ async def test_rejects_request_exceeding_limit(async_client: AsyncClient) -> Non
 
 
 @pytest.mark.asyncio
-async def test_allows_request_without_content_length(async_client: AsyncClient) -> None:
+async def test_request_body_limit_when_no_content_length(async_client: AsyncClient) -> None:
     response = await async_client.post("/test")
 
     assert response.status_code == 200
 
 
 @pytest.mark.asyncio
-async def test_allows_request_at_exact_limit(async_client: AsyncClient) -> None:
+async def test_request_body_limit_when_at_exact_limit(async_client: AsyncClient) -> None:
     response = await async_client.post(
         "/test",
         content=b"x" * 1024,
@@ -67,7 +67,7 @@ async def test_allows_request_at_exact_limit(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_rejects_oversized_body_without_content_length_header(async_client: AsyncClient) -> None:
+async def test_request_body_limit_when_oversized_body_without_content_length(async_client: AsyncClient) -> None:
     response = await async_client.post("/test", content=b"x" * 2048)
 
     assert response.status_code == 413

@@ -37,7 +37,7 @@ async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
 
 
 @pytest.mark.asyncio
-async def test_generates_uuid4_when_no_header(async_client: AsyncClient) -> None:
+async def test_request_id_middleware_when_no_header(async_client: AsyncClient) -> None:
     response = await async_client.get("/echo-request-id")
 
     assert response.status_code == 200
@@ -49,7 +49,7 @@ async def test_generates_uuid4_when_no_header(async_client: AsyncClient) -> None
 
 
 @pytest.mark.asyncio
-async def test_uses_provided_header_value(async_client: AsyncClient) -> None:
+async def test_request_id_middleware_when_header_provided(async_client: AsyncClient) -> None:
     provided_id = str(uuid.uuid4())
     response = await async_client.get("/echo-request-id", headers={REQUEST_ID_HEADER: provided_id})
 
@@ -61,7 +61,7 @@ async def test_uses_provided_header_value(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_accepts_valid_non_uuid_format(async_client: AsyncClient) -> None:
+async def test_request_id_middleware_when_valid_non_uuid_format(async_client: AsyncClient) -> None:
     provided_id = "trace-abc-123"
     response = await async_client.get("/echo-request-id", headers={REQUEST_ID_HEADER: provided_id})
 
@@ -73,7 +73,7 @@ async def test_accepts_valid_non_uuid_format(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_rejects_overly_long_request_id(async_client: AsyncClient) -> None:
+async def test_request_id_middleware_when_overly_long_id(async_client: AsyncClient) -> None:
     long_id = "A" * 300
     response = await async_client.get("/echo-request-id", headers={REQUEST_ID_HEADER: long_id})
 
@@ -82,7 +82,7 @@ async def test_rejects_overly_long_request_id(async_client: AsyncClient) -> None
 
 
 @pytest.mark.asyncio
-async def test_rejects_request_id_with_control_characters(async_client: AsyncClient) -> None:
+async def test_request_id_middleware_when_control_characters(async_client: AsyncClient) -> None:
     malicious_id = "request-id\x00injected"
     response = await async_client.get("/echo-request-id", headers={REQUEST_ID_HEADER: malicious_id})
 
