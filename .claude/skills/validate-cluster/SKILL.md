@@ -33,6 +33,7 @@ Run these checks in parallel:
 | Certificate not expired | `kubectl get certificate eshop-test-wildcard-tls -o jsonpath='{.status.notAfter}'` | Date is in the future |
 | PgBouncer running | `kubectl get pods -l app=pgbouncer` | 2 pods Running, containers ready |
 | PgBouncer node pool | `kubectl get pods -l app=pgbouncer -o wide` | All pods on `default-pool` nodes |
+| PgBouncer anti-affinity | Pods on different nodes | The two pods must be scheduled on different hostnames |
 | PgBouncer strategy | `kubectl get deployment pgbouncer -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
 | PgBouncer probes | `kubectl get deployment pgbouncer -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | TCP socket on port 5432 |
 
@@ -51,30 +52,30 @@ Run: `kubectl get pods -A`
 
 For each deployment (HTTP servers and messaging workers), verify replica count and scheduling:
 
-### api-gateway
+### api-gateway-http
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | 2 Running pods | `kubectl get deployment api-gateway -o jsonpath='{.status.readyReplicas}'` = 2 |
-| Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=api-gateway -o wide` — NODE column must be default-pool nodes |
+| Replicas | 2 Running pods | `kubectl get deployment api-gateway-http -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=api-gateway-http -o wide` — NODE column must be default-pool nodes |
 | Anti-affinity | Pods on different nodes | The two pods must be scheduled on different hostnames (required anti-affinity) |
 | Health endpoints | Liveness and readiness probes passing | No restart count incrementing, pods in Running state |
 
-### hello-world
+### hello-world-http
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | 2 Running pods | `kubectl get deployment hello-world -o jsonpath='{.status.readyReplicas}'` = 2 |
-| Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=hello-world -o wide` — NODE column must be default-pool nodes |
+| Replicas | 2 Running pods | `kubectl get deployment hello-world-http -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=hello-world-http -o wide` — NODE column must be default-pool nodes |
 | Anti-affinity | Pods preferably on different nodes | Preferred (weight 100), so warn if co-located but don't fail |
 | Health endpoints | Probes passing | No restart count incrementing |
 
-### wearables (HTTP)
+### wearables-http
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | 2 Running pods | `kubectl get deployment wearables -o jsonpath='{.status.readyReplicas}'` = 2 |
-| Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables -o wide` — NODE column must be wearables-pool nodes |
+| Replicas | 2 Running pods | `kubectl get deployment wearables-http -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-http -o wide` — NODE column must be wearables-pool nodes |
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
 | Health endpoints | Probes passing | No restart count incrementing |
 
@@ -144,11 +145,11 @@ curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/hea
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| api-gateway ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc api-gateway` |
-| hello-world ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc hello-world` |
-| wearables ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc wearables` |
+| api-gateway-http ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc api-gateway-http` |
+| hello-world-http ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc hello-world-http` |
+| wearables-http ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc wearables-http` |
 | pgbouncer ClusterIP service exists | Port 5432 -> 5432 | `kubectl get svc pgbouncer` |
-| Internal DNS resolution | Services resolvable within cluster | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup api-gateway.default.svc.cluster.local` (skip if impractical) |
+| Internal DNS resolution | Services resolvable within cluster | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup api-gateway-http.default.svc.cluster.local` (skip if impractical) |
 
 ## 7. Resource Requests & Limits
 
@@ -156,9 +157,9 @@ For each deployment, verify resource configuration matches manifests:
 
 | Service | CPU Request | Memory Request | CPU Limit | Memory Limit |
 |---------|-------------|----------------|-----------|--------------|
-| api-gateway | 50m | 128Mi | 200m | 256Mi |
-| hello-world | 50m | 128Mi | 200m | 256Mi |
-| wearables | 50m | 128Mi | 200m | 256Mi |
+| api-gateway-http | 50m | 128Mi | 200m | 256Mi |
+| hello-world-http | 50m | 128Mi | 200m | 256Mi |
+| wearables-http | 50m | 128Mi | 200m | 256Mi |
 | wearables-messaging | 50m | 128Mi | 200m | 256Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
 

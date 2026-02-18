@@ -29,6 +29,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: wearables
+                name: wearables-http
                 port:
                   number: 80

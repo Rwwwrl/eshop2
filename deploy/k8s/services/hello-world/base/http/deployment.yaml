@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-world
+  name: hello-world-http
 spec:
   selector:
     matchLabels:
-      app: hello-world
+      app: hello-world-http
   template:
     metadata:
       labels:
-        app: hello-world
+        app: hello-world-http
     spec:
       containers:
         - name: hello-world
