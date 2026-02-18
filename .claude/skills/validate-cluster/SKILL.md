@@ -49,7 +49,7 @@ Run: `kubectl get pods -A`
 
 ## 4. Service Deployments (test-eu)
 
-For each service, verify replica count and scheduling:
+For each deployment (HTTP servers and messaging workers), verify replica count and scheduling:
 
 ### api-gateway
 
@@ -69,7 +69,7 @@ For each service, verify replica count and scheduling:
 | Anti-affinity | Pods preferably on different nodes | Preferred (weight 100), so warn if co-located but don't fail |
 | Health endpoints | Probes passing | No restart count incrementing |
 
-### wearables
+### wearables (HTTP)
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
@@ -77,6 +77,16 @@ For each service, verify replica count and scheduling:
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables -o wide` — NODE column must be wearables-pool nodes |
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
 | Health endpoints | Probes passing | No restart count incrementing |
+
+### wearables-messaging (TaskIQ worker)
+
+| Check | Expected | How to verify |
+|-------|----------|---------------|
+| Replicas | 2 Running pods | `kubectl get deployment wearables-messaging -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-messaging -o wide` — NODE column must be wearables-pool nodes |
+| Strategy | Recreate (not RollingUpdate) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.strategy.type}'` = `Recreate` |
+| Liveness probe | Exec-based (`poetry run python -c "from libs.taskiq_ext.liveness_check import check_liveness; check_liveness()"`) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — must use exec command, initialDelaySeconds=30, periodSeconds=10 |
+| Health | Probes passing, no restarts | No restart count incrementing, pods in Running state |
 
 ## 5. Ingress & TLS
 
@@ -149,6 +159,7 @@ For each deployment, verify resource configuration matches manifests:
 | api-gateway | 50m | 128Mi | 200m | 256Mi |
 | hello-world | 50m | 128Mi | 200m | 256Mi |
 | wearables | 50m | 128Mi | 200m | 256Mi |
+| wearables-messaging | 50m | 128Mi | 200m | 256Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
 
 Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
