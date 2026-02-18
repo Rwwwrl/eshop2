@@ -16,7 +16,15 @@ spec:
           command: ["poetry", "run", "taskiq", "worker", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
           livenessProbe:
             exec:
-              command: ["poetry", "run", "python", "-c", "from libs.taskiq_ext.liveness_check import check_liveness; check_liveness()"]
+              command:
+                - sh
+                - -c
+                - |
+                  test -f /tmp/taskiq_heartbeat &&
+                  written_at=$(cat /tmp/taskiq_heartbeat) &&
+                  now=$(date +%s) &&
+                  age=$((now - ${written_at%%.*})) &&
+                  test "$age" -lt 60
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 3
