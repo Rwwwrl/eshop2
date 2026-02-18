@@ -86,7 +86,7 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 | Replicas | 2 Running pods | `kubectl get deployment wearables-messaging -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-messaging -o wide` — NODE column must be wearables-pool nodes |
 | Strategy | Recreate (not RollingUpdate) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.strategy.type}'` = `Recreate` |
-| Liveness probe | Exec-based (`poetry run python -c "from libs.taskiq_ext.liveness_check import check_liveness; check_liveness()"`) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — must use exec command, initialDelaySeconds=30, periodSeconds=10 |
+| Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — must use exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
 | Health | Probes passing, no restarts | No restart count incrementing, pods in Running state |
 
 ## 5. Ingress & TLS

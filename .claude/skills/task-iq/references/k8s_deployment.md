@@ -33,7 +33,15 @@ spec:
           command: ["poetry", "run", "taskiq", "worker", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
           livenessProbe:
             exec:
-              command: ["poetry", "run", "python", "-c", "from libs.taskiq_ext.liveness_check import check_liveness; check_liveness()"]
+              command:
+                - sh
+                - -c
+                - |
+                  test -f /tmp/taskiq_heartbeat &&
+                  written_at=$(cat /tmp/taskiq_heartbeat) &&
+                  now=$(date +%s) &&
+                  age=$((now - ${written_at%%.*})) &&
+                  test "$age" -lt 60
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 3
@@ -58,10 +66,9 @@ Rules:
 Heartbeat file mechanism in `libs/taskiq_ext/liveness_check.py`:
 
 1. `start_heartbeat_loop()` — writes timestamp to `/tmp/taskiq_heartbeat` every 10s
-2. `check_liveness()` — exits 0 if file is fresh (< 60s), exits 1 otherwise
-3. `stop_heartbeat_loop()` — cancels the loop task, removes file
+2. `stop_heartbeat_loop()` — cancels the loop task, removes file
 
-The k8s liveness probe runs `check_liveness()` via exec command.
+The k8s liveness probe uses a lightweight shell command to check the heartbeat file freshness (< 60s). This avoids the overhead of `poetry run python` which can timeout on CPU-constrained containers.
 
 ## CI/CD
 

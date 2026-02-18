@@ -15,7 +15,7 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 | Task handlers | `<service>/messaging/handlers.py` | `from taskiq.brokers.shared_broker import async_shared_broker` |
 | Settings mixin | `libs/taskiq_ext/settings.py` | `from libs.taskiq_ext import TaskiqSettingsMixin` |
 | TimeLimitMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import TimeLimitMiddleware` |
-| Liveness check | `libs/taskiq_ext/liveness_check.py` | `from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop, check_liveness` |
+| Heartbeat loop | `libs/taskiq_ext/liveness_check.py` | `from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop` |
 | Redis health check | `libs/redis_ext/utils.py` | `from libs.redis_ext.utils import health_check as redis_health_check` |
 
 ## File Structure
