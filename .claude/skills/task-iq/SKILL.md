@@ -166,6 +166,34 @@ See the testing skill for broader test patterns and conftest templates.
 
 See [references/k8s_deployment.md](references/k8s_deployment.md) for Kubernetes manifest patterns and liveness probe setup.
 
+## Graceful Shutdown
+
+TaskIQ shutdown has **two sequential phases** after receiving SIGTERM:
+
+1. **Task drain** (`--wait-tasks-timeout`): prefetcher stops, runner waits for in-flight tasks
+2. **Broker cleanup** (`--shutdown-timeout`): event handlers, middleware shutdown, Redis close
+
+```
+SIGTERM → prefetcher stops → runner drains tasks (phase 1) → broker.shutdown() (phase 2) → exit
+```
+
+Configuration must align with `TimeLimitMiddleware` timeout and k8s `terminationGracePeriodSeconds`:
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| `TimeLimitMiddleware` | 60s | Max single task duration |
+| `--wait-tasks-timeout` | 65s | Task limit + 5s buffer |
+| `--shutdown-timeout` | 10s | Broker cleanup (engine dispose, Redis close) |
+| `terminationGracePeriodSeconds` | 80s | 65 + 10 + 5s buffer before SIGKILL |
+
+Rules:
+- Always set `--wait-tasks-timeout` explicitly — default `None` waits forever, risks SIGKILL
+- `terminationGracePeriodSeconds` must be > `wait-tasks-timeout` + `shutdown-timeout`
+- No `preStop` hook needed for messaging workers (they pull from Redis, no ingress traffic to drain)
+- K8s sends exactly one SIGTERM, then one SIGKILL when grace period expires — no retries
+
+See [references/k8s_deployment.md](references/k8s_deployment.md) for the full deployment manifest and shutdown details.
+
 ## Conventions
 
 | Rule | Detail |
@@ -175,7 +203,7 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for Kubernetes 
 | Context injection | `context: Annotated[Context, TaskiqDepends()]` |
 | Retry count access | `context.message.labels.get("_retries", 0)` |
 | Enqueue method | `.kiq()` returns awaitable with `.task_id` |
-| Worker command | `taskiq worker --workers 1 --max-async-tasks 4 <service>.messaging.main:broker <service>.messaging.handlers` |
+| Worker command | `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.messaging.main:broker <service>.messaging.handlers` |
 | Deployment name | `<service>-messaging` |
 | Liveness probe | Heartbeat file at `/tmp/taskiq_heartbeat` |
 | Test broker | `InMemoryBroker` via `async_shared_broker.default_broker()` |
