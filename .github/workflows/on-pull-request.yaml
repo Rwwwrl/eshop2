@@ -25,11 +25,21 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       ENVIRONMENT: cicd
       POSTGRES_DIRECT_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/wearables
       POSTGRES_POOLER_DB_URL: null
-      TASKIQ_REDIS_URL: blabla
+      TASKIQ_REDIS_URL: redis://localhost:6379
 
     steps:
       - uses: actions/checkout@v6
