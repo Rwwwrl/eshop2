@@ -13,6 +13,7 @@ spec:
       labels:
         app: wearables-http
     spec:
+      terminationGracePeriodSeconds: 95
       nodeSelector:
         cloud.google.com/gke-nodepool: wearables-pool
       topologySpreadConstraints:
@@ -33,6 +34,13 @@ spec:
             limits:
               cpu: "200m"
               memory: "256Mi"
+          # NOTE @sosov: Sleep gives NGINX Ingress time to deregister the pod endpoint
+          # before Uvicorn receives SIGTERM. Without this, in-flight requests get dropped
+          # because endpoint removal from the Service is async.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
           livenessProbe:
             httpGet:
               path: /health
