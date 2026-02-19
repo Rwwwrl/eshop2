@@ -13,6 +13,7 @@ spec:
       labels:
         app: hello-world-http
     spec:
+      terminationGracePeriodSeconds: 95
       nodeSelector:
         cloud.google.com/gke-nodepool: default-pool
       affinity:
@@ -26,7 +27,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       containers:
         - name: hello-world
-          command: ["poetry", "run", "uvicorn", "hello_world.http.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          command: ["poetry", "run", "uvicorn", "hello_world.http.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]
           ports:
             - containerPort: 8000
           resources:
@@ -36,6 +37,13 @@ spec:
             limits:
               cpu: "200m"
               memory: "256Mi"
+          # NOTE @sosov: Sleep gives NGINX Ingress time to deregister the pod endpoint
+          # before Uvicorn receives SIGTERM. Without this, in-flight requests get dropped
+          # because endpoint removal from the Service is async.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
           livenessProbe:
             httpGet:
               path: /health

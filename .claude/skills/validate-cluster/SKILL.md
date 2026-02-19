@@ -65,6 +65,7 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 | Replicas | 2 Running pods | `kubectl get deployment api-gateway-http -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=api-gateway-http -o wide` — NODE column must be default-pool nodes |
 | Anti-affinity | Pods on different nodes | The two pods must be scheduled on different hostnames (required anti-affinity) |
+| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment api-gateway-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and `kubectl get deployment api-gateway-http -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command}'` contains `sleep` `10` |
 | Health endpoints | Liveness and readiness probes passing | No restart count incrementing, pods in Running state |
 
 ### hello-world-http
@@ -74,6 +75,7 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 | Replicas | 2 Running pods | `kubectl get deployment hello-world-http -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=hello-world-http -o wide` — NODE column must be default-pool nodes |
 | Anti-affinity | Pods preferably on different nodes | Preferred (weight 100), so warn if co-located but don't fail |
+| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment hello-world-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and `kubectl get deployment hello-world-http -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command}'` contains `sleep` `10` |
 | Health endpoints | Probes passing | No restart count incrementing |
 
 ### wearables-http
@@ -83,6 +85,7 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 | Replicas | 2 Running pods | `kubectl get deployment wearables-http -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-http -o wide` — NODE column must be wearables-pool nodes |
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
+| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment wearables-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and `kubectl get deployment wearables-http -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command}'` contains `sleep` `10` |
 | Health endpoints | Probes passing | No restart count incrementing |
 
 ### wearables-messaging (TaskIQ worker)
@@ -93,6 +96,7 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-messaging -o wide` — NODE column must be wearables-pool nodes |
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
 | Strategy | Recreate (not RollingUpdate) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.strategy.type}'` = `Recreate` |
+| Graceful shutdown | terminationGracePeriodSeconds=80 | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 80 |
 | Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — must use exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
 | Health | Probes passing, no restarts | No restart count incrementing, pods in Running state |
 
