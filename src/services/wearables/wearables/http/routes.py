@@ -5,7 +5,7 @@ from libs.sqlmodel_ext.utils import health_check as postgres_health_check
 
 from wearables import repositories
 from wearables.http.schemas import request_schemas
-from wearables.messaging.handlers import hello_world_task
+from wearables.messaging.handlers import always_failing_task, hello_world_task
 from wearables.schemas import dtos
 from wearables.settings import settings
 
@@ -27,6 +27,12 @@ async def readiness_check() -> dict[str, str]:
 @router.post("/debug/kiq-hello-world", status_code=status.HTTP_202_ACCEPTED)
 async def kiq_hello_world() -> dict[str, str]:
     result = await hello_world_task.kiq()
+    return {"task_id": result.task_id}
+
+
+@router.post("/debug/kiq-always-failing", status_code=status.HTTP_202_ACCEPTED)
+async def kiq_always_failing() -> dict[str, str]:
+    result = await always_failing_task.kiq()
     return {"task_id": result.task_id}
 
 

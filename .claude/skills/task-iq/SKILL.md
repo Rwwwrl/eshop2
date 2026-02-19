@@ -14,6 +14,8 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 | Broker setup | `<service>/messaging/main.py` | — |
 | Task handlers | `<service>/messaging/handlers.py` | `from taskiq.brokers.shared_broker import async_shared_broker` |
 | Settings mixin | `libs/taskiq_ext/settings.py` | `from libs.taskiq_ext import TaskiqSettingsMixin` |
+| `@dlq` decorator | `libs/taskiq_ext/decorators.py` | `from libs.taskiq_ext.decorators import dlq` |
+| DeadLetterMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import DeadLetterMiddleware` |
 | TimeLimitMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import TimeLimitMiddleware` |
 | Heartbeat loop | `libs/taskiq_ext/liveness_check.py` | `from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop` |
 | Redis health check | `libs/redis_ext/utils.py` | `from libs.redis_ext.utils import health_check as redis_health_check` |
@@ -54,6 +56,7 @@ broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
 
 broker.add_middlewares(
     TimeLimitMiddleware(default_timeout_seconds=60),
+    DeadLetterMiddleware(),
     SmartRetryMiddleware(use_jitter=True),
 )
 
@@ -83,10 +86,12 @@ async def _on_worker_shutdown(state: TaskiqState) -> None:
 ```python
 from typing import Annotated
 
+from libs.taskiq_ext.decorators import dlq
 from taskiq import Context, TaskiqDepends
 from taskiq.brokers.shared_broker import async_shared_broker
 
 
+@dlq(dlq_queue_name="wearables:dlq", ttl_seconds=60 * 60 * 24 * 7)
 @async_shared_broker.task(retry_on_error=True, max_retries=3)
 async def hello_world_task(context: Annotated[Context, TaskiqDepends()]) -> str:
     retries = int(context.message.labels.get("_retries", 0))
@@ -97,6 +102,7 @@ Rules:
 - Always use `async_shared_broker.task()`, never the concrete broker directly
 - Use `Annotated[Context, TaskiqDepends()]` for task context injection
 - Access retry count via `context.message.labels.get("_retries", 0)`
+- `@dlq` goes above `@broker.task()` — it receives the `AsyncTaskiqDecoratedTask` and wraps `original_func`
 
 ## Enqueuing from HTTP Routes
 
@@ -151,7 +157,54 @@ async def readiness_check() -> dict[str, str]:
 | Middleware | Source | Purpose |
 |-----------|--------|---------|
 | `TimeLimitMiddleware` | `libs/taskiq_ext/middlewares.py` | Sets default `timeout` label (60s) on tasks without one |
+| `DeadLetterMiddleware` | `libs/taskiq_ext/middlewares.py` | Routes permanently failed tasks to DLQ via `AsyncKicker` |
 | `SmartRetryMiddleware` | `taskiq` (built-in) | Exponential backoff with jitter for retries |
+
+Middleware ordering matters. `on_error` hooks fire in **reverse** registration order:
+
+```python
+broker.add_middlewares(
+    TimeLimitMiddleware(default_timeout_seconds=60),   # on_error: last
+    DeadLetterMiddleware(),                            # on_error: second
+    SmartRetryMiddleware(use_jitter=True),              # on_error: first
+    TaskLifecycleLogMiddleware(),
+)
+```
+
+On failure: SmartRetry decides whether to retry → DeadLetter routes to DLQ if retries exhausted → TimeLimit runs last.
+
+## Dead Letter Queue (DLQ)
+
+TaskIQ has no built-in DLQ. We implement it with two components: `@dlq` decorator + `DeadLetterMiddleware`.
+
+See [references/dlq.md](references/dlq.md) for label design, execution flow, and DLQ-to-DLQ chaining prevention.
+
+### `@dlq` Decorator
+
+Applied **above** `@broker.task()`. Validates at import time, wraps handler for TTL check at runtime.
+
+```python
+@dlq(dlq_queue_name="wearables:dlq", ttl_seconds=60 * 60 * 24 * 7)
+@async_shared_broker.task(retry_on_error=True, max_retries=3)
+async def my_task(context: Annotated[Context, TaskiqDepends()]) -> str:
+    ...
+```
+
+Import-time validations (raises immediately if violated):
+- `retry_on_error=True` requires explicit `max_retries`
+- Handler must have a `context` parameter
+
+### `DeadLetterMiddleware`
+
+`on_error` hook that routes permanently failed tasks to the DLQ stream via `AsyncKicker`. No constructor parameters — all configuration comes from message labels set by `@dlq`.
+
+### DLQ Queue Naming
+
+Convention: `<service>:dlq` (e.g., `wearables:dlq`). This becomes a separate Redis stream.
+
+### Stream Size
+
+`RedisStreamBroker` supports `maxlen` parameter (passed to every `XADD`), but it's global per broker — same limit for all streams. No per-queue override. For now, rely on Redis observability and manual trimming.
 
 ## Testing
 
@@ -200,6 +253,8 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for the full de
 |------|--------|
 | Broker import | Always `from taskiq.brokers.shared_broker import async_shared_broker` |
 | Task decorator | `@async_shared_broker.task()`, never the concrete broker |
+| DLQ decorator | `@dlq()` above `@broker.task()`, requires `context` param and explicit `max_retries` |
+| DLQ queue naming | `<service>:dlq` (e.g., `wearables:dlq`) |
 | Context injection | `context: Annotated[Context, TaskiqDepends()]` |
 | Retry count access | `context.message.labels.get("_retries", 0)` |
 | Enqueue method | `.kiq()` returns awaitable with `.task_id` |
