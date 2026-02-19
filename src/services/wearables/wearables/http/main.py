@@ -14,6 +14,7 @@ from libs.fastapi_ext.middlewares import (
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
+from libs.settings import is_data_sensitive_env
 from libs.sqlmodel_ext import Session
 from taskiq.brokers.shared_broker import async_shared_broker
 
@@ -42,11 +43,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await engine.dispose()
 
 
+_is_sensitive = is_data_sensitive_env(environment=settings.environment)
+
 app = FastAPI(
     title="Wearables Service",
     version=version("wearables"),
     description="Wearable data webhook ingestion service.",
     lifespan=lifespan,
+    docs_url=None if _is_sensitive else "/docs",
+    redoc_url=None if _is_sensitive else "/redoc",
+    openapi_url=None if _is_sensitive else "/openapi.json",
 )
 
 app.add_middleware(RequestBodyLimitMiddleware, max_body_size=1_048_576)

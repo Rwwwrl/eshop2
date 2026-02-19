@@ -5,6 +5,7 @@ from libs.common.enums import EnvironmentEnum, ServiceNameEnum
 from libs.logging.enums import ProcessTypeEnum
 from libs.logging.formatters import DevFormatter, GKEJsonFormatter
 from libs.logging.settings import LoggingSettingsMixin
+from libs.settings.utils import is_stand_env
 
 
 def setup_logging(settings: LoggingSettingsMixin, service_name: ServiceNameEnum, process_type: ProcessTypeEnum) -> None:
@@ -17,11 +18,12 @@ def setup_logging(settings: LoggingSettingsMixin, service_name: ServiceNameEnum,
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(log_level)
 
-    match settings.environment:
-        case EnvironmentEnum.DEV | EnvironmentEnum.CICD:
-            handler.setFormatter(DevFormatter(service_name=service_name, process_type=process_type))
-        case EnvironmentEnum.TEST | EnvironmentEnum.PROD:
-            handler.setFormatter(GKEJsonFormatter(service_name=service_name, process_type=process_type))
+    if is_stand_env(environment=settings.environment):
+        handler.setFormatter(GKEJsonFormatter(service_name=service_name, process_type=process_type))
+    elif settings.environment in {EnvironmentEnum.DEV, EnvironmentEnum.CICD}:
+        handler.setFormatter(DevFormatter(service_name=service_name, process_type=process_type))
+    else:
+        raise ValueError(f"Unknown environment: {settings.environment}")
 
     root_logger.addHandler(handler)
 
