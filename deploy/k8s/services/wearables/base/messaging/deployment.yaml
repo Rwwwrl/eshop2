@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: wearables-messaging
 spec:
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: wearables-messaging
@@ -11,6 +13,14 @@ spec:
       labels:
         app: wearables-messaging
     spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: wearables-pool
+      topologySpreadConstraints:
+        - topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: wearables-messaging
       terminationGracePeriodSeconds: 80
       containers:
         - name: wearables-messaging

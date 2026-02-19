@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wearables"
-version = "0.11.2"
+version = "0.11.3"
 description = "Wearables webhook ingestion microservice"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "wearables" }]

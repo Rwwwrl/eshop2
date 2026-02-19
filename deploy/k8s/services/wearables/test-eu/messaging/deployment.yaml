@@ -4,12 +4,12 @@ metadata:
   name: wearables-messaging
 spec:
   replicas: 2
-  strategy:
-    type: Recreate
   template:
     spec:
-      nodeSelector:
-        cloud.google.com/gke-nodepool: wearables-pool
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
       containers:
         - name: wearables-messaging
           image: wearables
