@@ -176,9 +176,9 @@ For each deployment, verify resource configuration matches manifests:
 | api-gateway-http | 50m | 128Mi | 200m | 256Mi |
 | hello-world-http | 50m | 128Mi | 200m | 256Mi |
 | wearables-http | 50m | 128Mi | 200m | 256Mi |
-| wearables-messaging | 50m | 128Mi | 200m | 256Mi |
+| wearables-messaging | 50m | 205Mi | 200m | 430Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
-| redisinsight | 25m | 128Mi | 200m | 256Mi |
+| redisinsight | 100m | 128Mi | 500m | 256Mi |
 
 Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
 

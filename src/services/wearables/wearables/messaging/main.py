@@ -9,6 +9,7 @@ from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_
 from libs.taskiq_ext.middlewares import TaskLifecycleLogMiddleware, TimeLimitMiddleware
 from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqState
 from taskiq.brokers.shared_broker import async_shared_broker
+from taskiq.middlewares.prometheus_middleware import PrometheusMiddleware
 from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
 
 from wearables.settings import settings
@@ -19,6 +20,7 @@ broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
 )
 
 broker.add_middlewares(
+    PrometheusMiddleware(server_port=settings.taskiq_metrics_port),
     TimeLimitMiddleware(default_timeout_seconds=60),
     SmartRetryMiddleware(use_jitter=True),
     TaskLifecycleLogMiddleware(),
