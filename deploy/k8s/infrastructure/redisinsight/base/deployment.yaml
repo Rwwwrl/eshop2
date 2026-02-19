@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redisinsight
+  labels:
+    app: redisinsight
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: redisinsight
+  template:
+    metadata:
+      labels:
+        app: redisinsight
+    spec:
+      # NOTE @sosov: RedisInsight runs as UID/GID 1000 (node user baked into the image).
+      # fsGroup makes the PVC group-writable for GID 1000 so the non-root process can write to /data.
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: redisinsight
+          image: redis/redisinsight:3.0.3
+          ports:
+            - containerPort: 5540
+          volumeMounts:
+            - name: redisinsight-data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5540
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 5540
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: redisinsight-data
+          persistentVolumeClaim:
+            claimName: redisinsight-data

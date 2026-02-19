@@ -36,6 +36,12 @@ Run these checks in parallel:
 | PgBouncer anti-affinity | Pods on different nodes | The two pods must be scheduled on different hostnames |
 | PgBouncer strategy | `kubectl get deployment pgbouncer -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
 | PgBouncer probes | `kubectl get deployment pgbouncer -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | TCP socket on port 5432 |
+| RedisInsight running | `kubectl get pods -l app=redisinsight` | 1 pod Running, container ready |
+| RedisInsight node pool | `kubectl get pods -l app=redisinsight -o wide` | Pod on `default-pool` node |
+| RedisInsight strategy | `kubectl get deployment redisinsight -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
+| RedisInsight probes | `kubectl get deployment redisinsight -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | HTTP GET on `/api/health` port 5540 |
+| RedisInsight fsGroup | `kubectl get deployment redisinsight -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'` | `1000` |
+| RedisInsight PVC bound | `kubectl get pvc redisinsight-data` | Status `Bound` |
 
 ## 3. Pod Health (all namespaces)
 
@@ -99,6 +105,7 @@ Run: `kubectl get ingress`
 |-------|----------|---------------|
 | api-gateway-ingress exists | Host: `test.eshop-test.com`, TLS secret: `eshop-test-wildcard-tls` | `kubectl get ingress api-gateway-ingress -o yaml` |
 | wearables-ingress exists | Host: `wearables-test.eshop-test.com`, TLS secret: `eshop-test-wildcard-tls` | `kubectl get ingress wearables-ingress -o yaml` |
+| redisinsight-ingress exists | Host: `redisinsight-test.eshop-test.com`, TLS secret: `eshop-test-wildcard-tls`, basic auth enabled | `kubectl get ingress redisinsight-ingress -o yaml` — must have `nginx.org/basic-auth-secret` annotation |
 
 ### NGINX Ingress Controller
 
@@ -118,12 +125,16 @@ curl -s -o /dev/null -w "%{http_code}" -H "Host: test.eshop-test.com" http://34.
 
 # Should return 308 redirect to HTTPS
 curl -s -o /dev/null -w "%{http_code}" -H "Host: wearables-test.eshop-test.com" http://34.159.106.171/health
+
+# Should return 308 redirect to HTTPS
+curl -s -o /dev/null -w "%{http_code}" -H "Host: redisinsight-test.eshop-test.com" http://34.159.106.171/api/health
 ```
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
 | api-gateway HTTP redirect | HTTP request returns 301 or 308 status | curl command above |
 | wearables HTTP redirect | HTTP request returns 301 or 308 status | curl command above |
+| redisinsight HTTP redirect | HTTP request returns 301 or 308 status | curl command above |
 
 ### TLS endpoints reachable
 
@@ -133,12 +144,16 @@ curl -s -o /dev/null -w "%{http_code}" https://test.eshop-test.com/health
 
 # Should return 200
 curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/health
+
+# Should return 401 (basic auth required)
+curl -s -o /dev/null -w "%{http_code}" https://redisinsight-test.eshop-test.com/api/health
 ```
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
 | api-gateway HTTPS reachable | Returns 200 on /health | curl command above |
 | wearables HTTPS reachable | Returns 200 on /health | curl command above |
+| redisinsight HTTPS basic auth | Returns 401 on /api/health (no credentials) | curl command above |
 | TLS certificate valid | curl succeeds without `--insecure` flag | If curl fails with SSL error, certificate is invalid |
 
 ## 6. Services & DNS Resolution
@@ -149,6 +164,7 @@ curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/hea
 | hello-world-http ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc hello-world-http` |
 | wearables-http ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc wearables-http` |
 | pgbouncer ClusterIP service exists | Port 5432 -> 5432 | `kubectl get svc pgbouncer` |
+| redisinsight ClusterIP service exists | Port 80 -> 5540 | `kubectl get svc redisinsight` |
 | Internal DNS resolution | Services resolvable within cluster | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup api-gateway-http.default.svc.cluster.local` (skip if impractical) |
 
 ## 7. Resource Requests & Limits
@@ -162,6 +178,7 @@ For each deployment, verify resource configuration matches manifests:
 | wearables-http | 50m | 128Mi | 200m | 256Mi |
 | wearables-messaging | 50m | 128Mi | 200m | 256Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
+| redisinsight | 25m | 128Mi | 200m | 256Mi |
 
 Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
 
