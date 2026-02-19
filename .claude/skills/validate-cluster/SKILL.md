@@ -91,6 +91,7 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 |-------|----------|---------------|
 | Replicas | 2 Running pods | `kubectl get deployment wearables-messaging -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-messaging -o wide` — NODE column must be wearables-pool nodes |
+| Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
 | Strategy | Recreate (not RollingUpdate) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.strategy.type}'` = `Recreate` |
 | Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — must use exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
 | Health | Probes passing, no restarts | No restart count incrementing, pods in Running state |
@@ -176,9 +177,9 @@ For each deployment, verify resource configuration matches manifests:
 | api-gateway-http | 50m | 128Mi | 200m | 256Mi |
 | hello-world-http | 50m | 128Mi | 200m | 256Mi |
 | wearables-http | 50m | 128Mi | 200m | 256Mi |
-| wearables-messaging | 50m | 128Mi | 200m | 256Mi |
+| wearables-messaging | 50m | 205Mi | 200m | 430Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
-| redisinsight | 25m | 128Mi | 200m | 256Mi |
+| redisinsight | 100m | 128Mi | 500m | 256Mi |
 
 Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
 

@@ -6,18 +6,10 @@ metadata:
     # Basic auth
     nginx.org/basic-auth-secret: "redisinsight-basic-auth"
     nginx.org/basic-auth-realm: "RedisInsight"
-    # Rate limiting (10r/s per IP, burst 20) — admin-only tool
-    nginx.org/limit-req-rate: "10r/s"
-    nginx.org/limit-req-key: "${binary_remote_addr}"
-    nginx.org/limit-req-zone-size: "5M"
-    nginx.org/limit-req-burst: "20"
-    nginx.org/limit-req-no-delay: "true"
-    nginx.org/limit-req-reject-code: "429"
-    nginx.org/limit-req-log-level: "warn"
-    # Timeout configuration
+    # Timeout configuration (read/send high for WebSocket + slow Redis commands)
     nginx.org/proxy-connect-timeout: "10s"
-    nginx.org/proxy-send-timeout: "20s"
-    nginx.org/proxy-read-timeout: "20s"
+    nginx.org/proxy-send-timeout: "120s"
+    nginx.org/proxy-read-timeout: "120s"
 spec:
   ingressClassName: nginx
   tls:

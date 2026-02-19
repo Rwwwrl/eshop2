@@ -46,6 +46,8 @@ kind: Deployment
 metadata:
   name: wearables-messaging
 spec:
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: wearables-messaging
@@ -54,6 +56,14 @@ spec:
       labels:
         app: wearables-messaging
     spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: wearables-pool
+      topologySpreadConstraints:
+        - topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: wearables-messaging
       terminationGracePeriodSeconds: 80
       containers:
         - name: wearables-messaging
@@ -94,6 +104,7 @@ Rules:
 - No Service resource needed (worker doesn't receive traffic)
 - Always set `terminationGracePeriodSeconds` to cover full shutdown (wait-tasks + shutdown + buffer)
 - Always set `--wait-tasks-timeout` and `--shutdown-timeout` explicitly
+- Base includes `strategy: Recreate`, `nodeSelector`, and `topologySpreadConstraints` (without `maxSkew`) — overlays set `replicas`, `maxSkew`, and `image`
 
 ## Graceful Shutdown
 

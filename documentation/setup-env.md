@@ -15,10 +15,9 @@
 1. [Prerequisites](#prerequisites)
 2. [Local Development Setup](#local-development-setup)
 3. [Docker Setup](#docker-setup)
-4. [Kubernetes Local Development (dev)](#kubernetes-local-development-dev)
-5. [GCP & GKE Setup](#gcp--gke-setup)
-6. [GKE Standard Cluster Setup (Console UI)](#gke-standard-cluster-setup-console-ui)
-7. [Deploy via CI/CD](#deploy-via-cicd)
+4. [GCP & GKE Setup](#gcp--gke-setup)
+5. [GKE Standard Cluster Setup (Console UI)](#gke-standard-cluster-setup-console-ui)
+6. [Deploy via CI/CD](#deploy-via-cicd)
 
 ## Cluster Lifecycle Scripts
 
@@ -116,39 +115,6 @@ poetry run pytest -c pytest.ini
 docker build -t api-gateway:latest src/services/api_gateway
 docker build -t hello-world:latest src/services/hello_world
 ```
-
----
-
-## Kubernetes Local Development (dev)
-
-### 1. Build Docker images locally
-
-```bash
-docker build -t api-gateway:latest src/services/api_gateway
-docker build -t hello-world:latest src/services/hello_world
-```
-
-### 2. Apply Kubernetes manifests
-
-```bash
-kubectl apply -k deploy/k8s/services/api-gateway/dev
-kubectl apply -k deploy/k8s/services/hello-world/dev
-```
-
-### 3. Verify deployment
-
-```bash
-kubectl get pods
-kubectl get services
-```
-
-### 4. Access the api-gateway
-
-```bash
-kubectl port-forward svc/api-gateway 8080:80
-```
-
-Access at `localhost:8080`.
 
 ---
 

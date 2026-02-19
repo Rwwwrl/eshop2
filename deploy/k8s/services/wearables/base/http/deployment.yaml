@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: wearables-http
 spec:
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: wearables-http
@@ -11,6 +13,14 @@ spec:
       labels:
         app: wearables-http
     spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: wearables-pool
+      topologySpreadConstraints:
+        - topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: wearables-http
       containers:
         - name: wearables
           command: ["poetry", "run", "uvicorn", "wearables.http.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]

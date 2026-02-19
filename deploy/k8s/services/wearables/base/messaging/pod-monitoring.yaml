@@ -1,0 +1,12 @@
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: wearables-messaging
+spec:
+  selector:
+    matchLabels:
+      app: wearables-messaging
+  endpoints:
+    - port: 9090
+      interval: 30s
+      path: /metrics
