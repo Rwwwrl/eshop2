@@ -4,7 +4,7 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
 
 from libs.common.enums import EnvironmentEnum
-from libs.settings import is_stand_env
+from libs.settings import is_data_sensitive_env, is_stand_env
 
 
 class SentrySettingsMixin(BaseSettings):
@@ -24,7 +24,7 @@ class SentrySettingsMixin(BaseSettings):
                 errors.append("sentry_send_pii is required for stand environments")
             if self.sentry_traces_sample_rate is None:
                 errors.append("sentry_traces_sample_rate is required for stand environments")
-            if self.environment == EnvironmentEnum.PROD and self.sentry_send_pii is True:
+            if is_data_sensitive_env(environment=self.environment) and self.sentry_send_pii is True:
                 errors.append("sentry_send_pii must be False in production")
         else:
             if self.sentry_dsn is not None:
