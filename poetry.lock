@@ -3178,7 +3178,7 @@ files = [
 
 [[package]]
 name = "wearables"
-version = "0.14.0"
+version = "0.14.2"
 description = "Wearables webhook ingestion microservice"
 optional = false
 python-versions = "^3.14"
