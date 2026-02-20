@@ -13,6 +13,7 @@ from libs.fastapi_ext.middlewares import (
 )
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
+from libs.prometheus_ext import setup_fastapi_prometheus
 from libs.sentry_ext import setup_sentry
 from libs.settings import is_data_sensitive_env
 from libs.sqlmodel_ext import Session
@@ -62,3 +63,5 @@ app.add_middleware(RequestResponseLoggingMiddleware)
 app.add_middleware(RequestIdMiddleware)
 
 app.include_router(router=router)
+
+setup_fastapi_prometheus(app=app)
