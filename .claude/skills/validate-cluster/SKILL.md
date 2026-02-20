@@ -44,6 +44,12 @@ Run these checks in parallel:
 | RedisInsight PVC bound | `kubectl get pvc redisinsight-data` | Status `Bound` |
 | KEDA operator running | `kubectl get pods -n keda` | 3 pods Running (operator, metrics-apiserver, admission-webhooks) |
 | Redis auth secret exists | `kubectl get secret redis-auth` | Secret exists |
+| redis-exporter running | `kubectl get pods -l app=redis-exporter` | 1 pod Running, container ready |
+| redis-exporter node pool | `kubectl get pods -l app=redis-exporter -o wide` | Pod on `default-pool` node |
+| redis-exporter strategy | `kubectl get deployment redis-exporter -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
+| redis-exporter probes | `kubectl get deployment redis-exporter -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | HTTP GET on `/health` port 9121 |
+| redis-exporter streams flag | `kubectl get deployment redis-exporter -o jsonpath='{.spec.template.spec.containers[0].args}'` | Contains `--check-streams=taskiq` |
+| redis-exporter PodMonitoring | `kubectl get podmonitoring redis-exporter -o jsonpath='{.spec.endpoints[0].port}'` | `9121` |
 
 ## 3. Pod Health (all namespaces)
 
@@ -191,6 +197,7 @@ For each deployment, verify resource configuration matches manifests:
 | wearables-messaging | 50m | 205Mi | 200m | 430Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
 | redisinsight | 100m | 128Mi | 500m | 256Mi |
+| redis-exporter | 50m | 64Mi | 100m | 128Mi |
 
 Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
 
