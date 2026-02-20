@@ -74,7 +74,7 @@ src/services/wearables/
 
 ## conftest.py Templates
 
-See [references/conftest_templates.md](references/conftest_templates.md) for unit test and DB integration conftest patterns.
+See [references/conftest_templates.md](references/conftest_templates.md) for unit test and DB integration conftest patterns, plus representative test examples.
 
 ## Mock Patterns
 

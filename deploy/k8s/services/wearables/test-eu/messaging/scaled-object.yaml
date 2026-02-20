@@ -12,7 +12,7 @@ spec:
   triggers:
     - type: redis-streams
       metadata:
-        address: 10.239.38.107:6379
+        address: redis-18185.crce275.eu-west3-1.gcp.cloud.redislabs.com:18185
         stream: taskiq
         consumerGroup: taskiq
         lagCount: "300"

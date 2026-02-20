@@ -70,16 +70,18 @@ Reference files are plain markdown (no frontmatter). Link them from SKILL.md.
 
 When the user asks to update or create a skill:
 
-1. **Read the current skill** (if updating) to understand existing content and structure.
+1. **Read the current skill** (if updating) — read SKILL.md and all files under `references/`. Missing a reference file risks creating duplicate content.
 2. **Ask clarifying questions** if the user's input is ambiguous about where the new info belongs.
-3. **Integrate the new information** into the existing structure. Don't just append — find the right section or create a new one that fits the document flow.
-4. **For new skills:** create the directory, SKILL.md with proper frontmatter, and references/ if needed.
-5. **Update this skill's "Existing Skills" table** when creating a new skill.
-6. **Show the user what changed** — summarize the edits made.
+3. **Decide where new content belongs** — SKILL.md for core patterns and quick reference; a `references/` file for deep dives, full templates, or content that would bloat SKILL.md. Never put the same content in both.
+4. **Integrate the new information** into the existing structure. Don't just append — find the right section or create a new one that fits the document flow.
+5. **For new skills:** create the directory, SKILL.md with proper frontmatter, and references/ if needed.
+6. **Update this skill's "Existing Skills" table** when creating a new skill.
+7. **Show the user what changed** — summarize the edits made.
 
 ## What NOT to Do
 
 - Don't create a skill for something that belongs in CLAUDE.md (project-wide coding standards).
 - Don't duplicate content across skills. Cross-reference instead.
+- Don't duplicate content within a skill. If a pattern exists in a `references/` file, don't repeat it in SKILL.md or another reference file — link to it.
 - Don't make skills too granular — one skill per domain area, not per feature.
 - Don't add `user_invocable: true` unless the skill is meant to be explicitly triggered by the user (like `version` or `validate-cluster`). Most skills are auto-triggered by context.
