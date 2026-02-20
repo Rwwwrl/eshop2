@@ -19,7 +19,7 @@ async def hello_world_task(context: Annotated[Context, TaskiqDepends()]) -> str:
 
 @async_shared_broker.task()
 async def process_5_min_batch() -> str:
-    time.sleep(1)
+    await asyncio.to_thread(time.sleep, 1)
     return f"foo {uuid4()}"
 
 
