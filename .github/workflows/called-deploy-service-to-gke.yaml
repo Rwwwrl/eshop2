@@ -106,7 +106,9 @@ jobs:
 
       - name: Wait for messaging rollout
         if: ${{ inputs.run_messaging_deployment }}
-        run: kubectl rollout status deployment/${{ inputs.service_name }}-messaging --timeout=300s
+        run: |
+          kubectl rollout status deployment/${{ inputs.service_name }}-messaging --timeout=300s
+          kubectl rollout status deployment/${{ inputs.service_name }}-scheduler --timeout=300s
 
       - name: Deploy http with kustomize
         env:

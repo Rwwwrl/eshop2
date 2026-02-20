@@ -7,9 +7,10 @@ from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop
 from libs.taskiq_ext.middlewares import TaskLifecycleLogMiddleware, TimeLimitMiddleware
-from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqState
+from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqState
 from taskiq.brokers.shared_broker import async_shared_broker
 from taskiq.middlewares.prometheus_middleware import PrometheusMiddleware
+from taskiq.schedule_sources import LabelScheduleSource
 from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
 
 from wearables.settings import settings
@@ -19,6 +20,11 @@ broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
     result_backend=RedisAsyncResultBackend(
         redis_url=settings.taskiq_redis_url, result_ex_time=7 * 60 * 60 * 24
     )  # 1 week
+)
+
+scheduler = TaskiqScheduler(
+    broker=broker,
+    sources=[LabelScheduleSource(broker)],
 )
 
 broker.add_middlewares(

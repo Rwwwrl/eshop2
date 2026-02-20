@@ -5,7 +5,8 @@
 ```
 deploy/k8s/services/<service>/
     base/messaging/
-        deployment.yaml
+        workers-deployment.yaml
+        scheduler-deployment.yaml
         kustomization.yaml
     <env>/messaging/
         deployment.yaml
@@ -106,6 +107,50 @@ Rules:
 - Always set `--wait-tasks-timeout` and `--shutdown-timeout` explicitly
 - Base includes `strategy: Recreate`, `nodeSelector`, and `topologySpreadConstraints` (without `maxSkew`) — overlays set `replicas`, `maxSkew`, and `image`
 
+## Scheduler Deployment
+
+The scheduler is a separate process that only dispatches scheduled tasks to the broker — it does not execute them.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wearables-scheduler
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: wearables-scheduler
+  template:
+    metadata:
+      labels:
+        app: wearables-scheduler
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: wearables-pool
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: wearables-scheduler
+          command: ["poetry", "run", "taskiq", "scheduler", "wearables.messaging.main:scheduler", "wearables.messaging.handlers", "--skip-first-run"]
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "100Mi"
+            limits:
+              cpu: "100m"
+              memory: "200Mi"
+```
+
+Rules:
+- **Exactly 1 replica** — multiple schedulers = duplicate task dispatches
+- **`strategy: Recreate`** — prevents two schedulers running during rollout
+- **`--skip-first-run`** — on startup, the scheduler checks for overdue tasks and would fire them all immediately. This flag waits for the next natural cron tick instead, preventing a burst on every deploy/restart
+- Handler modules must be passed as CLI args (e.g., `wearables.messaging.handlers`) so the scheduler can read `schedule=[...]` labels
+- Lightweight resources — scheduler only polls schedule sources and calls `.kiq()`, no task execution
+- No `WORKER_STARTUP`/`WORKER_SHUTDOWN` events fire in the scheduler process — those are worker-only
+
 ## Graceful Shutdown
 
 K8s pod termination sends exactly **one SIGTERM**, then **one SIGKILL** when `terminationGracePeriodSeconds` expires. No retries, no second SIGTERM.
@@ -158,4 +203,6 @@ run_messaging_deployment:
   default: false
 ```
 
-Enable it for services that have a messaging worker.
+Enable it for services that have a messaging worker. The workflow:
+1. Runs `kustomize build . | kubectl apply -f -` in the messaging overlay — deploys both worker and scheduler
+2. Waits for both rollouts: `<service>-messaging` and `<service>-scheduler`

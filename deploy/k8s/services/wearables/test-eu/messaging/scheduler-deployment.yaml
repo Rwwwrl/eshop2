@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wearables-scheduler
+spec:
+  template:
+    spec:
+      containers:
+        - name: wearables-scheduler
+          image: wearables
+          imagePullPolicy: Always

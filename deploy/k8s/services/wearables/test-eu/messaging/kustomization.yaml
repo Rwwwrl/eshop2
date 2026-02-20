@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
   - ../../base/messaging
 patches:
-  - path: deployment.yaml
+  - path: workers-deployment.yaml
+  - path: scheduler-deployment.yaml
