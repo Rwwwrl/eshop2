@@ -23,7 +23,7 @@ async def process_5_min_batch() -> str:
     return f"foo {uuid4()}"
 
 
-@async_shared_broker.task(schedule=[{"cron": "*/5 * * * *"}])
+@async_shared_broker.task(schedule=[{"cron": "*/10 * * * *"}])
 async def dispatch_wearable_events() -> str:
     sem = asyncio.Semaphore(200)
 
@@ -32,7 +32,7 @@ async def dispatch_wearable_events() -> str:
             await process_5_min_batch.kiq()
 
     async with asyncio.TaskGroup() as tg:
-        for _ in range(1500):
+        for _ in range(2400):
             tg.create_task(_kick())
 
-    return "Dispatched 1500 tasks"
+    return "Dispatched 2400 tasks"

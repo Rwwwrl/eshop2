@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: wearables-messaging
 spec:
-  replicas: 2
   template:
     spec:
       topologySpreadConstraints:
