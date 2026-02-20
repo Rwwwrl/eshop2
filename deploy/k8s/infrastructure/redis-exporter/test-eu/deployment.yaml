@@ -11,7 +11,7 @@ spec:
         - name: redis-exporter
           env:
             - name: REDIS_ADDR
-              value: "redis://10.239.38.107:6379"
+              value: "redis://redis-18185.crce275.eu-west3-1.gcp.cloud.redislabs.com:18185"
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
