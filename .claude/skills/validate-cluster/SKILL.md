@@ -42,6 +42,8 @@ Run these checks in parallel:
 | RedisInsight probes | `kubectl get deployment redisinsight -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | HTTP GET on `/api/health` port 5540 |
 | RedisInsight fsGroup | `kubectl get deployment redisinsight -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'` | `1000` |
 | RedisInsight PVC bound | `kubectl get pvc redisinsight-data` | Status `Bound` |
+| KEDA operator running | `kubectl get pods -n keda` | 3 pods Running (operator, metrics-apiserver, admission-webhooks) |
+| Redis auth secret exists | `kubectl get secret redis-auth` | Secret exists |
 
 ## 3. Pod Health (all namespaces)
 
@@ -92,13 +94,18 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | 2 Running pods | `kubectl get deployment wearables-messaging -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Replicas | >= 2 Running pods (KEDA-managed) | `kubectl get deployment wearables-messaging -o jsonpath='{.status.readyReplicas}'` >= 2 |
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-messaging -o wide` — NODE column must be wearables-pool nodes |
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
 | Strategy | Recreate (not RollingUpdate) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.strategy.type}'` = `Recreate` |
 | Graceful shutdown | terminationGracePeriodSeconds=80 | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 80 |
 | Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — must use exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
 | Health | Probes passing, no restarts | No restart count incrementing, pods in Running state |
+| ScaledObject ready | READY=True | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
+| ScaledObject target | Targets wearables-messaging | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.scaleTargetRef.name}'` = `wearables-messaging` |
+| ScaledObject min/max | minReplicaCount=2, maxReplicaCount=10 | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.minReplicaCount}'` = 2 and `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.maxReplicaCount}'` = 10 |
+| HPA created by KEDA | HPA exists for wearables-messaging | `kubectl get hpa` — should show an HPA targeting wearables-messaging |
+| TriggerAuthentication exists | redis-trigger-auth present | `kubectl get triggerauthentication redis-trigger-auth` — must exist |
 
 ## 5. Ingress & TLS
 

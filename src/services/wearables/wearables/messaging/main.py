@@ -24,7 +24,7 @@ broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
 
 scheduler = TaskiqScheduler(
     broker=broker,
-    sources=[LabelScheduleSource(broker)],
+    sources=[LabelScheduleSource(async_shared_broker)],
 )
 
 broker.add_middlewares(

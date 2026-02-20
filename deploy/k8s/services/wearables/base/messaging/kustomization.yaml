@@ -4,3 +4,4 @@ resources:
   - workers-deployment.yaml
   - scheduler-deployment.yaml
   - pod-monitoring.yaml
+  - trigger-auth.yaml

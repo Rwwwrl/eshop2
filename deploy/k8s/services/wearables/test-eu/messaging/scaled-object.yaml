@@ -1,0 +1,21 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: wearables-worker-scaler
+spec:
+  scaleTargetRef:
+    name: wearables-messaging
+  pollingInterval: 5
+  cooldownPeriod: 300
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  triggers:
+    - type: redis-streams
+      metadata:
+        address: 10.239.38.107:6379
+        stream: taskiq
+        consumerGroup: taskiq
+        pendingEntriesCount: "300"
+        databaseIndex: "0"
+      authenticationRef:
+        name: redis-trigger-auth

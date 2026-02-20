@@ -2,6 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base/messaging
+  - scaled-object.yaml
 patches:
   - path: workers-deployment.yaml
   - path: scheduler-deployment.yaml

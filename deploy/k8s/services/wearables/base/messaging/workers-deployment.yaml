@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: wearables-messaging
 spec:
+  # NOTE @sosov: replicas managed by KEDA ScaledObject "wearables-worker-scaler"
   strategy:
     type: Recreate
   selector:
