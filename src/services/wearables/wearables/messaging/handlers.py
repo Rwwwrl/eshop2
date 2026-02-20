@@ -25,18 +25,5 @@ async def process_5_min_batch() -> str:
 
 @async_shared_broker.task(schedule=[{"cron": "*/10 * * * *"}])
 async def dispatch_wearable_events() -> str:
-    # NOTE @sosov: Production approach — throttled dispatch via semaphore:
-    # sem = asyncio.Semaphore(200)
-    #
-    # async def _kick() -> None:
-    #     async with sem:
-    #         await process_5_min_batch.kiq()
-    #
-    # async with asyncio.TaskGroup() as tg:
-    #     for _ in range(2400):
-    #         tg.create_task(_kick())
-
-    # NOTE @sosov: Using gather without throttling to create a message spike in Redis,
-    # so pending entries exceed KEDA's pendingEntriesCount threshold and trigger scaling.
-    await asyncio.gather(*(process_5_min_batch.kiq() for _ in range(2400)))
-    return "Dispatched 2400 tasks"
+    await asyncio.gather(*(process_5_min_batch.kiq() for _ in range(10)))
+    return "Dispatched 10 tasks"
