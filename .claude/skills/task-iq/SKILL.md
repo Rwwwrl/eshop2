@@ -32,17 +32,20 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 ## Architecture
 
 - Worker runs as a **separate process** — same Docker image, different k8s Deployment
+- Scheduler runs as a **third process** — dispatches scheduled tasks to the broker on cron/interval
 - One worker process per pod (`--workers 1`), scale horizontally with k8s replicas
-- `messaging/main.py` configures the real Redis broker and worker lifecycle
+- Exactly **one scheduler replica** — multiple replicas = duplicate task dispatches
+- `messaging/main.py` configures the real Redis broker, scheduler, and worker lifecycle
 - `messaging/handlers.py` defines tasks via `@async_shared_broker.task()` — decoupled from concrete broker
 - HTTP routes enqueue tasks by importing handlers and calling `.kiq()`
 - `async_shared_broker.default_broker(broker)` wires the real broker at worker startup
 
-## Broker Setup (messaging/main.py)
+## Broker & Scheduler Setup (messaging/main.py)
 
 ```python
-from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqState
+from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqState
 from taskiq.brokers.shared_broker import async_shared_broker
+from taskiq.schedule_sources import LabelScheduleSource
 from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
 
 from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop
@@ -50,6 +53,11 @@ from libs.taskiq_ext.middlewares import TimeLimitMiddleware
 
 broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
     result_backend=RedisAsyncResultBackend(redis_url=settings.taskiq_redis_url)
+)
+
+scheduler = TaskiqScheduler(
+    broker=broker,
+    sources=[LabelScheduleSource(broker)],
 )
 
 broker.add_middlewares(
@@ -98,6 +106,55 @@ Rules:
 - Use `Annotated[Context, TaskiqDepends()]` for task context injection
 - Access retry count via `context.message.labels.get("_retries", 0)`
 
+## Scheduled Tasks
+
+Use `schedule=[...]` label on `@async_shared_broker.task()` — `LabelScheduleSource` reads these at scheduler startup.
+
+```python
+# Cron — runs every 5 minutes
+@async_shared_broker.task(schedule=[{"cron": "*/5 * * * *"}])
+async def periodic_job() -> str:
+    return "done"
+
+# Interval — runs every 30 seconds
+@async_shared_broker.task(schedule=[{"interval": 30}])
+async def heartbeat() -> str:
+    return "alive"
+```
+
+Schedule dict keys: `cron` | `interval` | `time` (one-shot). Optional: `args`, `kwargs`, `cron_offset` (timezone).
+
+Rules:
+- The scheduler process must import handler modules to read labels — pass them as CLI args
+- `--skip-first-run` prevents burst of overdue tasks on deploy/restart
+- Scheduler command: `taskiq scheduler <service>.messaging.main:scheduler <service>.messaging.handlers --skip-first-run`
+
+## Bulk Dispatch Pattern
+
+Use `asyncio.Semaphore` + `asyncio.TaskGroup` to dispatch many tasks efficiently. The semaphore caps concurrent Redis calls; TaskGroup cancels all remaining tasks if one fails (e.g., Redis down).
+
+```python
+@async_shared_broker.task(schedule=[{"cron": "*/5 * * * *"}])
+async def dispatch_wearable_events() -> str:
+    sem = asyncio.Semaphore(200)
+
+    async def _kick() -> None:
+        async with sem:
+            await process_5_min_batch.kiq()
+
+    async with asyncio.TaskGroup() as tg:
+        for _ in range(1500):
+            tg.create_task(_kick())
+
+    return "Dispatched 1500 tasks"
+```
+
+Rules:
+- Semaphore concurrency (~200) should roughly match Redis connection pool size
+- TaskGroup over `asyncio.gather` — fail-fast cancellation on errors
+- No built-in bulk dispatch API in TaskIQ — this is the standard asyncio pattern
+- Scales from 1,500 to 30,000+ by changing the count; semaphore ensures backpressure
+
 ## Enqueuing from HTTP Routes
 
 ```python
@@ -129,8 +186,9 @@ Adds `taskiq_redis_url: str` to the settings.
 3. Add `taskiq_redis_url` to `env.yaml` and k8s ConfigMaps
 4. Create `messaging/__init__.py`, `messaging/main.py`, `messaging/handlers.py`
 5. Copy broker setup pattern from wearables — adjust service name in logging/sentry calls
-6. Add k8s manifests: `base/messaging/deployment.yaml` + `kustomization.yaml`, plus environment overlays
+6. Add k8s manifests: `base/messaging/workers-deployment.yaml`, `scheduler-deployment.yaml`, `kustomization.yaml`, plus environment overlays
 7. Set `run_messaging_deployment: true` in CI/CD workflow call
+   - CI waits for both `<service>-messaging` and `<service>-scheduler` rollouts
 8. Add `taskiq_broker` fixture to service `tests/conftest.py`
 9. Add Redis health check to HTTP `/readiness_check` endpoint
 
@@ -204,6 +262,9 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for the full de
 | Retry count access | `context.message.labels.get("_retries", 0)` |
 | Enqueue method | `.kiq()` returns awaitable with `.task_id` |
 | Worker command | `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.messaging.main:broker <service>.messaging.handlers` |
-| Deployment name | `<service>-messaging` |
-| Liveness probe | Heartbeat file at `/tmp/taskiq_heartbeat` |
+| Scheduler command | `taskiq scheduler <service>.messaging.main:scheduler <service>.messaging.handlers --skip-first-run` |
+| Worker deployment name | `<service>-messaging` |
+| Scheduler deployment name | `<service>-scheduler` |
+| Worker liveness probe | Heartbeat file at `/tmp/taskiq_heartbeat` |
+| Scheduler replicas | Exactly 1 (multiple = duplicate dispatches) |
 | Test broker | `InMemoryBroker` via `async_shared_broker.default_broker()` |

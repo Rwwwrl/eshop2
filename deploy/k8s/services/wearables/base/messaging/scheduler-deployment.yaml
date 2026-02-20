@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wearables-scheduler
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: wearables-scheduler
+  template:
+    metadata:
+      labels:
+        app: wearables-scheduler
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: wearables-pool
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: wearables-scheduler
+          # NOTE @sosov: --skip-first-run prevents burst of all overdue tasks on deploy/restart.
+          # Waits for the next natural cron tick instead.
+          command: ["poetry", "run", "taskiq", "scheduler", "wearables.messaging.main:scheduler", "wearables.messaging.handlers", "--skip-first-run"]
+          # NOTE @sosov: No liveness probe intentionally. The scheduler is a lightweight
+          # dispatch-only process. If it crashes, k8s restartPolicy handles it.
+          # A hung-process scenario is theoretically possible but not a real problem yet.
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "100Mi"
+            limits:
+              cpu: "100m"
+              memory: "200Mi"
