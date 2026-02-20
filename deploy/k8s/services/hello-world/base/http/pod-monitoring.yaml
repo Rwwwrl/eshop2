@@ -1,0 +1,12 @@
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: hello-world-http
+spec:
+  selector:
+    matchLabels:
+      app: hello-world-http
+  endpoints:
+    - port: 8000
+      interval: 30s
+      path: /metrics

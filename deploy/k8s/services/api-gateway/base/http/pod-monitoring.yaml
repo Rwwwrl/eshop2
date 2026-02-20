@@ -1,0 +1,12 @@
+apiVersion: monitoring.googleapis.com/v1
+kind: PodMonitoring
+metadata:
+  name: api-gateway-http
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway-http
+  endpoints:
+    - port: 8000
+      interval: 30s
+      path: /metrics

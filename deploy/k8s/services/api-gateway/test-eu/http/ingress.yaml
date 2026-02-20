@@ -11,6 +11,10 @@ metadata:
     nginx.org/limit-req-burst: "30"
     nginx.org/limit-req-no-delay: "true"
     nginx.org/limit-req-reject-code: "429"
+    nginx.org/server-snippets: |
+      location = /metrics {
+        return 403;
+      }
     # Timeout configuration
     nginx.org/proxy-connect-timeout: "10s"
     nginx.org/proxy-send-timeout: "60s"
