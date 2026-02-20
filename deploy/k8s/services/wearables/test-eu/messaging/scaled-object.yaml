@@ -15,7 +15,7 @@ spec:
         address: 10.239.38.107:6379
         stream: taskiq
         consumerGroup: taskiq
-        pendingEntriesCount: "300"
+        lagCount: "300"
         databaseIndex: "0"
       authenticationRef:
         name: redis-trigger-auth
