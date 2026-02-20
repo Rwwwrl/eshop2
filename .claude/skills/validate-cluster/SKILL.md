@@ -14,11 +14,11 @@ If `kubectl` is not configured or the cluster is unreachable, stop immediately a
 
 Run: `kubectl get nodes -o wide`
 
-| Check | Expected | How to verify |
-|-------|----------|---------------|
-| All nodes Ready | Every node shows `STATUS=Ready` | No node in `NotReady`, `SchedulingDisabled`, or unknown state |
-| default-pool node count | >= 3 nodes with label `cloud.google.com/gke-nodepool=default-pool` | `kubectl get nodes -l cloud.google.com/gke-nodepool=default-pool` |
-| wearables-pool node count | >= 2 nodes with label `cloud.google.com/gke-nodepool=wearables-pool` | `kubectl get nodes -l cloud.google.com/gke-nodepool=wearables-pool` |
+| Check | Expected |
+|-------|----------|
+| All nodes Ready | Every node shows `STATUS=Ready` — no `NotReady`, `SchedulingDisabled`, or unknown state |
+| default-pool count >= 3 | `kubectl get nodes -l cloud.google.com/gke-nodepool=default-pool` returns >= 3 nodes |
+| wearables-pool count >= 2 | `kubectl get nodes -l cloud.google.com/gke-nodepool=wearables-pool` returns >= 2 nodes |
 
 ## 2. System Components
 
@@ -33,15 +33,9 @@ Run these checks in parallel:
 | Certificate not expired | `kubectl get certificate eshop-test-wildcard-tls -o jsonpath='{.status.notAfter}'` | Date is in the future |
 | PgBouncer running | `kubectl get pods -l app=pgbouncer` | 2 pods Running, containers ready |
 | PgBouncer node pool | `kubectl get pods -l app=pgbouncer -o wide` | All pods on `default-pool` nodes |
-| PgBouncer anti-affinity | Pods on different nodes | The two pods must be scheduled on different hostnames |
+| PgBouncer anti-affinity | `kubectl get pods -l app=pgbouncer -o wide` | Two pods on different hostnames |
 | PgBouncer strategy | `kubectl get deployment pgbouncer -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
 | PgBouncer probes | `kubectl get deployment pgbouncer -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | TCP socket on port 5432 |
-| RedisInsight running | `kubectl get pods -l app=redisinsight` | 1 pod Running, container ready |
-| RedisInsight node pool | `kubectl get pods -l app=redisinsight -o wide` | Pod on `default-pool` node |
-| RedisInsight strategy | `kubectl get deployment redisinsight -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
-| RedisInsight probes | `kubectl get deployment redisinsight -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | HTTP GET on `/api/health` port 5540 |
-| RedisInsight fsGroup | `kubectl get deployment redisinsight -o jsonpath='{.spec.template.spec.securityContext.fsGroup}'` | `1000` |
-| RedisInsight PVC bound | `kubectl get pvc redisinsight-data` | Status `Bound` |
 | KEDA operator running | `kubectl get pods -n keda` | 3 pods Running (operator, metrics-apiserver, admission-webhooks) |
 | Redis auth secret exists | `kubectl get secret redis-auth` | Secret exists |
 | redis-exporter running | `kubectl get pods -l app=redis-exporter` | 1 pod Running, container ready |
@@ -55,16 +49,16 @@ Run these checks in parallel:
 
 Run: `kubectl get pods -A`
 
-| Check | Expected | How to verify |
-|-------|----------|---------------|
-| No Pending pods | Zero pods in `Pending` state | `kubectl get pods -A --field-selector=status.phase=Pending` |
-| No CrashLoopBackOff | Zero pods with CrashLoopBackOff | `kubectl get pods -A -o jsonpath='{range .items[*]}{.metadata.name}{" "}{range .status.containerStatuses[*]}{.state.waiting.reason}{end}{"\n"}{end}'` and grep for CrashLoopBackOff |
-| No ImagePullBackOff | Zero pods with ImagePullBackOff or ErrImagePull | Same approach, grep for ImagePullBackOff or ErrImagePull |
-| All pods containers ready | Every pod has all containers ready | Check READY column shows `N/N` (all containers) |
+| Check | Expected |
+|-------|----------|
+| No Pending pods | `kubectl get pods -A --field-selector=status.phase=Pending` returns zero rows |
+| No CrashLoopBackOff | Grep containerStatuses waiting.reason for CrashLoopBackOff — zero matches |
+| No ImagePullBackOff | Same approach, grep for ImagePullBackOff or ErrImagePull — zero matches |
+| All containers ready | Every pod READY column shows `N/N` |
 
 ## 4. Service Deployments (test-eu)
 
-For each deployment (HTTP servers and messaging workers), verify replica count and scheduling:
+For each deployment, verify replica count and scheduling:
 
 ### api-gateway-http
 
@@ -73,7 +67,7 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 | Replicas | 2 Running pods | `kubectl get deployment api-gateway-http -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=api-gateway-http -o wide` — NODE column must be default-pool nodes |
 | Anti-affinity | Pods on different nodes | The two pods must be scheduled on different hostnames (required anti-affinity) |
-| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment api-gateway-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and `kubectl get deployment api-gateway-http -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command}'` contains `sleep` `10` |
+| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment api-gateway-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and preStop exec contains `sleep` `10` |
 | Health endpoints | Liveness and readiness probes passing | No restart count incrementing, pods in Running state |
 
 ### hello-world-http
@@ -83,7 +77,7 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 | Replicas | 2 Running pods | `kubectl get deployment hello-world-http -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=hello-world-http -o wide` — NODE column must be default-pool nodes |
 | Anti-affinity | Pods preferably on different nodes | Preferred (weight 100), so warn if co-located but don't fail |
-| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment hello-world-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and `kubectl get deployment hello-world-http -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command}'` contains `sleep` `10` |
+| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment hello-world-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and preStop exec contains `sleep` `10` |
 | Health endpoints | Probes passing | No restart count incrementing |
 
 ### wearables-http
@@ -92,8 +86,8 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 |-------|----------|---------------|
 | Replicas | 2 Running pods | `kubectl get deployment wearables-http -o jsonpath='{.status.readyReplicas}'` = 2 |
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-http -o wide` — NODE column must be wearables-pool nodes |
-| Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
-| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment wearables-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and `kubectl get deployment wearables-http -o jsonpath='{.spec.template.spec.containers[0].lifecycle.preStop.exec.command}'` contains `sleep` `10` |
+| Topology spread | maxSkew <= 1 across hostnames | Count pods per node; difference between most-loaded and least-loaded node must be <= 1 |
+| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment wearables-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and preStop exec contains `sleep` `10` |
 | Health endpoints | Probes passing | No restart count incrementing |
 
 ### wearables-messaging (TaskIQ worker)
@@ -102,14 +96,14 @@ For each deployment (HTTP servers and messaging workers), verify replica count a
 |-------|----------|---------------|
 | Replicas | >= 2 Running pods (KEDA-managed) | `kubectl get deployment wearables-messaging -o jsonpath='{.status.readyReplicas}'` >= 2 |
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-messaging -o wide` — NODE column must be wearables-pool nodes |
-| Topology spread | maxSkew <= 1 across hostnames | Count pods per node; the difference between the most-loaded and least-loaded node must be <= 1 |
+| Topology spread | maxSkew <= 1 across hostnames | Count pods per node; difference between most-loaded and least-loaded node must be <= 1 |
 | Strategy | Recreate (not RollingUpdate) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.strategy.type}'` = `Recreate` |
 | Graceful shutdown | terminationGracePeriodSeconds=80 | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 80 |
-| Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — must use exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
+| Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
 | Health | Probes passing, no restarts | No restart count incrementing, pods in Running state |
 | ScaledObject ready | READY=True | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | ScaledObject target | Targets wearables-messaging | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.scaleTargetRef.name}'` = `wearables-messaging` |
-| ScaledObject min/max | minReplicaCount=2, maxReplicaCount=10 | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.minReplicaCount}'` = 2 and `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.maxReplicaCount}'` = 10 |
+| ScaledObject min/max | minReplicaCount=2, maxReplicaCount=10 | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.minReplicaCount}'` = 2 and `{.spec.maxReplicaCount}` = 10 |
 | HPA created by KEDA | HPA exists for wearables-messaging | `kubectl get hpa` — should show an HPA targeting wearables-messaging |
 | TriggerAuthentication exists | redis-trigger-auth present | `kubectl get triggerauthentication redis-trigger-auth` — must exist |
 
@@ -123,7 +117,6 @@ Run: `kubectl get ingress`
 |-------|----------|---------------|
 | api-gateway-ingress exists | Host: `test.eshop-test.com`, TLS secret: `eshop-test-wildcard-tls` | `kubectl get ingress api-gateway-ingress -o yaml` |
 | wearables-ingress exists | Host: `wearables-test.eshop-test.com`, TLS secret: `eshop-test-wildcard-tls` | `kubectl get ingress wearables-ingress -o yaml` |
-| redisinsight-ingress exists | Host: `redisinsight-test.eshop-test.com`, TLS secret: `eshop-test-wildcard-tls`, basic auth enabled | `kubectl get ingress redisinsight-ingress -o yaml` — must have `nginx.org/basic-auth-secret` annotation |
 
 ### NGINX Ingress Controller
 
@@ -135,44 +128,21 @@ Run: `kubectl get ingress`
 
 ### HTTP to HTTPS redirect
 
-Use `curl` to verify redirect behavior:
-
 ```bash
-# Should return 308 redirect to HTTPS
 curl -s -o /dev/null -w "%{http_code}" -H "Host: test.eshop-test.com" http://34.159.106.171/health
-
-# Should return 308 redirect to HTTPS
 curl -s -o /dev/null -w "%{http_code}" -H "Host: wearables-test.eshop-test.com" http://34.159.106.171/health
-
-# Should return 308 redirect to HTTPS
-curl -s -o /dev/null -w "%{http_code}" -H "Host: redisinsight-test.eshop-test.com" http://34.159.106.171/api/health
 ```
 
-| Check | Expected | How to verify |
-|-------|----------|---------------|
-| api-gateway HTTP redirect | HTTP request returns 301 or 308 status | curl command above |
-| wearables HTTP redirect | HTTP request returns 301 or 308 status | curl command above |
-| redisinsight HTTP redirect | HTTP request returns 301 or 308 status | curl command above |
+Both must return 308.
 
 ### TLS endpoints reachable
 
 ```bash
-# Should return 200
-curl -s -o /dev/null -w "%{http_code}" https://test.eshop-test.com/health
-
-# Should return 200
-curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/health
-
-# Should return 401 (basic auth required)
-curl -s -o /dev/null -w "%{http_code}" https://redisinsight-test.eshop-test.com/api/health
+curl -s -o /dev/null -w "%{http_code}" https://test.eshop-test.com/health          # expect 200
+curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/health # expect 200
 ```
 
-| Check | Expected | How to verify |
-|-------|----------|---------------|
-| api-gateway HTTPS reachable | Returns 200 on /health | curl command above |
-| wearables HTTPS reachable | Returns 200 on /health | curl command above |
-| redisinsight HTTPS basic auth | Returns 401 on /api/health (no credentials) | curl command above |
-| TLS certificate valid | curl succeeds without `--insecure` flag | If curl fails with SSL error, certificate is invalid |
+TLS certificate is valid if curl succeeds without `--insecure`.
 
 ## 6. Services & DNS Resolution
 
@@ -182,12 +152,11 @@ curl -s -o /dev/null -w "%{http_code}" https://redisinsight-test.eshop-test.com/
 | hello-world-http ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc hello-world-http` |
 | wearables-http ClusterIP service exists | Port 80 -> 8000 | `kubectl get svc wearables-http` |
 | pgbouncer ClusterIP service exists | Port 5432 -> 5432 | `kubectl get svc pgbouncer` |
-| redisinsight ClusterIP service exists | Port 80 -> 5540 | `kubectl get svc redisinsight` |
 | Internal DNS resolution | Services resolvable within cluster | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup api-gateway-http.default.svc.cluster.local` (skip if impractical) |
 
 ## 7. Resource Requests & Limits
 
-For each deployment, verify resource configuration matches manifests:
+Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
 
 | Service | CPU Request | Memory Request | CPU Limit | Memory Limit |
 |---------|-------------|----------------|-----------|--------------|
@@ -196,10 +165,7 @@ For each deployment, verify resource configuration matches manifests:
 | wearables-http | 50m | 128Mi | 200m | 256Mi |
 | wearables-messaging | 50m | 205Mi | 200m | 430Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
-| redisinsight | 100m | 128Mi | 500m | 256Mi |
 | redis-exporter | 50m | 64Mi | 100m | 128Mi |
-
-Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
 
 ## Summary Format
 

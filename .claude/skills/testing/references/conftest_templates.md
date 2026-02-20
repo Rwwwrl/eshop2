@@ -126,3 +126,34 @@ Key differences from unit test conftest:
 - `fastapi_app` depends on `sqlmodel_engine` (from shared plugin)
 - Engine stored on `app.state.sqlmodel_engine`
 - Named `fastapi_app` (not `app`) to avoid fixture name conflicts
+
+## Test Examples
+
+### POST with valid payload (success)
+
+```python
+@pytest.mark.asyncio(loop_scope="session")
+async def test_handle_webhook_when_valid_payload(async_client: AsyncClient) -> None:
+    payload = {
+        "event_type": "provider.connection.created",
+        "client_user_id": "client-user-123",
+        "user_id": "junction-user-456",
+        "data": {"provider": "oura", "status": "connected"},
+    }
+    response = await async_client.post(url="/webhook", json=payload)
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+```
+
+### POST with missing required field (validation error)
+
+```python
+@pytest.mark.asyncio(loop_scope="session")
+async def test_handle_webhook_when_missing_required_field(async_client: AsyncClient) -> None:
+    payload = {
+        "event_type": "provider.connection.created",
+        "client_user_id": "client-user-123",
+    }
+    response = await async_client.post(url="/webhook", json=payload)
+    assert response.status_code == 422
+```
