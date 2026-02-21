@@ -4,7 +4,7 @@ metadata:
   name: api-gateway-http
 spec:
   strategy:
-    type: Recreate
+    type: RollingUpdate
   selector:
     matchLabels:
       app: api-gateway-http
