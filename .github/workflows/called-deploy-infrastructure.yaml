@@ -8,6 +8,38 @@ on:
         type: string
 
 jobs:
+  apply-secrets:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Install gke-gcloud-auth-plugin
+        run: gcloud components install gke-gcloud-auth-plugin --quiet
+
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials ${{ vars.GKE_CLUSTER_NAME }} \
+            --region ${{ vars.GCP_REGION }} \
+            --project ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Apply secrets
+        run: |
+          for secret in $(gsutil ls gs://${{ vars.GCS_CONFIG_BUCKET }}/infrastructure/secrets/*.yaml); do
+            gsutil -q cp "$secret" - | kubectl apply -f -
+          done
+
   deploy-ingress-nginx:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
@@ -57,6 +89,7 @@ jobs:
           kubectl apply -f deploy/k8s/infrastructure/cert-manager/cluster-issuer.yaml
 
   deploy-pgbouncer:
+    needs: [apply-secrets]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -84,12 +117,6 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --project ${{ vars.GCP_PROJECT_ID }}
 
-      - name: Apply PgBouncer secret
-        run: >-
-          gsutil -q cp
-          gs://${{ vars.GCS_CONFIG_BUCKET }}/infrastructure/pgbouncer/pgbouncer-secret.yaml -
-          | kubectl apply -f -
-
       - name: Deploy PgBouncer
         run: |
           kustomize build deploy/k8s/infrastructure/pgbouncer/${{ inputs.environment }} \
@@ -105,6 +132,7 @@ jobs:
         run: kubectl rollout status deployment/pgbouncer --timeout=120s
 
   deploy-keda:
+    needs: [apply-secrets]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -145,13 +173,11 @@ jobs:
             --create-namespace \
             --version 2.19.0
 
-      - name: Apply Redis auth secret
-        run: >-
-          gsutil -q cp
-          gs://${{ vars.GCS_CONFIG_BUCKET }}/infrastructure/keda/redis-auth-secret.yaml -
-          | kubectl apply -f -
+      - name: Deploy KEDA TriggerAuthentication
+        run: kubectl apply -f deploy/k8s/infrastructure/keda/trigger-auth.yaml
 
   deploy-redis-exporter:
+    needs: [apply-secrets]
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     permissions:
@@ -178,12 +204,6 @@ jobs:
           gcloud container clusters get-credentials ${{ vars.GKE_CLUSTER_NAME }} \
             --region ${{ vars.GCP_REGION }} \
             --project ${{ vars.GCP_PROJECT_ID }}
-
-      - name: Apply Redis auth secret
-        run: >-
-          gsutil -q cp
-          gs://${{ vars.GCS_CONFIG_BUCKET }}/infrastructure/redis-exporter/redis-auth-secret.yaml -
-          | kubectl apply -f -
 
       - name: Deploy redis-exporter
         run: |
