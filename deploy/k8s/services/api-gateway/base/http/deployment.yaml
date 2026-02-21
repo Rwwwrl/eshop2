@@ -26,6 +26,11 @@ spec:
       containers:
         - name: api-gateway
           command: ["poetry", "run", "uvicorn", "api_gateway.http.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]
+          envFrom:
+            - configMapRef:
+                name: api-gateway-config
+            - secretRef:
+                name: api-gateway-secrets
           ports:
             - containerPort: 8000
           resources:

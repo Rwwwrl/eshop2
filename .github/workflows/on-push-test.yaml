@@ -38,6 +38,7 @@ jobs:
       service_name: api-gateway
       service_path: src/services/api_gateway
       run_postgres_migrations: false
+
     secrets: inherit
 
   deploy-hello-world:
@@ -48,6 +49,7 @@ jobs:
       service_name: hello-world
       service_path: src/services/hello_world
       run_postgres_migrations: false
+
     secrets: inherit
 
   deploy-wearables:
@@ -59,4 +61,5 @@ jobs:
       service_path: src/services/wearables
       run_postgres_migrations: true
       run_messaging_deployment: true
+
     secrets: inherit

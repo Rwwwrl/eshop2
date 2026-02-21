@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, YamlConfigSettingsSource
 
 from libs.common.enums import EnvironmentEnum
@@ -21,8 +23,11 @@ class BaseAppSettings(LoggingSettingsMixin, BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        return (
-            init_settings,
-            env_settings,
-            YamlConfigSettingsSource(settings_cls=settings_cls),
-        )
+        # NOTE @sosov: YAML source is conditional on file existence. In production, config is injected
+        # via K8s env vars (ConfigMap + Secret), so no env.yaml exists. In local dev, env.yaml provides values.
+        sources: list[PydanticBaseSettingsSource] = [init_settings, env_settings]
+        yaml_file = cls.model_config.get("yaml_file")
+        if yaml_file and Path(yaml_file).exists():
+            sources.append(YamlConfigSettingsSource(settings_cls=settings_cls))
+
+        return tuple(sources)

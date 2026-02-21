@@ -26,6 +26,11 @@ spec:
       containers:
         - name: wearables-messaging
           command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
+          envFrom:
+            - configMapRef:
+                name: wearables-config
+            - secretRef:
+                name: wearables-secrets
           ports:
             - containerPort: 9090
               protocol: TCP

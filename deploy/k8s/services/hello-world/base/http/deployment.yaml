@@ -28,6 +28,11 @@ spec:
       containers:
         - name: hello-world
           command: ["poetry", "run", "uvicorn", "hello_world.http.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "75"]
+          envFrom:
+            - configMapRef:
+                name: hello-world-config
+            - secretRef:
+                name: hello-world-secrets
           ports:
             - containerPort: 8000
           resources:

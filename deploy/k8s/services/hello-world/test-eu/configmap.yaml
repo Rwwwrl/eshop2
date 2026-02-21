@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-world-config
+data:
+  ENVIRONMENT: "test"
+  LOG_LEVEL: "INFO"
+  SENTRY_SEND_PII: "true"
+  SENTRY_TRACES_SAMPLE_RATE: "1.0"

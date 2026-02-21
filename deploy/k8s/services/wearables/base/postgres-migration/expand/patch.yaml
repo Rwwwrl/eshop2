@@ -8,3 +8,8 @@ spec:
       containers:
         - name: migration
           command: ["poetry", "run", "alembic", "upgrade", "expand@head"]
+          envFrom:
+            - configMapRef:
+                name: wearables-config
+            - secretRef:
+                name: wearables-secrets
