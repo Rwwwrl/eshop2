@@ -64,7 +64,11 @@ For each deployment, verify replica count and scheduling:
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | 2 Running pods | `kubectl get deployment api-gateway-http -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Replicas | >= 2 Running pods (HPA-managed) | `kubectl get deployment api-gateway-http -o jsonpath='{.status.readyReplicas}'` >= 2 |
+| HPA exists | HPA targeting api-gateway-http | `kubectl get hpa api-gateway-http` — must exist |
+| HPA target | averageUtilization=70 on CPU | `kubectl get hpa api-gateway-http -o jsonpath='{.spec.metrics[0].resource.target.averageUtilization}'` = 70 |
+| HPA min/max | minReplicas=2, maxReplicas=4 | `kubectl get hpa api-gateway-http -o jsonpath='{.spec.minReplicas}'` = 2 and `{.spec.maxReplicas}` = 4 |
+| HPA metrics available | TARGETS column shows current/70% (not \<unknown\>/70%) | `kubectl get hpa api-gateway-http` — TARGETS must not show `<unknown>` |
 | Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=api-gateway-http -o wide` — NODE column must be default-pool nodes |
 | Anti-affinity | Pods on different nodes | The two pods must be scheduled on different hostnames (required anti-affinity) |
 | Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment api-gateway-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and preStop exec contains `sleep` `10` |
@@ -75,7 +79,11 @@ For each deployment, verify replica count and scheduling:
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | 2 Running pods | `kubectl get deployment hello-world-http -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Replicas | >= 2 Running pods (HPA-managed) | `kubectl get deployment hello-world-http -o jsonpath='{.status.readyReplicas}'` >= 2 |
+| HPA exists | HPA targeting hello-world-http | `kubectl get hpa hello-world-http` — must exist |
+| HPA target | averageUtilization=70 on CPU | `kubectl get hpa hello-world-http -o jsonpath='{.spec.metrics[0].resource.target.averageUtilization}'` = 70 |
+| HPA min/max | minReplicas=2, maxReplicas=4 | `kubectl get hpa hello-world-http -o jsonpath='{.spec.minReplicas}'` = 2 and `{.spec.maxReplicas}` = 4 |
+| HPA metrics available | TARGETS column shows current/70% (not \<unknown\>/70%) | `kubectl get hpa hello-world-http` — TARGETS must not show `<unknown>` |
 | Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=hello-world-http -o wide` — NODE column must be default-pool nodes |
 | Anti-affinity | Pods preferably on different nodes | Preferred (weight 100), so warn if co-located but don't fail |
 | Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment hello-world-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and preStop exec contains `sleep` `10` |
@@ -86,7 +94,11 @@ For each deployment, verify replica count and scheduling:
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | 2 Running pods | `kubectl get deployment wearables-http -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Replicas | >= 2 Running pods (HPA-managed) | `kubectl get deployment wearables-http -o jsonpath='{.status.readyReplicas}'` >= 2 |
+| HPA exists | HPA targeting wearables-http | `kubectl get hpa wearables-http` — must exist |
+| HPA target | averageUtilization=70 on CPU | `kubectl get hpa wearables-http -o jsonpath='{.spec.metrics[0].resource.target.averageUtilization}'` = 70 |
+| HPA min/max | minReplicas=2, maxReplicas=4 | `kubectl get hpa wearables-http -o jsonpath='{.spec.minReplicas}'` = 2 and `{.spec.maxReplicas}` = 4 |
+| HPA metrics available | TARGETS column shows current/70% (not \<unknown\>/70%) | `kubectl get hpa wearables-http` — TARGETS must not show `<unknown>` |
 | Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-http -o wide` — NODE column must be wearables-pool nodes |
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; difference between most-loaded and least-loaded node must be <= 1 |
 | Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment wearables-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and preStop exec contains `sleep` `10` |

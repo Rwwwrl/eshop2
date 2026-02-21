@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: api-gateway-http
 spec:
-  replicas: 2
   template:
     spec:
       containers:
