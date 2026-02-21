@@ -5,7 +5,7 @@ metadata:
 spec:
   # NOTE @sosov: replicas managed by KEDA ScaledObject "wearables-worker-scaler"
   strategy:
-    type: Recreate
+    type: RollingUpdate
   selector:
     matchLabels:
       app: wearables-messaging

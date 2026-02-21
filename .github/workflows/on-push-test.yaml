@@ -10,13 +10,21 @@ permissions:
   id-token: write
 
 jobs:
+  apply-secrets:
+    uses: ./.github/workflows/called-apply-secrets.yaml
+    with:
+      environment: test-eu
+    secrets: inherit
+
   publish-libs:
+    needs: [apply-secrets]
     uses: ./.github/workflows/called-publish-libs.yaml
     with:
       environment: test-eu
     secrets: inherit
 
   deploy-infrastructure:
+    needs: [apply-secrets]
     uses: ./.github/workflows/called-deploy-infrastructure.yaml
     with:
       environment: test-eu
