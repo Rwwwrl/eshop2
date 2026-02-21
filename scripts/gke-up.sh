@@ -78,6 +78,22 @@ helm install nginx-ingress nginx-stable/nginx-ingress \
     --create-namespace \
     -f deploy/k8s/infrastructure/ingress-nginx/test-eu/values.yaml
 
+echo "=== Installing External Secrets Operator ==="
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update
+helm install external-secrets external-secrets/external-secrets \
+    --namespace external-secrets --create-namespace
+
+echo "=== Waiting for ESO to be ready ==="
+kubectl wait --for=condition=Available deployment --all \
+    -n external-secrets --timeout=120s
+
+echo "=== Creating ESO Kubernetes Service Account ==="
+kubectl apply -f deploy/k8s/infrastructure/external-secrets/test-eu/service-account.yaml
+
+echo "=== Applying ClusterSecretStore ==="
+kubectl apply -f deploy/k8s/infrastructure/external-secrets/test-eu/cluster-secret-store.yaml
+
 echo "=== Cluster is ready ==="
 kubectl get nodes
 kubectl get certificate
