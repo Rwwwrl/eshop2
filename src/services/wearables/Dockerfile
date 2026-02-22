@@ -15,7 +15,6 @@ RUN --mount=type=secret,id=gcp_token \
 COPY wearables/ ./wearables/
 COPY alembic.ini ./
 COPY migrations/ ./migrations/
-COPY env.yaml ./
 RUN poetry install --only main
 
 EXPOSE 8000

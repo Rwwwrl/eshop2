@@ -226,7 +226,7 @@ trio = ["trio (>=0.31.0)", "trio (>=0.32.0)"]
 
 [[package]]
 name = "api-gateway"
-version = "0.9.4"
+version = "0.9.5"
 description = "API Gateway FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -1253,7 +1253,7 @@ files = [
 
 [[package]]
 name = "hello-world"
-version = "0.8.4"
+version = "0.8.5"
 description = "Simple Hello World FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -1776,7 +1776,7 @@ files = [
 
 [[package]]
 name = "myeshop-libs"
-version = "0.13.2"
+version = "0.13.3"
 description = "Shared library for MyEshop microservices"
 optional = false
 python-versions = "^3.14"
@@ -3178,7 +3178,7 @@ files = [
 
 [[package]]
 name = "wearables"
-version = "0.14.8"
+version = "0.14.9"
 description = "Wearables webhook ingestion microservice"
 optional = false
 python-versions = "^3.14"

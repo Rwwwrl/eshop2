@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - ../../base/messaging
   - scaled-object.yaml
+  - ../configmap.yaml
 patches:
   - path: workers-deployment.yaml
   - path: scheduler-deployment.yaml

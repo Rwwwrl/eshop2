@@ -49,7 +49,7 @@ gcloud container clusters get-credentials "$CLUSTER" \
     --project "$PROJECT"
 
 echo "=== Installing cert-manager ==="
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.17.2/cert-manager.yaml
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.3/cert-manager.yaml
 
 echo "=== Waiting for cert-manager to be ready ==="
 kubectl wait --for=condition=Available deployment --all \
@@ -76,7 +76,38 @@ helm repo update
 helm install nginx-ingress nginx-stable/nginx-ingress \
     --namespace ingress-nginx \
     --create-namespace \
+    --version 2.4.4 \
     -f deploy/k8s/infrastructure/ingress-nginx/test-eu/values.yaml
+
+echo "=== Installing External Secrets Operator ==="
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update
+helm install external-secrets external-secrets/external-secrets \
+    --namespace external-secrets \
+    --create-namespace \
+    --version 2.0.1
+
+echo "=== Waiting for ESO to be ready ==="
+kubectl wait --for=condition=Available deployment --all \
+    -n external-secrets --timeout=120s
+
+echo "=== Creating ESO Kubernetes Service Account ==="
+kubectl apply -f deploy/k8s/infrastructure/external-secrets/test-eu/service-account.yaml
+
+echo "=== Applying ClusterSecretStore ==="
+kubectl apply -f deploy/k8s/infrastructure/external-secrets/test-eu/cluster-secret-store.yaml
+
+echo "=== Installing KEDA ==="
+helm repo add kedacore https://kedacore.github.io/charts
+helm repo update
+helm install keda kedacore/keda \
+    --namespace keda \
+    --create-namespace \
+    --version 2.19.0
+
+echo "=== Waiting for KEDA to be ready ==="
+kubectl wait --for=condition=Available deployment --all \
+    -n keda --timeout=120s
 
 echo "=== Cluster is ready ==="
 kubectl get nodes

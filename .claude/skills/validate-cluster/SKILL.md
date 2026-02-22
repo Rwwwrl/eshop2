@@ -37,7 +37,6 @@ Run these checks in parallel:
 | PgBouncer strategy | `kubectl get deployment pgbouncer -o jsonpath='{.spec.strategy.type}'` | `RollingUpdate` |
 | PgBouncer probes | `kubectl get deployment pgbouncer -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | TCP socket on port 5432 |
 | KEDA operator running | `kubectl get pods -n keda` | 3 pods Running (operator, metrics-apiserver, admission-webhooks) |
-| Redis auth secret exists | `kubectl get secret redis-auth` | Secret exists |
 | redis-exporter running | `kubectl get pods -l app=redis-exporter` | 1 pod Running, container ready |
 | redis-exporter node pool | `kubectl get pods -l app=redis-exporter -o wide` | Pod on `default-pool` node |
 | redis-exporter strategy | `kubectl get deployment redis-exporter -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
@@ -45,7 +44,47 @@ Run these checks in parallel:
 | redis-exporter streams flag | `kubectl get deployment redis-exporter -o jsonpath='{.spec.template.spec.containers[0].args}'` | Contains `--check-streams=taskiq` |
 | redis-exporter PodMonitoring | `kubectl get podmonitoring redis-exporter -o jsonpath='{.spec.endpoints[0].port}'` | `9121` |
 
-## 3. Pod Health (all namespaces)
+## 3. External Secrets Operator
+
+### Service Account
+
+| Check | Expected | How to verify |
+|-------|----------|---------------|
+| eso-ksa exists | ServiceAccount present in external-secrets namespace | `kubectl get serviceaccount eso-ksa -n external-secrets` — must exist (no `NotFound`) |
+
+### ClusterSecretStore
+
+| Check | Expected | How to verify |
+|-------|----------|---------------|
+| gcp-cluster-store ready | Status=Valid | `kubectl get clustersecretstore gcp-cluster-store -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
+
+### ExternalSecrets (all must show Ready)
+
+Run: `kubectl get externalsecrets`
+
+| ExternalSecret | Target K8s Secret | How to verify |
+|----------------|-------------------|---------------|
+| redis-auth | redis-auth | `kubectl get externalsecret redis-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
+| pgbouncer-config | pgbouncer-config | `kubectl get externalsecret pgbouncer-config -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
+| api-gateway-secrets | api-gateway-secrets | `kubectl get externalsecret api-gateway-secrets -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
+| hello-world-secrets | hello-world-secrets | `kubectl get externalsecret hello-world-secrets -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
+| wearables-secrets | wearables-secrets | `kubectl get externalsecret wearables-secrets -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
+
+### Generated K8s Secrets exist
+
+Verify ESO created the target secrets: `kubectl get secret redis-auth pgbouncer-config api-gateway-secrets hello-world-secrets wearables-secrets`
+
+All must exist (no `NotFound` errors).
+
+### Service ConfigMaps exist
+
+| Check | How to verify |
+|-------|---------------|
+| api-gateway-config exists | `kubectl get configmap api-gateway-config` |
+| hello-world-config exists | `kubectl get configmap hello-world-config` |
+| wearables-config exists | `kubectl get configmap wearables-config` |
+
+## 4. Pod Health (all namespaces)
 
 Run: `kubectl get pods -A`
 
@@ -56,7 +95,7 @@ Run: `kubectl get pods -A`
 | No ImagePullBackOff | Same approach, grep for ImagePullBackOff or ErrImagePull — zero matches |
 | All containers ready | Every pod READY column shows `N/N` |
 
-## 4. Service Deployments (test-eu)
+## 5. Service Deployments (test-eu)
 
 For each deployment, verify replica count and scheduling:
 
@@ -132,7 +171,7 @@ For each deployment, verify replica count and scheduling:
 | HPA created by KEDA | HPA exists for wearables-messaging | `kubectl get hpa` — should show an HPA targeting wearables-messaging |
 | TriggerAuthentication exists | redis-trigger-auth present | `kubectl get triggerauthentication redis-trigger-auth` — must exist |
 
-## 5. Ingress & TLS
+## 6. Ingress & TLS
 
 ### Ingress resources
 
@@ -169,7 +208,7 @@ curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/hea
 
 TLS certificate is valid if curl succeeds without `--insecure`.
 
-## 6. Services & DNS Resolution
+## 7. Services & DNS Resolution
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
@@ -179,7 +218,7 @@ TLS certificate is valid if curl succeeds without `--insecure`.
 | pgbouncer ClusterIP service exists | Port 5432 -> 5432 | `kubectl get svc pgbouncer` |
 | Internal DNS resolution | Services resolvable within cluster | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup api-gateway-http.default.svc.cluster.local` (skip if impractical) |
 
-## 7. Resource Requests & Limits
+## 8. Resource Requests & Limits
 
 Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.containers[0].resources}'`
 
@@ -203,11 +242,12 @@ Section                    | Passed | Failed | Warnings
 ---------------------------|--------|--------|----------
 1. Node Pool Health        |   X    |   X    |    X
 2. System Components       |   X    |   X    |    X
-3. Pod Health              |   X    |   X    |    X
-4. Service Deployments     |   X    |   X    |    X
-5. Ingress & TLS           |   X    |   X    |    X
-6. Services & DNS          |   X    |   X    |    X
-7. Resource Configuration  |   X    |   X    |    X
+3. External Secrets        |   X    |   X    |    X
+4. Pod Health              |   X    |   X    |    X
+5. Service Deployments     |   X    |   X    |    X
+6. Ingress & TLS           |   X    |   X    |    X
+7. Services & DNS          |   X    |   X    |    X
+8. Resource Configuration  |   X    |   X    |    X
 ---------------------------|--------|--------|----------
 TOTAL                      |   X    |   X    |    X
 

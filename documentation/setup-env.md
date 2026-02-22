@@ -227,67 +227,94 @@ Create a GitHub environment (e.g., `test-eu`) with these variables:
 | `GCP_SERVICE_ACCOUNT`            | `github-actions@my-eshop-123.iam.gserviceaccount.com`                                    |
 | `GKE_CLUSTER_NAME`               | `my-cluster`                                                                             |
 | `GCP_ARTIFACT_REGISTRY_NAME`     | `myeshop`                                                                                |
-| `GCS_CONFIG_BUCKET`              | `myeshop-config`                                                                         |
 
 Path: GitHub repo -> Settings -> Environments -> New environment
 
-### 8. Create GCS Config Bucket
+### 8. Set Up Secret Manager + External Secrets Operator
 
-Each service reads its configuration from an `env.yaml` file. Per-environment config files are stored in a GCS bucket and downloaded during CI/CD deployment.
+Service configuration is split into two sources injected as Kubernetes environment variables:
 
-#### Console UI
+- **ConfigMaps** — non-secret values (environment, log level, feature flags). Defined per service per environment in `deploy/k8s/services/<SERVICE>/<ENV>/configmap.yaml`.
+- **Secrets** — sensitive values (database URLs, API keys, DSNs). Stored in GCP Secret Manager and synced to Kubernetes Secrets via External Secrets Operator (ESO).
 
-1. Navigation Menu -> Cloud Storage -> Buckets
-2. Click CREATE
-3. Configure:
-   - Name: `<PROJECT_NAME>-config` (e.g., `eshop-test-config`)
-   - Location type: Region
-   - Region: same as your GKE cluster (e.g., `europe-west3`)
-   - Storage class: Standard
-   - Access control: Uniform
-4. Click CREATE
-
-#### gcloud CLI
+#### Enable Secret Manager API
 
 ```bash
-gsutil mb -l <REGION> -b on gs://<PROJECT_NAME>-config
+gcloud services enable secretmanager.googleapis.com
 ```
 
-#### Folder structure
+#### Create secrets in GCP Secret Manager
 
-Create a folder per environment and service:
-
-```
-gs://<PROJECT_NAME>-config/
-  services/
-    api-gateway/env.yaml
-    hello-world/env.yaml
-    wearables/env.yaml
-```
-
-Upload config files:
+Each secret is a separate Secret Manager entry. Naming convention: `<service>-<key-name>` (e.g., `wearables-postgres-direct-db-url`, `api-gateway-sentry-dsn`).
 
 ```bash
-gsutil cp env.yaml gs://<PROJECT_NAME>-config/services/api-gateway/env.yaml
-gsutil cp env.yaml gs://<PROJECT_NAME>-config/services/hello-world/env.yaml
-gsutil cp env.yaml gs://<PROJECT_NAME>-config/services/wearables/env.yaml
+echo -n "<VALUE>" | gcloud secrets create <SECRET_NAME> --data-file=-
 ```
 
-#### IAM
+Infrastructure secrets (shared across services):
 
-Grant the `github-actions` service account read access to the bucket:
+| Secret Name          | Used By       |
+|----------------------|---------------|
+| `redis-password`     | redis-auth    |
+| `pgbouncer-ini`      | pgbouncer     |
+| `pgbouncer-userlist` | pgbouncer     |
+
+Per-service secrets:
+
+| Secret Name                        | Service     |
+|------------------------------------|-------------|
+| `api-gateway-sentry-dsn`           | api-gateway |
+| `hello-world-sentry-dsn`           | hello-world |
+| `wearables-sentry-dsn`             | wearables   |
+| `wearables-postgres-direct-db-url` | wearables   |
+| `wearables-postgres-pooler-db-url` | wearables   |
+| `wearables-taskiq-redis-url`       | wearables   |
+
+#### Install External Secrets Operator
 
 ```bash
-gsutil iam ch \
-  serviceAccount:github-actions@<PROJECT_ID>.iam.gserviceaccount.com:roles/storage.objectViewer \
-  gs://<PROJECT_NAME>-config
+helm repo add external-secrets https://charts.external-secrets.io
+helm install external-secrets external-secrets/external-secrets \
+  --namespace external-secrets --create-namespace
 ```
+
+#### Set up Workload Identity for ESO (Direct Principal)
+
+Grant the ESO Kubernetes service account direct access to Secret Manager — no GCP service account intermediary needed.
+
+```bash
+# Get your project number (not project ID)
+gcloud projects describe <PROJECT_ID> --format="value(projectNumber)"
+
+# Grant the K8s SA direct access to Secret Manager
+gcloud projects add-iam-policy-binding <PROJECT_ID> \
+  --role="roles/secretmanager.secretAccessor" \
+  --member="principal://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<PROJECT_ID>.svc.id.goog/subject/ns/external-secrets/sa/eso-ksa"
+```
+
+The K8s ServiceAccount manifest is at `deploy/k8s/infrastructure/external-secrets/<ENV>/service-account.yaml` and is applied by `gke-up.sh`.
+
+#### Deploy ClusterSecretStore
+
+The `ClusterSecretStore` connects ESO to GCP Secret Manager. Manifest: `deploy/k8s/infrastructure/external-secrets/<ENV>/cluster-secret-store.yaml`.
+
+```bash
+kubectl apply -f deploy/k8s/infrastructure/external-secrets/<ENV>/cluster-secret-store.yaml
+```
+
+#### How it works
+
+Each service has an `ExternalSecret` manifest (`deploy/k8s/services/<SERVICE>/base/external-secret.yaml`) that references secrets from the `ClusterSecretStore`. ESO syncs these into Kubernetes Secrets, which are mounted via `envFrom` in deployments alongside ConfigMaps.
+
+Infrastructure-level ExternalSecrets (e.g., `redis-auth`) are stored in `deploy/k8s/infrastructure/external-secrets/<ENV>/external-secrets/` and deployed by the `called-apply-secrets.yaml` CI workflow.
+
+The `gke-up.sh` script handles the full ESO bootstrap: Helm install, KSA creation, workload identity annotation, and ClusterSecretStore deployment.
 
 ### 9. Create Google Cloud Memorystore (Redis)
 
 - Create a Redis instance in Memorystore (console or gcloud)
 - Note the connection string
-- Add `taskiq_redis_url` to the wearables env.yaml in GCS
+- Store the Redis URL as `wearables-taskiq-redis-url` in GCP Secret Manager
 
 ---
 
