@@ -63,6 +63,15 @@ kubectl create secret generic cloudflare-api-token \
 echo "=== Applying ClusterIssuer ==="
 kubectl apply -f deploy/k8s/infrastructure/cert-manager/test-eu/cluster-issuer.yaml
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKUP_DIR="$SCRIPT_DIR/../.tls-backup"
+TLS_BACKUP="$BACKUP_DIR/eshop-test-wildcard-tls.yaml"
+
+if [ -f "$TLS_BACKUP" ]; then
+    echo "=== Restoring TLS secret from backup ==="
+    kubectl apply -f "$TLS_BACKUP"
+fi
+
 echo "=== Applying wildcard Certificate ==="
 kubectl apply -f deploy/k8s/infrastructure/cert-manager/certificates/test-eu/certificate.yaml
 

@@ -168,6 +168,7 @@ cython_debug/
 
 ######## CREDENTIALS ########
 /keys/*
+.tls-backup/
 
 justfile.local
 .claude/settings.local.json
