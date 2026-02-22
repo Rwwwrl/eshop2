@@ -2,29 +2,18 @@
 
 ---
 
-## How We Write This Documentation
-
-- Write clear facts only, without notes or suggestions unless explicitly provided
-- Do not imagine or describe environments that are not set up (e.g., prod)
-- Provide a clear list that another developer can follow to repeat the setup on a new environment
-
----
-
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
 2. [Local Development Setup](#local-development-setup)
 3. [Docker Setup](#docker-setup)
 4. [GCP & GKE Setup](#gcp--gke-setup)
-5. [GKE Standard Cluster Setup (Console UI)](#gke-standard-cluster-setup-console-ui)
-6. [Deploy via CI/CD](#deploy-via-cicd)
+5. [Deploy via CI/CD](#deploy-via-cicd)
 
 ## Cluster Lifecycle Scripts
 
-To save costs, the GKE cluster can be deleted when not in use and recreated on demand.
-
 ```bash
-# Create cluster with full infrastructure (NGINX Ingress, cert-manager, TLS)
+# Create cluster with full infrastructure (NGINX Ingress, cert-manager, TLS, KEDA)
 export CLOUDFLARE_API_TOKEN="<your-token>"
 just gke-up
 
@@ -33,8 +22,6 @@ just gke-down
 ```
 
 Scripts: `scripts/gke-up.sh`, `scripts/gke-down.sh`
-
-The static IP and Workload Identity Federation (pools, providers, service account bindings) are GCP project-level resources and persist across cluster deletions. DNS records also remain unchanged.
 
 ---
 
@@ -145,7 +132,25 @@ gcloud artifacts repositories create <REGISTRY_NAME> \
   --description="MyEshop Docker images"
 ```
 
-### 4. Create a GKE cluster
+### 4. Reserve a static IP
+
+```bash
+gcloud compute addresses create nginx-ingress-ip \
+  --region=<REGION> \
+  --network-tier=PREMIUM
+```
+
+```bash
+gcloud compute addresses describe nginx-ingress-ip \
+  --region=<REGION> \
+  --format="get(address)"
+```
+
+| Environment | IP Name            | Region       |
+|-------------|--------------------|--------------|
+| test-eu     | `nginx-ingress-ip` | europe-west3 |
+
+### 5. Create a GKE cluster
 
 ```bash
 gcloud container clusters create <CLUSTER_NAME> \
@@ -163,9 +168,7 @@ gcloud container clusters create <CLUSTER_NAME> \
   --workload-pool=<PROJECT_ID>.svc.id.goog
 ```
 
-The `--workload-pool` flag enables Workload Identity, which is required for CI/CD (GitHub Actions) to authenticate to the cluster.
-
-### 5. Create wearables node pool
+### 6. Create wearables node pool
 
 ```bash
 gcloud container node-pools create wearables-pool \
@@ -184,7 +187,7 @@ gcloud container node-pools create wearables-pool \
   --enable-autoupgrade
 ```
 
-### 6. Set up Workload Identity Federation for GitHub Actions
+### 7. Set up Workload Identity Federation for GitHub Actions
 
 ```bash
 gcloud iam service-accounts create github-actions \
@@ -215,7 +218,7 @@ gcloud iam service-accounts add-iam-policy-binding \
   --member="principalSet://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github/attribute.repository/<GITHUB_ORG>/<GITHUB_REPO>"
 ```
 
-### 7. Configure GitHub Environment Variables
+### 8. Configure GitHub Environment Variables
 
 Create a GitHub environment (e.g., `test-eu`) with these variables:
 
@@ -230,12 +233,7 @@ Create a GitHub environment (e.g., `test-eu`) with these variables:
 
 Path: GitHub repo -> Settings -> Environments -> New environment
 
-### 8. Set Up Secret Manager + External Secrets Operator
-
-Service configuration is split into two sources injected as Kubernetes environment variables:
-
-- **ConfigMaps** — non-secret values (environment, log level, feature flags). Defined per service per environment in `deploy/k8s/services/<SERVICE>/<ENV>/configmap.yaml`.
-- **Secrets** — sensitive values (database URLs, API keys, DSNs). Stored in GCP Secret Manager and synced to Kubernetes Secrets via External Secrets Operator (ESO).
+### 9. Set Up Secret Manager + External Secrets Operator
 
 #### Enable Secret Manager API
 
@@ -280,129 +278,34 @@ helm install external-secrets external-secrets/external-secrets \
 
 #### Set up Workload Identity for ESO (Direct Principal)
 
-Grant the ESO Kubernetes service account direct access to Secret Manager — no GCP service account intermediary needed.
-
 ```bash
-# Get your project number (not project ID)
 gcloud projects describe <PROJECT_ID> --format="value(projectNumber)"
 
-# Grant the K8s SA direct access to Secret Manager
 gcloud projects add-iam-policy-binding <PROJECT_ID> \
   --role="roles/secretmanager.secretAccessor" \
   --member="principal://iam.googleapis.com/projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<PROJECT_ID>.svc.id.goog/subject/ns/external-secrets/sa/eso-ksa"
 ```
 
-The K8s ServiceAccount manifest is at `deploy/k8s/infrastructure/external-secrets/<ENV>/service-account.yaml` and is applied by `gke-up.sh`.
+KSA manifest: `deploy/k8s/infrastructure/external-secrets/<ENV>/service-account.yaml`
 
 #### Deploy ClusterSecretStore
-
-The `ClusterSecretStore` connects ESO to GCP Secret Manager. Manifest: `deploy/k8s/infrastructure/external-secrets/<ENV>/cluster-secret-store.yaml`.
 
 ```bash
 kubectl apply -f deploy/k8s/infrastructure/external-secrets/<ENV>/cluster-secret-store.yaml
 ```
 
-#### How it works
+#### Key manifests
 
-Each service has an `ExternalSecret` manifest (`deploy/k8s/services/<SERVICE>/base/external-secret.yaml`) that references secrets from the `ClusterSecretStore`. ESO syncs these into Kubernetes Secrets, which are mounted via `envFrom` in deployments alongside ConfigMaps.
+| Manifest | Purpose |
+|----------|---------|
+| `deploy/k8s/services/<SERVICE>/base/external-secret.yaml` | Per-service ExternalSecret |
+| `deploy/k8s/infrastructure/external-secrets/<ENV>/external-secrets/` | Infrastructure-level ExternalSecrets |
+| `deploy/k8s/infrastructure/external-secrets/<ENV>/cluster-secret-store.yaml` | ClusterSecretStore |
 
-Infrastructure-level ExternalSecrets (e.g., `redis-auth`) are stored in `deploy/k8s/infrastructure/external-secrets/<ENV>/external-secrets/` and deployed by the `called-apply-secrets.yaml` CI workflow.
+### 10. Create Google Cloud Memorystore (Redis)
 
-The `gke-up.sh` script handles the full ESO bootstrap: Helm install, KSA creation, workload identity annotation, and ClusterSecretStore deployment.
-
-### 9. Create Google Cloud Memorystore (Redis)
-
-- Create a Redis instance in Memorystore (console or gcloud)
-- Note the connection string
-- Store the Redis URL as `wearables-taskiq-redis-url` in GCP Secret Manager
-
----
-
-## GKE Standard Cluster Setup (Console UI)
-
-### Step 1: Navigate to GKE
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Select your project
-3. Navigation Menu -> Kubernetes Engine -> Clusters
-4. Click CREATE
-5. Click SWITCH TO STANDARD CLUSTER
-
-### Step 2: Cluster Basics
-
-| Field                 | Value           |
-| --------------------- | --------------- |
-| Name                  | `eshop-cluster` |
-| Location type         | Regional        |
-| Region                | `europe-west3`  |
-| Control plane version | Regular         |
-
-Default node locations: Select Custom, pick one zone (e.g., `europe-west3-a`)
-
-### Step 3: Node Pool Configuration
-
-Click default-pool in the left sidebar.
-
-| Field           | Value          |
-| --------------- | -------------- |
-| Name            | `default-pool` |
-| Number of nodes | `3`            |
-
-Node configuration (click Nodes in the left sidebar under default-pool):
-
-| Field          | Value                                      |
-| -------------- | ------------------------------------------ |
-| Series         | E2                                         |
-| Machine type   | `e2-standard-2` (2 vCPU, 1 core, 8 GB)    |
-| Boot disk type | Standard persistent disk                   |
-| Boot disk size | 30 GB                                      |
-
-Cluster autoscaler:
-
-| Field                       | Value        |
-| --------------------------- | ------------ |
-| Enable cluster autoscaler   | Enabled      |
-| Location policy             | Balanced     |
-| Size limits type            | Total limits |
-| Minimum number of all nodes | `3`          |
-| Maximum number of all nodes | `4`          |
-
-Automation:
-
-| Field                                                  | Value   |
-| ------------------------------------------------------ | ------- |
-| Automatically upgrade nodes to next available version  | Enabled |
-| Enable auto-repair                                     | Enabled |
-
-### Step 4: Create Cluster
-
-1. Click CREATE
-2. Wait for provisioning
-
-### Post-Creation: Update GitHub Variables
-
-Path: GitHub repo -> Settings -> Secrets and variables -> Actions -> Variables
-
-| Variable           | Value           |
-| ------------------ | --------------- |
-| `GKE_CLUSTER_NAME` | `eshop-cluster` |
-| `GCP_REGION`       | `europe-west3`  |
-
-### Post-Creation: Reserve Static IP
-
-1. Navigation Menu -> VPC network -> IP addresses
-2. Click RESERVE EXTERNAL STATIC ADDRESS
-3. Configure:
-   - Name: `nginx-ingress-ip`
-   - Network Service Tier: Premium
-   - IP version: IPv4
-   - Type: Regional
-   - Region: `europe-west3`
-4. Click RESERVE
-
-| Environment | IP Name            | IP Address       | Region       |
-|-------------|--------------------|------------------|--------------|
-| test-eu     | `nginx-ingress-ip` | `<STATIC_IP>`    | europe-west3 |
+1. Create a Redis instance in Memorystore
+2. Store the Redis URL as `wearables-taskiq-redis-url` in GCP Secret Manager
 
 ---
 
@@ -412,7 +315,7 @@ CI/CD deploys infrastructure (NGINX Ingress, ClusterIssuer) and services automat
 
 ### 1. Create Cloudflare API Token
 
-Create a scoped API token at Cloudflare dashboard (My Profile > API Tokens > Create Token):
+Cloudflare dashboard → My Profile → API Tokens → Create Token:
 
 | Permission | Value |
 |------------|-------|
@@ -420,7 +323,7 @@ Create a scoped API token at Cloudflare dashboard (My Profile > API Tokens > Cre
 | Zone - Zone | Read |
 | Zone Resources | Include - Specific zone - `eshop-test.com` |
 
-This token is used by cert-manager to create/delete DNS TXT records for Let's Encrypt DNS-01 challenges. Set it as `CLOUDFLARE_API_TOKEN` before running `gke-up.sh`.
+Set as `CLOUDFLARE_API_TOKEN` before running `gke-up.sh`.
 
 ### 2. Create infrastructure config files
 
@@ -433,14 +336,14 @@ controller:
     loadBalancerIP: "<STATIC_IP>"
 ```
 
-### 4. Create service Kubernetes overlays
+### 3. Create service Kubernetes overlays
 
 Create overlay folder `deploy/k8s/services/<SERVICE>/<ENV>/` with:
 - `kustomization.yaml`
 - `deployment.yaml`
 - `ingress.yaml` (for public services)
 
-### 5. Create workflow file
+### 4. Create workflow file
 
 Create `.github/workflows/on-push-<ENV>.yaml`:
 
@@ -482,7 +385,7 @@ jobs:
     secrets: inherit
 ```
 
-### 6. Configure DNS
+### 5. Configure DNS
 
 Create an A record pointing to the static IP:
 
@@ -493,14 +396,14 @@ Create an A record pointing to the static IP:
 | IPv4 address | `<STATIC_IP>` |
 | Proxy status | DNS only      |
 
-### 7. Trigger deployment
+### 6. Trigger deployment
 
 ```bash
 git checkout -b <ENV>/initial-deploy
 git push -u origin <ENV>/initial-deploy
 ```
 
-### 8. Verify deployment
+### 7. Verify deployment
 
 ```bash
 kubectl get pods
