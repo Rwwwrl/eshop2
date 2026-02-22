@@ -201,12 +201,14 @@ Both must return 308.
 
 ### TLS endpoints reachable
 
+test-eu uses Let's Encrypt **staging** (not browser-trusted). Use `--insecure` to skip CA verification:
+
 ```bash
-curl -s -o /dev/null -w "%{http_code}" https://test.eshop-test.com/health          # expect 200
-curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/health # expect 200
+curl -sk -o /dev/null -w "%{http_code}" https://test.eshop-test.com/health          # expect 200
+curl -sk -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/health # expect 200
 ```
 
-TLS certificate is valid if curl succeeds without `--insecure`.
+TLS is working if HTTPS responds with 200. The certificate won't pass CA trust checks (staging issuer) — this is expected for test-eu.
 
 ## 7. Services & DNS Resolution
 

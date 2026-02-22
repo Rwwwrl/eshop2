@@ -61,7 +61,7 @@ kubectl create secret generic cloudflare-api-token \
     --from-literal=api-token="$CLOUDFLARE_API_TOKEN"
 
 echo "=== Applying ClusterIssuer ==="
-kubectl apply -f deploy/k8s/infrastructure/cert-manager/cluster-issuer.yaml
+kubectl apply -f deploy/k8s/infrastructure/cert-manager/test-eu/cluster-issuer.yaml
 
 echo "=== Applying wildcard Certificate ==="
 kubectl apply -f deploy/k8s/infrastructure/cert-manager/certificates/test-eu/certificate.yaml
