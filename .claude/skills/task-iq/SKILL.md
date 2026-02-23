@@ -14,6 +14,7 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 | Broker setup | `<service>/background_tasks/main.py` | — |
 | Task definitions | `<service>/background_tasks/tasks.py` | `from taskiq.brokers.shared_broker import async_shared_broker` |
 | Settings mixin | `libs/taskiq_ext/settings.py` | `from libs.taskiq_ext import TaskiqSettingsMixin` |
+| RequestIdMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import RequestIdMiddleware` |
 | TimeLimitMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import TimeLimitMiddleware` |
 | Heartbeat loop | `libs/taskiq_ext/liveness_check.py` | `from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop` |
 | Redis health check | `libs/redis_ext/utils.py` | `from libs.redis_ext.utils import health_check as redis_health_check` |
@@ -49,7 +50,7 @@ from taskiq.schedule_sources import LabelScheduleSource
 from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
 
 from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop
-from libs.taskiq_ext.middlewares import TimeLimitMiddleware
+from libs.taskiq_ext.middlewares import RequestIdMiddleware, TimeLimitMiddleware
 
 broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
     result_backend=RedisAsyncResultBackend(redis_url=settings.taskiq_redis_url)
@@ -61,6 +62,7 @@ scheduler = TaskiqScheduler(
 )
 
 broker.add_middlewares(
+    RequestIdMiddleware(),
     TimeLimitMiddleware(default_timeout_seconds=60),
     SmartRetryMiddleware(use_jitter=True),
 )
@@ -166,6 +168,33 @@ async def kiq_hello_world() -> dict[str, str]:
     return {"task_id": result.task_id}
 ```
 
+## Request ID Propagation
+
+`RequestIdMiddleware` automatically propagates `request_id` from HTTP requests into TaskIQ worker tasks, enabling log correlation across processes.
+
+**How it works:**
+
+1. `pre_send` (HTTP process): reads `request_id_var` ContextVar, writes to `message.labels["_request_id"]`
+2. `pre_execute` (worker process): reads `_request_id` from labels, sets `request_id_var`
+3. Logger formatters (`GKEJsonFormatter`, `DevFormatter`) already read from `request_id_var` — no task code changes needed
+
+```python
+# Registration in background_tasks/main.py — must be first middleware
+broker.add_middlewares(
+    RequestIdMiddleware(),
+    PrometheusMiddleware(server_port=settings.taskiq_metrics_port),
+    TimeLimitMiddleware(default_timeout_seconds=60),
+    SmartRetryMiddleware(use_jitter=True),
+    TaskLifecycleLogMiddleware(),
+)
+```
+
+Rules:
+- Label key is `_request_id` (underscore prefix = internal infrastructure, not for task authors)
+- Both `pre_send` and `pre_execute` guard with `if request_id is not None` — tasks dispatched without HTTP context (scheduler, CLI) don't touch the ContextVar
+- No `post_execute` cleanup needed — each task runs in its own async context, ContextVar is naturally scoped
+- Task authors just use `logger.info(...)` — the request_id appears automatically in logs
+
 ## Settings
 
 Mix `TaskiqSettingsMixin` into the service settings:
@@ -208,8 +237,11 @@ async def readiness_check() -> dict[str, str]:
 
 | Middleware | Source | Purpose |
 |-----------|--------|---------|
+| `RequestIdMiddleware` | `libs/taskiq_ext/middlewares.py` | Propagates `request_id` from HTTP context into worker tasks via labels |
 | `TimeLimitMiddleware` | `libs/taskiq_ext/middlewares.py` | Sets default `timeout` label (60s) on tasks without one |
 | `SmartRetryMiddleware` | `taskiq` (built-in) | Exponential backoff with jitter for retries |
+
+`RequestIdMiddleware` must be registered **first** — before other middlewares that might log.
 
 ## Testing
 

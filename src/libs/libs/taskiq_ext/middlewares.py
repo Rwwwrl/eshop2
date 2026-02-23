@@ -5,7 +5,32 @@ from taskiq.abc.middleware import TaskiqMiddleware
 from taskiq.message import TaskiqMessage
 from taskiq.result import TaskiqResult
 
+from libs.context_vars import request_id_var
+
 _logger = getLogger(__name__)
+
+_REQUEST_ID_LABEL = "_request_id"
+
+
+class RequestIdMiddleware(TaskiqMiddleware):
+    """
+    Propagates request_id from the HTTP process into TaskIQ worker tasks via labels.
+
+    - pre_send (client side): reads request_id_var and injects it into message labels.
+    - pre_execute (worker side): reads the label and sets request_id_var so loggers pick it up.
+    """
+
+    def pre_send(self, message: TaskiqMessage) -> TaskiqMessage:
+        request_id = request_id_var.get()
+        if request_id is not None:
+            message.labels[_REQUEST_ID_LABEL] = request_id
+        return message
+
+    def pre_execute(self, message: TaskiqMessage) -> TaskiqMessage:
+        request_id = message.labels.get(_REQUEST_ID_LABEL)
+        if request_id is not None:
+            request_id_var.set(request_id)
+        return message
 
 
 class TimeLimitMiddleware(TaskiqMiddleware):
