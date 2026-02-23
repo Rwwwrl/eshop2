@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "myeshop-libs"
-version = "0.14.0"
+version = "0.15.0"
 description = "Shared library for MyEshop microservices"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "libs" }]
@@ -22,6 +22,7 @@ taskiq = "^0.12.1"
 redis = "^7.1.1"
 prometheus-client = "^0.24.1"
 prometheus-fastapi-instrumentator = "^7.1.0"
+faststream = {extras = ["redis", "cli"], version = "^0.6.6"}
 
 [build-system]
 requires = ["poetry-core"]

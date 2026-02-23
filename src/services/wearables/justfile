@@ -1,0 +1,15 @@
+[group('run')]
+run-http:
+    poetry run uvicorn wearables.http.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 75
+
+[group('run')]
+run-taskiq-worker:
+    poetry run taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 wearables.background_tasks.main:broker wearables.background_tasks.tasks
+
+[group('run')]
+run-taskiq-scheduler:
+    poetry run taskiq scheduler wearables.background_tasks.main:scheduler wearables.background_tasks.tasks --skip-first-run
+
+[group('run')]
+run-faststream-worker:
+    FASTSTREAM_CLI_RICH_MODE=none poetry run faststream run wearables.messaging.main:app
