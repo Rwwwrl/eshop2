@@ -77,6 +77,16 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --project ${{ vars.GCP_PROJECT_ID }}
 
+      - name: Apply ExternalSecret
+        run: kubectl apply -f deploy/k8s/services/${{ inputs.service_name }}/base/shared/external-secret.yaml
+
+      - name: Force sync external secrets
+        run: |
+          kubectl annotate externalsecrets --all \
+            force-sync=$(date +%s) --overwrite
+          kubectl wait externalsecrets --all \
+            --for=condition=Ready --timeout=60s
+
       - name: Run postgres expand migrations
         id: expand_migrations
         if: ${{ inputs.run_postgres_migrations }}
