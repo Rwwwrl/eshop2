@@ -6,7 +6,7 @@ from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop
-from libs.taskiq_ext.middlewares import TaskLifecycleLogMiddleware, TimeLimitMiddleware
+from libs.taskiq_ext.middlewares import RequestIdMiddleware, TaskLifecycleLogMiddleware, TimeLimitMiddleware
 from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqState
 from taskiq.brokers.shared_broker import async_shared_broker
 from taskiq.middlewares.prometheus_middleware import PrometheusMiddleware
@@ -28,6 +28,7 @@ scheduler = TaskiqScheduler(
 )
 
 broker.add_middlewares(
+    RequestIdMiddleware(),
     PrometheusMiddleware(server_port=settings.taskiq_metrics_port),
     TimeLimitMiddleware(default_timeout_seconds=60),
     SmartRetryMiddleware(use_jitter=True),
