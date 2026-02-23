@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wearables-messaging
+  name: wearables-background-tasks
 spec:
   template:
     spec:
@@ -10,6 +10,6 @@ spec:
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: DoNotSchedule
       containers:
-        - name: wearables-messaging
+        - name: wearables-background-tasks
           image: wearables
           imagePullPolicy: Always

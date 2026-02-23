@@ -18,7 +18,7 @@ This is a learning project focused on building microservices architecture from s
 
 Every microservice follows **vertical slice architecture**. Code is organized by **context** (feature/domain area), not by technical layer. Each context groups related functionality around a business capability, with technical layers inside.
 
-The top-level split within each service is by **communication protocol** (`http/`, `grpc/`, `messaging/`), not by technical layer. Each protocol folder has its own `main.py` with protocol-specific setup (FastAPI app, broker config, etc.). Shared domain code — models, repositories, schemas, settings — lives at the service root and is accessible from all protocol folders.
+The top-level split within each service is by **communication protocol** (`http/`, `grpc/`, `background_tasks/`), not by technical layer. Each protocol folder has its own `main.py` with protocol-specific setup (FastAPI app, broker config, etc.). Shared domain code — models, repositories, schemas, settings — lives at the service root and is accessible from all protocol folders.
 
 Not every service needs all protocol folders. Simpler services may only have `http/`. The `grpc/` folder is planned but not yet in use.
 
@@ -44,10 +44,10 @@ service_name/
     grpc/                    # Future — gRPC protocol support
         __init__.py
         main.py
-    messaging/               # Async communication (TaskIQ + Redis)
+    background_tasks/        # Background tasks (TaskIQ + Redis)
         __init__.py
         main.py              # Broker setup, worker lifecycle
-        handlers.py          # Task handlers
+        tasks.py             # Task definitions
 ```
 
 Additional common files (add as needed): `enums.py`, `serializers.py`, `exceptions.py`.
@@ -72,7 +72,7 @@ Routes depend on services, services depend on repositories, repositories depend 
 
 ### Kubernetes Deployment Mirroring
 
-The k8s manifest structure mirrors the code protocol split: `deploy/k8s/services/<service>/base/http/`, `base/messaging/`, etc. Services with multiple process types (e.g., HTTP server + async worker) share one Docker image but have no `CMD` in the Dockerfile — the command is specified per-deployment in k8s manifests.
+The k8s manifest structure mirrors the code protocol split: `deploy/k8s/services/<service>/base/http/`, `base/background-tasks/`, etc. Services with multiple process types (e.g., HTTP server + async worker) share one Docker image but have no `CMD` in the Dockerfile — the command is specified per-deployment in k8s manifests.
 
 ### Shared Library
 

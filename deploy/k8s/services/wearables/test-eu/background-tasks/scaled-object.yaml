@@ -4,7 +4,7 @@ metadata:
   name: wearables-worker-scaler
 spec:
   scaleTargetRef:
-    name: wearables-messaging
+    name: wearables-background-tasks
   pollingInterval: 5
   cooldownPeriod: 300
   minReplicaCount: 2

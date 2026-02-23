@@ -4,11 +4,11 @@
 
 ```
 deploy/k8s/services/<service>/
-    base/messaging/
+    base/background-tasks/
         workers-deployment.yaml
         scheduler-deployment.yaml
         kustomization.yaml
-    <env>/messaging/
+    <env>/background-tasks/
         deployment.yaml
         kustomization.yaml
 ```
@@ -45,17 +45,17 @@ Add a NOTE comment above resources in the deployment manifest explaining the bud
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wearables-messaging
+  name: wearables-background-tasks
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: wearables-messaging
+      app: wearables-background-tasks
   template:
     metadata:
       labels:
-        app: wearables-messaging
+        app: wearables-background-tasks
     spec:
       nodeSelector:
         cloud.google.com/gke-nodepool: wearables-pool
@@ -64,11 +64,11 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              app: wearables-messaging
+              app: wearables-background-tasks
       terminationGracePeriodSeconds: 80
       containers:
-        - name: wearables-messaging
-          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.messaging.main:broker", "wearables.messaging.handlers"]
+        - name: wearables-background-tasks
+          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.background_tasks.main:broker", "wearables.background_tasks.tasks"]
           livenessProbe:
             exec:
               command:
@@ -97,9 +97,9 @@ spec:
 ```
 
 Rules:
-- Deployment name: `<service>-messaging`
+- Deployment name: `<service>-background-tasks`
 - Same Docker image as HTTP deployment (no CMD in Dockerfile — command in manifest)
-- Worker command: `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.messaging.main:broker <service>.messaging.handlers`
+- Worker command: `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.background_tasks.main:broker <service>.background_tasks.tasks`
 - Always use `--workers 1` — scale with k8s replicas, not in-process workers
 - Always set `--max-async-tasks` to bound memory usage
 - No Service resource needed (worker doesn't receive traffic)
@@ -133,7 +133,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: wearables-scheduler
-          command: ["poetry", "run", "taskiq", "scheduler", "wearables.messaging.main:scheduler", "wearables.messaging.handlers", "--skip-first-run"]
+          command: ["poetry", "run", "taskiq", "scheduler", "wearables.background_tasks.main:scheduler", "wearables.background_tasks.tasks", "--skip-first-run"]
           resources:
             requests:
               cpu: "25m"
@@ -147,7 +147,7 @@ Rules:
 - **Exactly 1 replica** — multiple schedulers = duplicate task dispatches
 - **`strategy: Recreate`** — prevents two schedulers running during rollout
 - **`--skip-first-run`** — on startup, the scheduler checks for overdue tasks and would fire them all immediately. This flag waits for the next natural cron tick instead, preventing a burst on every deploy/restart
-- Handler modules must be passed as CLI args (e.g., `wearables.messaging.handlers`) so the scheduler can read `schedule=[...]` labels
+- Task modules must be passed as CLI args (e.g., `wearables.background_tasks.tasks`) so the scheduler can read `schedule=[...]` labels
 - Lightweight resources — scheduler only polls schedule sources and calls `.kiq()`, no task execution
 - No `WORKER_STARTUP`/`WORKER_SHUTDOWN` events fire in the scheduler process — those are worker-only
 
@@ -181,7 +181,7 @@ terminationGracePeriodSeconds (80s)
 └── 5s buffer                 ← process overhead
 ```
 
-No `preStop` hook needed — messaging workers pull from Redis, there's no ingress endpoint removal to wait for (unlike HTTP pods)
+No `preStop` hook needed — background task workers pull from Redis, there's no ingress endpoint removal to wait for (unlike HTTP pods)
 
 ## Liveness Probe
 
@@ -194,15 +194,15 @@ The k8s liveness probe uses a lightweight shell command to check the heartbeat f
 
 ## CI/CD
 
-The deploy workflow (`called-deploy-service-to-gke.yaml`) has a `run_messaging_deployment` input:
+The deploy workflow (`called-deploy-service-to-gke.yaml`) has a `run_background_tasks_deployment` input:
 
 ```yaml
-run_messaging_deployment:
+run_background_tasks_deployment:
   required: false
   type: boolean
   default: false
 ```
 
-Enable it for services that have a messaging worker. The workflow:
-1. Runs `kustomize build . | kubectl apply -f -` in the messaging overlay — deploys both worker and scheduler
-2. Waits for both rollouts: `<service>-messaging` and `<service>-scheduler`
+Enable it for services that have a background tasks worker. The workflow:
+1. Runs `kustomize build . | kubectl apply -f -` in the background-tasks overlay — deploys both worker and scheduler
+2. Waits for both rollouts: `<service>-background-tasks` and `<service>-scheduler`
