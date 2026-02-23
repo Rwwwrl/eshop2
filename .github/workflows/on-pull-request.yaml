@@ -138,7 +138,7 @@ jobs:
 
       - name: Validate manifests
         run: |
-          for kustomization in $(find deploy/k8s/services -name kustomization.yaml -not -path "*/base/*" -not -path "*/postgres-migration/*"); do
+          for kustomization in $(find deploy/k8s -name kustomization.yaml -not -path "*/base/*"); do
             dir=$(dirname "$kustomization")
             echo "Validating $dir..."
             kubectl kustomize "$dir" | kubeconform \

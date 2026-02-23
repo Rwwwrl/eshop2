@@ -7,6 +7,7 @@ if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
 fi
 
 PROJECT="eshop-test-485206"
+PROJECT_NUMBER="746555235320"
 CLUSTER="eshop-cluster"
 REGION="europe-west3"
 ZONE="europe-west3-a"
@@ -102,6 +103,12 @@ kubectl wait --for=condition=Available deployment --all \
 
 echo "=== Creating ESO Kubernetes Service Account ==="
 kubectl apply -f deploy/k8s/infrastructure/external-secrets/test-eu/service-account.yaml
+
+echo "=== Granting Secret Manager access to ESO service account ==="
+gcloud projects add-iam-policy-binding "$PROJECT" \
+    --role=roles/secretmanager.secretAccessor \
+    --member="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$PROJECT.svc.id.goog/subject/ns/external-secrets/sa/eso-ksa" \
+    --condition=None
 
 echo "=== Applying ClusterSecretStore ==="
 kubectl apply -f deploy/k8s/infrastructure/external-secrets/test-eu/cluster-secret-store.yaml

@@ -3,6 +3,6 @@ kind: Kustomization
 resources:
   - ../../base/http
   - hpa.yaml
-  - ../configmap.yaml
+  - ../shared
 patches:
   - path: deployment.yaml
