@@ -154,21 +154,21 @@ For each deployment, verify replica count and scheduling:
 | Graceful shutdown | terminationGracePeriodSeconds=30 | `kubectl get deployment wearables-scheduler -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 30 |
 | Health | No restarts, pod in Running state | No restart count incrementing |
 
-### wearables-messaging (TaskIQ worker)
+### wearables-background-tasks (TaskIQ worker)
 
 | Check | Expected | How to verify |
 |-------|----------|---------------|
-| Replicas | >= 2 Running pods (KEDA-managed) | `kubectl get deployment wearables-messaging -o jsonpath='{.status.readyReplicas}'` >= 2 |
-| Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-messaging -o wide` — NODE column must be wearables-pool nodes |
+| Replicas | >= 2 Running pods (KEDA-managed) | `kubectl get deployment wearables-background-tasks -o jsonpath='{.status.readyReplicas}'` >= 2 |
+| Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-background-tasks -o wide` — NODE column must be wearables-pool nodes |
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; difference between most-loaded and least-loaded node must be <= 1 |
-| Strategy | RollingUpdate | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.strategy.type}'` = `RollingUpdate` |
-| Graceful shutdown | terminationGracePeriodSeconds=80 | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 80 |
-| Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
+| Strategy | RollingUpdate | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.strategy.type}'` = `RollingUpdate` |
+| Graceful shutdown | terminationGracePeriodSeconds=80 | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 80 |
+| Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
 | Health | Probes passing, no restarts | No restart count incrementing, pods in Running state |
 | ScaledObject ready | READY=True | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
-| ScaledObject target | Targets wearables-messaging | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.scaleTargetRef.name}'` = `wearables-messaging` |
+| ScaledObject target | Targets wearables-background-tasks | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.scaleTargetRef.name}'` = `wearables-background-tasks` |
 | ScaledObject min/max | minReplicaCount=2, maxReplicaCount=10 | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.minReplicaCount}'` = 2 and `{.spec.maxReplicaCount}` = 10 |
-| HPA created by KEDA | HPA exists for wearables-messaging | `kubectl get hpa` — should show an HPA targeting wearables-messaging |
+| HPA created by KEDA | HPA exists for wearables-background-tasks | `kubectl get hpa` — should show an HPA targeting wearables-background-tasks |
 | TriggerAuthentication exists | redis-trigger-auth present | `kubectl get triggerauthentication redis-trigger-auth` — must exist |
 
 ## 6. Ingress & TLS
@@ -229,7 +229,7 @@ Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.co
 | api-gateway-http | 50m | 128Mi | 200m | 256Mi |
 | hello-world-http | 50m | 128Mi | 200m | 256Mi |
 | wearables-http | 50m | 128Mi | 200m | 256Mi |
-| wearables-messaging | 50m | 205Mi | 200m | 430Mi |
+| wearables-background-tasks | 50m | 205Mi | 200m | 430Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
 | redis-exporter | 50m | 64Mi | 100m | 128Mi |
 

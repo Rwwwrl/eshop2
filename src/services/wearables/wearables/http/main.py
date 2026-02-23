@@ -19,8 +19,8 @@ from libs.settings import is_data_sensitive_env
 from libs.sqlmodel_ext import Session
 from taskiq.brokers.shared_broker import async_shared_broker
 
+from wearables.background_tasks.main import broker
 from wearables.http.routes import router
-from wearables.messaging.main import broker
 from wearables.settings import settings
 from wearables.utils import init_sqlmodel_engine
 

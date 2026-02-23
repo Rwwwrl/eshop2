@@ -1,6 +1,6 @@
 ---
 name: task-iq
-description: Guides TaskIQ async task queue integration in MyEshop. Use when adding background tasks to a service, setting up a messaging worker, writing task handlers, or configuring broker middleware. Trigger phrases include "taskiq", "task queue", "background task", "worker", "messaging handler", "broker", "kiq".
+description: Guides TaskIQ async task queue integration in MyEshop. Use when adding background tasks to a service, setting up a background tasks worker, writing task definitions, or configuring broker middleware. Trigger phrases include "taskiq", "task queue", "background task", "worker", "background tasks", "broker", "kiq".
 ---
 
 # TaskIQ
@@ -11,8 +11,8 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 
 | Component | Location | Import |
 |-----------|----------|--------|
-| Broker setup | `<service>/messaging/main.py` | — |
-| Task handlers | `<service>/messaging/handlers.py` | `from taskiq.brokers.shared_broker import async_shared_broker` |
+| Broker setup | `<service>/background_tasks/main.py` | — |
+| Task definitions | `<service>/background_tasks/tasks.py` | `from taskiq.brokers.shared_broker import async_shared_broker` |
 | Settings mixin | `libs/taskiq_ext/settings.py` | `from libs.taskiq_ext import TaskiqSettingsMixin` |
 | TimeLimitMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import TimeLimitMiddleware` |
 | Heartbeat loop | `libs/taskiq_ext/liveness_check.py` | `from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop` |
@@ -22,10 +22,10 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 
 ```
 <service>/
-    messaging/
+    background_tasks/
         __init__.py
         main.py          # Broker config, worker lifecycle
-        handlers.py      # Task functions (@async_shared_broker.task)
+        tasks.py         # Task functions (@async_shared_broker.task)
     settings.py          # Mixes in TaskiqSettingsMixin
 ```
 
@@ -35,12 +35,12 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 - Scheduler runs as a **third process** — dispatches scheduled tasks to the broker on cron/interval
 - One worker process per pod (`--workers 1`), scale horizontally with k8s replicas
 - Exactly **one scheduler replica** — multiple replicas = duplicate task dispatches
-- `messaging/main.py` configures the real Redis broker, scheduler, and worker lifecycle
-- `messaging/handlers.py` defines tasks via `@async_shared_broker.task()` — decoupled from concrete broker
-- HTTP routes enqueue tasks by importing handlers and calling `.kiq()`
+- `background_tasks/main.py` configures the real Redis broker, scheduler, and worker lifecycle
+- `background_tasks/tasks.py` defines tasks via `@async_shared_broker.task()` — decoupled from concrete broker
+- HTTP routes enqueue tasks by importing task functions and calling `.kiq()`
 - `async_shared_broker.default_broker(broker)` wires the real broker at worker startup
 
-## Broker & Scheduler Setup (messaging/main.py)
+## Broker & Scheduler Setup (background_tasks/main.py)
 
 ```python
 from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqState
@@ -86,7 +86,7 @@ async def _on_worker_shutdown(state: TaskiqState) -> None:
     await state.sqlmodel_engine.dispose()
 ```
 
-## Task Handler Pattern (messaging/handlers.py)
+## Task Definition Pattern (background_tasks/tasks.py)
 
 ```python
 from typing import Annotated
@@ -125,9 +125,9 @@ async def heartbeat() -> str:
 Schedule dict keys: `cron` | `interval` | `time` (one-shot). Optional: `args`, `kwargs`, `cron_offset` (timezone).
 
 Rules:
-- The scheduler process must import handler modules to read labels — pass them as CLI args
+- The scheduler process must import task modules to read labels — pass them as CLI args
 - `--skip-first-run` prevents burst of overdue tasks on deploy/restart
-- Scheduler command: `taskiq scheduler <service>.messaging.main:scheduler <service>.messaging.handlers --skip-first-run`
+- Scheduler command: `taskiq scheduler <service>.background_tasks.main:scheduler <service>.background_tasks.tasks --skip-first-run`
 
 ## Bulk Dispatch Pattern
 
@@ -158,7 +158,7 @@ Rules:
 ## Enqueuing from HTTP Routes
 
 ```python
-from wearables.messaging.handlers import hello_world_task
+from wearables.background_tasks.tasks import hello_world_task
 
 @router.post("/debug/kiq-hello-world", status_code=status.HTTP_202_ACCEPTED)
 async def kiq_hello_world() -> dict[str, str]:
@@ -184,11 +184,11 @@ Adds `taskiq_redis_url: str` to the settings.
 1. Add dependencies: `poetry add taskiq taskiq-redis`
 2. Mix `TaskiqSettingsMixin` into the service's `Settings` class
 3. Add `taskiq_redis_url` to `env.yaml` and k8s ConfigMaps
-4. Create `messaging/__init__.py`, `messaging/main.py`, `messaging/handlers.py`
+4. Create `background_tasks/__init__.py`, `background_tasks/main.py`, `background_tasks/tasks.py`
 5. Copy broker setup pattern from wearables — adjust service name in logging/sentry calls
-6. Add k8s manifests: `base/messaging/workers-deployment.yaml`, `scheduler-deployment.yaml`, `kustomization.yaml`, plus environment overlays
-7. Set `run_messaging_deployment: true` in CI/CD workflow call
-   - CI waits for both `<service>-messaging` and `<service>-scheduler` rollouts
+6. Add k8s manifests: `base/background-tasks/workers-deployment.yaml`, `scheduler-deployment.yaml`, `kustomization.yaml`, plus environment overlays
+7. Set `run_background_tasks_deployment: true` in CI/CD workflow call
+   - CI waits for both `<service>-background-tasks` and `<service>-scheduler` rollouts
 8. Add `taskiq_broker` fixture to service `tests/conftest.py`
 9. Add Redis health check to HTTP `/readiness_check` endpoint
 
@@ -217,7 +217,7 @@ Use `InMemoryBroker` in tests — no Redis needed. Register via `async_shared_br
 
 - Session-scoped `taskiq_broker` fixture in service `tests/conftest.py` — creates `InMemoryBroker`, calls startup/shutdown
 - `fastapi_app` fixture must depend on `taskiq_broker`
-- Handler tests: call `.kiq()` then `.wait_result()` to verify execution
+- Task tests: call `.kiq()` then `.wait_result()` to verify execution
 - Middleware tests: plain sync unit tests, no broker needed
 
 See the testing skill for broader test patterns and conftest templates.
@@ -247,7 +247,7 @@ Configuration must align with `TimeLimitMiddleware` timeout and k8s `termination
 Rules:
 - Always set `--wait-tasks-timeout` explicitly — default `None` waits forever, risks SIGKILL
 - `terminationGracePeriodSeconds` must be > `wait-tasks-timeout` + `shutdown-timeout`
-- No `preStop` hook needed for messaging workers (they pull from Redis, no ingress traffic to drain)
+- No `preStop` hook needed for background task workers (they pull from Redis, no ingress traffic to drain)
 - K8s sends exactly one SIGTERM, then one SIGKILL when grace period expires — no retries
 
 See [references/k8s_deployment.md](references/k8s_deployment.md) for the full deployment manifest and shutdown details.
@@ -261,9 +261,9 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for the full de
 | Context injection | `context: Annotated[Context, TaskiqDepends()]` |
 | Retry count access | `context.message.labels.get("_retries", 0)` |
 | Enqueue method | `.kiq()` returns awaitable with `.task_id` |
-| Worker command | `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.messaging.main:broker <service>.messaging.handlers` |
-| Scheduler command | `taskiq scheduler <service>.messaging.main:scheduler <service>.messaging.handlers --skip-first-run` |
-| Worker deployment name | `<service>-messaging` |
+| Worker command | `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.background_tasks.main:broker <service>.background_tasks.tasks` |
+| Scheduler command | `taskiq scheduler <service>.background_tasks.main:scheduler <service>.background_tasks.tasks --skip-first-run` |
+| Worker deployment name | `<service>-background-tasks` |
 | Scheduler deployment name | `<service>-scheduler` |
 | Worker liveness probe | Heartbeat file at `/tmp/taskiq_heartbeat` |
 | Scheduler replicas | Exactly 1 (multiple = duplicate dispatches) |

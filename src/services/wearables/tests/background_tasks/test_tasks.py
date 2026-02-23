@@ -1,6 +1,6 @@
 import pytest
 from taskiq import AsyncBroker
-from wearables.messaging.handlers import hello_world_task
+from wearables.background_tasks.tasks import hello_world_task
 
 
 @pytest.mark.asyncio(loop_scope="session")

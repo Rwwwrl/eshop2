@@ -4,8 +4,8 @@ from libs.sqlmodel_ext import Session
 from libs.sqlmodel_ext.utils import health_check as postgres_health_check
 
 from wearables import repositories
+from wearables.background_tasks.tasks import hello_world_task
 from wearables.http.schemas import request_schemas
-from wearables.messaging.handlers import hello_world_task
 from wearables.schemas import dtos
 from wearables.settings import settings
 

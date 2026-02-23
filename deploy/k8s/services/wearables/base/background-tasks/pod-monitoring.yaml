@@ -1,11 +1,11 @@
 apiVersion: monitoring.googleapis.com/v1
 kind: PodMonitoring
 metadata:
-  name: wearables-messaging
+  name: wearables-background-tasks
 spec:
   selector:
     matchLabels:
-      app: wearables-messaging
+      app: wearables-background-tasks
   endpoints:
     - port: 9090
       interval: 30s

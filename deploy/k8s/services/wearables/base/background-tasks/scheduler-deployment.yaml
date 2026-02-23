@@ -21,7 +21,7 @@ spec:
         - name: wearables-scheduler
           # NOTE @sosov: --skip-first-run prevents burst of all overdue tasks on deploy/restart.
           # Waits for the next natural cron tick instead.
-          command: ["poetry", "run", "taskiq", "scheduler", "wearables.messaging.main:scheduler", "wearables.messaging.handlers", "--skip-first-run"]
+          command: ["poetry", "run", "taskiq", "scheduler", "wearables.background_tasks.main:scheduler", "wearables.background_tasks.tasks", "--skip-first-run"]
           envFrom:
             - configMapRef:
                 name: wearables-config
