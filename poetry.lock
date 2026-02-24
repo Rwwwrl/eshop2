@@ -1305,7 +1305,7 @@ files = [
 
 [[package]]
 name = "hello-world"
-version = "0.10.0"
+version = "0.10.1"
 description = "Simple Hello World FastAPI microservice"
 optional = false
 python-versions = "^3.14"

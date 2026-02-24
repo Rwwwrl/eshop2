@@ -3,7 +3,6 @@ from pathlib import Path
 from libs.faststream_ext.settings import FaststreamSettingsMixin
 from libs.sentry_ext import SentrySettingsMixin
 from libs.settings import BaseAppSettings
-from libs.sqlmodel_ext.settings import PostgresSettingsMixin
 from pydantic_settings import SettingsConfigDict
 
 _BASE_DIR = Path(__file__).resolve().parent.parent
@@ -11,7 +10,6 @@ _BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(
     SentrySettingsMixin,
-    PostgresSettingsMixin,
     FaststreamSettingsMixin,
     BaseAppSettings,
 ):
