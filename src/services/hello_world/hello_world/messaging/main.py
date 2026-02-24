@@ -2,9 +2,11 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 
-from faststream import ContextRepo, FastStream
+from faststream import ContextRepo
+from faststream.asgi import AsgiFastStream, make_ping_asgi
 from faststream.redis import RedisBroker
 from libs.common.enums import ServiceNameEnum
+from libs.faststream_ext import TimeLimitMiddleware
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
@@ -14,7 +16,11 @@ from hello_world.messaging.handlers import router
 from hello_world.settings import settings
 from hello_world.utils import init_sqlmodel_engine
 
-broker = RedisBroker(url=settings.faststream_redis_url)
+broker = RedisBroker(
+    url=settings.faststream_redis_url,
+    graceful_timeout=settings.faststream_graceful_timeout,
+    middlewares=[TimeLimitMiddleware],
+)
 broker.include_router(router)
 
 
@@ -32,4 +38,8 @@ async def lifespan(context: ContextRepo) -> AsyncGenerator[None, None]:
     await engine.dispose()
 
 
-app = FastStream(broker, lifespan=lifespan)
+app = AsgiFastStream(
+    broker,
+    lifespan=lifespan,
+    asgi_routes=[("/health", make_ping_asgi(broker, timeout=5.0))],
+)
