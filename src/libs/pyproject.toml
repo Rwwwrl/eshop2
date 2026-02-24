@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "myeshop-libs"
-version = "0.15.0"
+version = "0.16.0"
 description = "Shared library for MyEshop microservices"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "libs" }]

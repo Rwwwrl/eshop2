@@ -18,9 +18,18 @@ jobs:
 
   publish-libs:
     needs: [apply-infrastructure-secrets]
-    uses: ./.github/workflows/called-publish-libs.yaml
+    uses: ./.github/workflows/called-publish-python-package.yaml
     with:
       environment: test-eu
+      package_path: src/libs
+    secrets: inherit
+
+  publish-messaging-contracts:
+    needs: [publish-libs]
+    uses: ./.github/workflows/called-publish-python-package.yaml
+    with:
+      environment: test-eu
+      package_path: src/messaging_contracts
     secrets: inherit
 
   deploy-infrastructure:
@@ -31,7 +40,7 @@ jobs:
     secrets: inherit
 
   deploy-api-gateway:
-    needs: [deploy-infrastructure, publish-libs]
+    needs: [deploy-infrastructure, publish-libs, publish-messaging-contracts]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
@@ -42,18 +51,19 @@ jobs:
     secrets: inherit
 
   deploy-hello-world:
-    needs: [deploy-infrastructure, publish-libs]
+    needs: [deploy-infrastructure, publish-libs, publish-messaging-contracts]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
       service_name: hello-world
       service_path: src/services/hello_world
       run_postgres_migrations: false
+      run_faststream_deployment: true
 
     secrets: inherit
 
   deploy-wearables:
-    needs: [deploy-infrastructure, publish-libs]
+    needs: [deploy-infrastructure, publish-libs, publish-messaging-contracts]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
@@ -61,5 +71,6 @@ jobs:
       service_path: src/services/wearables
       run_postgres_migrations: true
       run_background_tasks_deployment: true
+      run_faststream_deployment: true
 
     secrets: inherit

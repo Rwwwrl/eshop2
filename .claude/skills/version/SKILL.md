@@ -8,18 +8,41 @@ user_invocable: true
 
 ## Pyproject.toml Locations
 
-- **libs:** `src/libs/pyproject.toml`
-- **api_gateway:** `src/services/api_gateway/pyproject.toml`
-- **hello_world:** `src/services/hello_world/pyproject.toml`
-- **wearables:** `src/services/wearables/pyproject.toml`
+### Shared Packages
+
+| Package | Path |
+|---------|------|
+| `myeshop-libs` | `src/libs/pyproject.toml` |
+| `myeshop-messaging-contracts` | `src/messaging_contracts/pyproject.toml` |
+
+### Services
+
+| Service | Path |
+|---------|------|
+| `api_gateway` | `src/services/api_gateway/pyproject.toml` |
+| `hello_world` | `src/services/hello_world/pyproject.toml` |
+| `wearables` | `src/services/wearables/pyproject.toml` |
+
+## Dependency Graph
+
+```
+services (api_gateway, hello_world, wearables)
+  ├── myeshop-libs
+  └── myeshop-messaging-contracts
+        └── myeshop-libs
+```
+
+Both shared packages are path dependencies in the root `pyproject.toml`. Services depend on both.
 
 ## Instructions
 
 1. Read the `version` field from every pyproject.toml listed above.
-2. Read the `myeshop-libs` dependency version from every service pyproject.toml.
-3. Display a table with columns: **Package**, **Version**, **myeshop-libs dep**.
+2. Read the `myeshop-libs` and `myeshop-messaging-contracts` dependency versions from every service pyproject.toml. Also read the `myeshop-libs` dependency version from `messaging_contracts/pyproject.toml`.
+3. Display a table with columns: **Package**, **Version**, **myeshop-libs dep**, **myeshop-messaging-contracts dep**.
 4. Check for issues:
-   - If `myeshop-libs` version in libs pyproject.toml is `X.Y.Z`, then every service must have `myeshop-libs = "^X.Y.0"` (matching major.minor). For 0.x versions, `^0.Y.0` only matches `0.Y.*`, so services MUST match the minor version of libs.
-   - Flag any service whose `myeshop-libs` constraint does not satisfy the current libs version.
-5. If the user asked to **bump**: ask which packages to bump and by what level (patch/minor/major), then apply the changes. After bumping libs, check whether the new libs version is still covered by the existing service `myeshop-libs` constraints. If it is (e.g., libs `0.9.0` → `0.9.1` and services have `^0.9.0`), no service changes are needed. If it is **not** (e.g., libs `0.9.x` → `0.10.0` and services have `^0.9.0`), update all service `myeshop-libs` constraints to match — and since their `pyproject.toml` files change, bump all service versions too (at least patch level).
+   - For 0.x versions, `^0.Y.0` only matches `0.Y.*`, so consumers MUST match the minor version of the shared package.
+   - If `myeshop-libs` version in libs pyproject.toml is `0.Y.Z`, then every consumer (services + messaging-contracts) must have `myeshop-libs = "^0.Y.0"`.
+   - If `myeshop-messaging-contracts` version is `0.Y.Z`, then every service must have `myeshop-messaging-contracts = "^0.Y.0"`.
+   - Flag any consumer whose constraint does not satisfy the current shared package version.
+5. If the user asked to **bump**: ask which packages to bump and by what level (patch/minor/major), then apply the changes. After bumping a shared package, check whether the new version is still covered by existing consumer constraints. If it is (e.g., `0.9.0` → `0.9.1` and consumers have `^0.9.0`), no consumer changes needed. If it is **not** (e.g., `0.9.x` → `0.10.0` and consumers have `^0.9.0`), update all consumer constraints to match — and since their `pyproject.toml` files change, bump all consumer versions too (at least patch level).
 6. After any version edits: run `cd src/libs && poetry lock --no-update` then `cd ../.. && poetry lock --no-update` then `poetry install`.

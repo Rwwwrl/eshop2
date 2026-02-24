@@ -1,7 +1,11 @@
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
+from libs.faststream_ext import publish
+from messaging_contracts.events import HelloWorldEvent
+
+from api_gateway.messaging.main import broker as faststream_broker
 
 router = APIRouter()
 
@@ -34,3 +38,10 @@ async def get_hello_world_host() -> dict:
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{_HELLO_WORLD_SERVICE_URL}/host", headers=headers)
         return response.json()
+
+
+@router.post("/debug/publish-hello-world", status_code=status.HTTP_202_ACCEPTED)
+async def publish_hello_world() -> dict[str, str]:
+    event = HelloWorldEvent(message="Hello from API Gateway!")
+    await publish(broker=faststream_broker, message=event)
+    return {"status": "published"}

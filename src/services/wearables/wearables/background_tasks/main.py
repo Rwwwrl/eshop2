@@ -18,8 +18,9 @@ from wearables.utils import init_sqlmodel_engine
 
 broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
     result_backend=RedisAsyncResultBackend(
-        redis_url=settings.taskiq_redis_url, result_ex_time=7 * 60 * 60 * 24
-    )  # 1 week
+        redis_url=settings.taskiq_redis_url,
+        result_ex_time=7 * 60 * 60 * 24,  # 1 week
+    )
 )
 
 scheduler = TaskiqScheduler(

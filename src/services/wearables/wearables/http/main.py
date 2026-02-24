@@ -21,7 +21,6 @@ from taskiq.brokers.shared_broker import async_shared_broker
 
 from wearables.background_tasks.main import broker
 from wearables.http.routes import router
-from wearables.messaging.main import broker as faststream_broker
 from wearables.settings import settings
 from wearables.utils import init_sqlmodel_engine
 
@@ -39,11 +38,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await broker.startup()
     async_shared_broker.default_broker(broker)
 
-    await faststream_broker.connect()
-
     yield
 
-    await faststream_broker.close()
     await broker.shutdown()
     await engine.dispose()
 

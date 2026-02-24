@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wearables-messaging
+spec:
+  replicas: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: wearables-messaging
+  template:
+    metadata:
+      labels:
+        app: wearables-messaging
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: wearables-pool
+      containers:
+        - name: wearables-messaging
+          command: ["poetry", "run", "faststream", "run", "wearables.messaging.main:app"]
+          env:
+            - name: FASTSTREAM_CLI_RICH_MODE
+              value: "none"
+          envFrom:
+            - configMapRef:
+                name: wearables-config
+            - secretRef:
+                name: wearables-secrets

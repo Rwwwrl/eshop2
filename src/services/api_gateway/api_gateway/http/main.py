@@ -18,6 +18,7 @@ from libs.sentry_ext import setup_sentry
 from libs.settings import is_data_sensitive_env
 
 from api_gateway.http.routes import router
+from api_gateway.messaging.main import broker as faststream_broker
 from api_gateway.settings import settings
 
 
@@ -25,7 +26,12 @@ from api_gateway.settings import settings
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging(settings=settings, service_name=ServiceNameEnum.API_GATEWAY, process_type=ProcessTypeEnum.FASTAPI)
     setup_sentry(settings=settings, release=version("api-gateway"))
+
+    await faststream_broker.connect()
+
     yield
+
+    await faststream_broker.stop()
 
 
 _is_sensitive = is_data_sensitive_env(environment=settings.environment)
