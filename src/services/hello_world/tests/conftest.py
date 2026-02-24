@@ -2,10 +2,10 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from api_gateway.http.routes import router
-from api_gateway.messaging.main import broker as faststream_broker
 from fastapi import FastAPI
 from faststream.redis import TestRedisBroker
+from hello_world.http.routes import router
+from hello_world.messaging.main import broker as faststream_broker
 from httpx import ASGITransport, AsyncClient
 from libs.fastapi_ext.middlewares import UnhandledExceptionMiddleware
 

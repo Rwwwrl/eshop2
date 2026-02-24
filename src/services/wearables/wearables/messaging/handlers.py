@@ -10,6 +10,9 @@ _logger = getLogger(__name__)
 router = RedisRouter()
 
 
-@router.subscriber(stream=WEARABLES_STREAM, filter=message_type_filter(HelloWorldEvent))
-async def handle_hello_world_event(body: dict) -> None:
+subscriber = router.subscriber(stream=WEARABLES_STREAM)
+
+
+@subscriber(filter=message_type_filter(HelloWorldEvent))
+async def handle_hello_world_event(body: HelloWorldEvent) -> None:
     _logger.info("Wearables received HelloWorldEvent: %s", body)

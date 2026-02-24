@@ -43,6 +43,10 @@ async def sqlmodel_engine(settings: PostgresSettingsMixin) -> AsyncGenerator[Asy
 async def _clear_sqlmodel_tables(request: pytest.FixtureRequest) -> AsyncGenerator[None]:
     yield
 
+    # NOTE @sosov: Skip table cleanup for tests that don't use the DB (e.g., messaging tests).
+    if sqlmodel_engine.__name__ not in request.fixturenames:
+        return
+
     try:
         tables: list[type[BaseSqlModel]] = request.getfixturevalue("autocleared_sqlmodel_tables")
     except pytest.FixtureLookupError:

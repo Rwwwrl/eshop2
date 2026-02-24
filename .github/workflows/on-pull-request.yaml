@@ -18,7 +18,7 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
-          - 5432:5432
+          - 15432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -28,19 +28,12 @@ jobs:
       redis:
         image: redis:7-alpine
         ports:
-          - 6379:6379
+          - 16379:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
-
-    env:
-      ENVIRONMENT: cicd
-      POSTGRES_DIRECT_DB_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/wearables
-      POSTGRES_POOLER_DB_URL: null
-      TASKIQ_REDIS_URL: redis://localhost:6379
-      FASTSTREAM_REDIS_URL: redis://localhost:6379
 
     steps:
       - uses: actions/checkout@v6

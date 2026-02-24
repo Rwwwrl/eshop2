@@ -39,3 +39,4 @@ configs:
   init_sql:
     content: |
       CREATE DATABASE wearables;
+      CREATE DATABASE hello_world;
