@@ -129,6 +129,17 @@ For each deployment, verify replica count and scheduling:
 | Strategy | RollingUpdate | `kubectl get deployment hello-world-http -o jsonpath='{.spec.strategy.type}'` = `RollingUpdate` |
 | Health endpoints | Probes passing | No restart count incrementing |
 
+### hello-world-messaging (FastStream consumer)
+
+| Check | Expected | How to verify |
+|-------|----------|---------------|
+| Replicas | 2 Running pods (fixed) | `kubectl get deployment hello-world-messaging -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Node selector | All pods on `default-pool` nodes | `kubectl get pods -l app=hello-world-messaging -o wide` — NODE column must be default-pool nodes |
+| Strategy | RollingUpdate | `kubectl get deployment hello-world-messaging -o jsonpath='{.spec.strategy.type}'` = `RollingUpdate` |
+| Graceful shutdown | terminationGracePeriodSeconds=75 | `kubectl get deployment hello-world-messaging -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 75 |
+| Liveness probe | HTTP GET on `/health` port 8001 | `kubectl get deployment hello-world-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — httpGet path=/health port=8001, initialDelaySeconds=30, periodSeconds=10 |
+| Health | Probes passing, no restarts | No restart count incrementing |
+
 ### wearables-http
 
 | Check | Expected | How to verify |
@@ -143,6 +154,17 @@ For each deployment, verify replica count and scheduling:
 | Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | `kubectl get deployment wearables-http -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 95 and preStop exec contains `sleep` `10` |
 | Strategy | RollingUpdate | `kubectl get deployment wearables-http -o jsonpath='{.spec.strategy.type}'` = `RollingUpdate` |
 | Health endpoints | Probes passing | No restart count incrementing |
+
+### wearables-messaging (FastStream consumer)
+
+| Check | Expected | How to verify |
+|-------|----------|---------------|
+| Replicas | 2 Running pods (fixed) | `kubectl get deployment wearables-messaging -o jsonpath='{.status.readyReplicas}'` = 2 |
+| Node selector | All pods on `wearables-pool` nodes | `kubectl get pods -l app=wearables-messaging -o wide` — NODE column must be wearables-pool nodes |
+| Strategy | RollingUpdate | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.strategy.type}'` = `RollingUpdate` |
+| Graceful shutdown | terminationGracePeriodSeconds=75 | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 75 |
+| Liveness probe | HTTP GET on `/health` port 8001 | `kubectl get deployment wearables-messaging -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — httpGet path=/health port=8001, initialDelaySeconds=30, periodSeconds=10 |
+| Health | Probes passing, no restarts | No restart count incrementing |
 
 ### wearables-scheduler (TaskIQ scheduler)
 
@@ -163,7 +185,8 @@ For each deployment, verify replica count and scheduling:
 | Topology spread | maxSkew <= 1 across hostnames | Count pods per node; difference between most-loaded and least-loaded node must be <= 1 |
 | Strategy | RollingUpdate | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.strategy.type}'` = `RollingUpdate` |
 | Graceful shutdown | terminationGracePeriodSeconds=80 | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}'` = 80 |
-| Liveness probe | Shell-based heartbeat file check (`/tmp/taskiq_heartbeat` freshness < 60s) | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — exec with `sh -c`, initialDelaySeconds=30, periodSeconds=10 |
+| Liveness probe | HTTP GET on `/health-check` port 8081 | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` — httpGet path=/health-check port=8081, initialDelaySeconds=30, periodSeconds=10, failureThreshold=3, timeoutSeconds=5 |
+| Readiness probe | HTTP GET on `/readiness-check` port 8081 | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.template.spec.containers[0].readinessProbe}'` — httpGet path=/readiness-check port=8081, initialDelaySeconds=10, periodSeconds=10, failureThreshold=3, timeoutSeconds=5 |
 | Health | Probes passing, no restarts | No restart count incrementing, pods in Running state |
 | ScaledObject ready | READY=True | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | ScaledObject target | Targets wearables-background-tasks | `kubectl get scaledobject wearables-worker-scaler -o jsonpath='{.spec.scaleTargetRef.name}'` = `wearables-background-tasks` |
@@ -228,7 +251,9 @@ Verify with: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.co
 |---------|-------------|----------------|-----------|--------------|
 | api-gateway-http | 50m | 128Mi | 200m | 256Mi |
 | hello-world-http | 50m | 128Mi | 200m | 256Mi |
+| hello-world-messaging | 50m | 128Mi | 200m | 256Mi |
 | wearables-http | 50m | 128Mi | 200m | 256Mi |
+| wearables-messaging | 50m | 128Mi | 200m | 256Mi |
 | wearables-background-tasks | 50m | 205Mi | 200m | 430Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
 | redis-exporter | 50m | 64Mi | 100m | 128Mi |
