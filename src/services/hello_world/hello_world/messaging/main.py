@@ -6,7 +6,7 @@ from faststream import ContextRepo
 from faststream.asgi import AsgiFastStream, make_ping_asgi
 from faststream.redis import RedisBroker
 from libs.common.enums import ServiceNameEnum
-from libs.faststream_ext import TimeLimitMiddleware
+from libs.faststream_ext.middlewares import RequestIdMiddleware, TimeLimitMiddleware
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
@@ -19,7 +19,7 @@ from hello_world.utils import init_sqlmodel_engine
 broker = RedisBroker(
     url=settings.faststream_redis_url,
     graceful_timeout=settings.faststream_graceful_timeout,
-    middlewares=[TimeLimitMiddleware],
+    middlewares=[RequestIdMiddleware, TimeLimitMiddleware],
 )
 broker.include_router(router)
 

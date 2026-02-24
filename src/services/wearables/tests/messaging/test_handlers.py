@@ -2,7 +2,8 @@ from unittest.mock import patch
 
 import pytest
 from faststream.redis import TestRedisBroker
-from libs.faststream_ext.utils import MESSAGE_CLASS_HEADER, get_message_class_path
+from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER
+from libs.faststream_ext.utils import get_message_class_path
 from messaging_contracts.consts import WEARABLES_STREAM
 from messaging_contracts.events import HelloWorldEvent
 from wearables.messaging.handlers import handle_hello_world_event

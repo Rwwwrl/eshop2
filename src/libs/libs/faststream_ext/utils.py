@@ -2,9 +2,9 @@ from collections.abc import Callable
 
 from faststream.redis import RedisBroker, RedisMessage
 
+from libs.context_vars import request_id_var
+from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER, REQUEST_ID_HEADER
 from libs.faststream_ext.schemas.dtos import BaseMessage
-
-MESSAGE_CLASS_HEADER = "x-message-class"
 
 
 def get_message_class_path(message_class: type[BaseMessage]) -> str:
@@ -25,6 +25,11 @@ async def publish(broker: RedisBroker, message: BaseMessage) -> None:
         raise TypeError(f"{type(message).__name__} has no streams. Apply @streams decorator.")
 
     class_path = get_message_class_path(message_class=type(message))
-    headers = {MESSAGE_CLASS_HEADER: class_path}
+    headers: dict[str, str] = {MESSAGE_CLASS_HEADER: class_path}
+
+    request_id = request_id_var.get()
+    if request_id is not None:
+        headers[REQUEST_ID_HEADER] = request_id
+
     for stream in message.__streams__:
         await broker.publish(message=message, stream=stream, headers=headers)
