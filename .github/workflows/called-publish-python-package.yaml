@@ -1,9 +1,12 @@
-name: Publish myeshop-libs
+name: Publish Python Package
 
 on:
   workflow_call:
     inputs:
       environment:
+        required: true
+        type: string
+      package_path:
         required: true
         type: string
 
@@ -37,7 +40,7 @@ jobs:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
       - name: Configure Poetry repository
-        working-directory: src/libs
+        working-directory: ${{ inputs.package_path }}
         run: |
           REGISTRY_URL="https://${{ vars.GCP_REGION }}-python.pkg.dev/${{ vars.GCP_PROJECT_ID }}/myeshop-python/"
           poetry config repositories.myeshop-python "$REGISTRY_URL"
@@ -46,7 +49,7 @@ jobs:
           poetry config http-basic.myeshop-python oauth2accesstoken "$TOKEN"
 
       - name: Build and publish
-        working-directory: src/libs
+        working-directory: ${{ inputs.package_path }}
         run: |
           OUTPUT=$(poetry publish --build --repository myeshop-python 2>&1) && exit 0
           echo "$OUTPUT"

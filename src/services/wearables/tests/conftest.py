@@ -3,17 +3,21 @@ from collections.abc import AsyncGenerator
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
+from faststream.redis import TestRedisBroker
+from httpx import ASGITransport, AsyncClient
 from libs.sqlmodel_ext import BaseSqlModel, Session
 from sqlalchemy.ext.asyncio import AsyncEngine
 from taskiq import AsyncBroker, InMemoryBroker
 from taskiq.brokers.shared_broker import async_shared_broker
 from wearables.http.routes import router
+from wearables.messaging.main import broker as faststream_broker
 from wearables.models import WearableEvent
+from wearables.settings import Settings
 from wearables.settings import settings as wearables_settings
 
 
 @pytest.fixture(scope="session")
-def settings() -> wearables_settings.__class__:
+def settings() -> Settings:
     return wearables_settings
 
 
@@ -38,3 +42,16 @@ async def fastapi_app(sqlmodel_engine: AsyncEngine, taskiq_broker: AsyncBroker) 
     app.state.sqlmodel_engine = sqlmodel_engine
     app.include_router(router=router)
     yield app
+
+
+@pytest_asyncio.fixture(scope="session")
+async def async_client(fastapi_app: FastAPI) -> AsyncGenerator[AsyncClient]:
+    transport = ASGITransport(app=fastapi_app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
+@pytest_asyncio.fixture(scope="session")
+async def test_broker() -> AsyncGenerator[TestRedisBroker]:
+    async with TestRedisBroker(faststream_broker) as br:
+        yield br

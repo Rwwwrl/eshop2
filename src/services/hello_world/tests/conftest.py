@@ -1,0 +1,31 @@
+from collections.abc import AsyncGenerator
+
+import pytest
+import pytest_asyncio
+from fastapi import FastAPI
+from faststream.redis import TestRedisBroker
+from hello_world.http.routes import router
+from hello_world.messaging.main import broker as faststream_broker
+from httpx import ASGITransport, AsyncClient
+from libs.fastapi_ext.middlewares import UnhandledExceptionMiddleware
+
+
+@pytest.fixture()
+def fastapi_app() -> FastAPI:
+    app = FastAPI()
+    app.add_middleware(UnhandledExceptionMiddleware)
+    app.include_router(router=router)
+    return app
+
+
+@pytest_asyncio.fixture()
+async def async_client(fastapi_app: FastAPI) -> AsyncGenerator[AsyncClient]:
+    transport = ASGITransport(app=fastapi_app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
+@pytest_asyncio.fixture()
+async def test_broker() -> AsyncGenerator[TestRedisBroker]:
+    async with TestRedisBroker(faststream_broker) as br:
+        yield br

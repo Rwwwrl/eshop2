@@ -12,3 +12,4 @@ class LogLevelEnum(str, Enum):
 class ProcessTypeEnum(str, Enum):
     FASTAPI = "fastapi"
     TASKIQ = "taskiq"
+    FASTSTREAM = "faststream"

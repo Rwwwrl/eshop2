@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wearables-messaging
+spec:
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: wearables-messaging
+  template:
+    metadata:
+      labels:
+        app: wearables-messaging
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: wearables-pool
+      terminationGracePeriodSeconds: 75
+      containers:
+        - name: wearables-messaging
+          command: ["poetry", "run", "uvicorn", "wearables.messaging.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]
+          envFrom:
+            - configMapRef:
+                name: wearables-config
+            - secretRef:
+                name: wearables-secrets
+          ports:
+            - containerPort: 8001
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"

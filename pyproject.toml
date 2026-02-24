@@ -11,6 +11,7 @@ hello-world = { path = "src/services/hello_world", develop = true }
 api-gateway = { path = "src/services/api_gateway", develop = true }
 wearables = { path = "src/services/wearables", develop = true }
 myeshop-libs = { path = "src/libs", develop = true }
+myeshop-messaging-contracts = { path = "src/messaging_contracts", develop = true }
 pre-commit = "^4.5.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -18,6 +19,7 @@ ipython = "^9.10.0"
 google-cloud-storage = "^3.9.0"
 pyyaml = "^6.0.3"
 pytest-cov = "^7.0.0"
+pytest-env = "^1.5.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -26,6 +28,14 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "session"
 addopts = "--import-mode=importlib -p libs.tests_ext.sqlmodel_fixtures"
+env = [
+    "ENVIRONMENT=cicd",
+    "FASTSTREAM_REDIS_URL=redis://localhost:16379",
+    "POSTGRES_DIRECT_DB_URL=postgresql+asyncpg://postgres:postgres@localhost:15432/postgres",
+    # NOTE @sosov: No pooler in CI — reuse direct URL to satisfy the required setting.
+    "POSTGRES_POOLER_DB_URL=postgresql+asyncpg://postgres:postgres@localhost:15432/postgres",
+    "TASKIQ_REDIS_URL=redis://localhost:16379",
+]
 testpaths = [
     "src/libs/tests",
     "src/services/hello_world/tests",

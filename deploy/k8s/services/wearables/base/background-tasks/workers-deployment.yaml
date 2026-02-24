@@ -34,18 +34,21 @@ spec:
           ports:
             - containerPort: 9090
               protocol: TCP
+            - containerPort: 8081
+              protocol: TCP
           livenessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - |
-                  test -f /tmp/taskiq_heartbeat &&
-                  written_at=$(cat /tmp/taskiq_heartbeat) &&
-                  now=$(date +%s) &&
-                  age=$((now - ${written_at%%.*})) &&
-                  test "$age" -lt 60
+            httpGet:
+              path: /health-check
+              port: 8081
             initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /readiness-check
+              port: 8081
+            initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 3
             timeoutSeconds: 5

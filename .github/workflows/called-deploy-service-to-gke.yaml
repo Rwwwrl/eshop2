@@ -20,6 +20,10 @@ on:
         required: false
         type: boolean
         default: false
+      run_faststream_deployment:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-and-deploy:
@@ -99,7 +103,7 @@ jobs:
           kustomize build . | kubectl apply -f -
           kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-expand-migration --timeout=120s
 
-      - name: Deploy background tasks with kustomize
+      - name: Deploy background tasks
         if: ${{ inputs.run_background_tasks_deployment }}
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
@@ -114,7 +118,21 @@ jobs:
           kubectl rollout status deployment/${{ inputs.service_name }}-background-tasks --timeout=300s
           kubectl rollout status deployment/${{ inputs.service_name }}-scheduler --timeout=300s
 
-      - name: Deploy http with kustomize
+      - name: Deploy messaging
+        if: ${{ inputs.run_faststream_deployment }}
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}/messaging
+          kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for messaging rollout
+        if: ${{ inputs.run_faststream_deployment }}
+        run: |
+          kubectl rollout status deployment/${{ inputs.service_name }}-messaging --timeout=300s
+
+      - name: Deploy http
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
         run: |
