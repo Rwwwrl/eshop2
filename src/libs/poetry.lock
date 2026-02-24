@@ -363,6 +363,7 @@ files = [
 [package.dependencies]
 anyio = ">=4.0,<5"
 fast-depends = {version = ">=3.0.0", extras = ["pydantic"]}
+prometheus-client = {version = ">=0.20.0,<0.30.0", optional = true, markers = "extra == \"prometheus\""}
 redis = {version = ">=5.0.0,<8.0.0", optional = true, markers = "extra == \"redis\""}
 typer = {version = ">=0.9,<0.12 || >0.12,<=0.21.1", optional = true, markers = "extra == \"cli\""}
 typing-extensions = ">=4.12.0"
@@ -2068,4 +2069,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.14"
-content-hash = "711d6dbf6ef7f5f5ae28425da4c1f141e5e9164addb24c824a0d5fab31be5dcc"
+content-hash = "da257510a93ebf9d800486099c6e782cd5d4e5a47398bd0db07600886a85d812"
