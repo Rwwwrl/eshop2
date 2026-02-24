@@ -1,11 +1,15 @@
 from importlib.metadata import version
 
+from fastapi import FastAPI
+from fastapi.responses import Response
 from libs.common.enums import ServiceNameEnum
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
+from libs.redis_ext.utils import health_check as redis_health_check
 from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
-from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop
+from libs.sqlmodel_ext.utils import health_check as sqlmodel_health_check
+from libs.taskiq_ext.health_server import HealthServer
 from libs.taskiq_ext.middlewares import RequestIdMiddleware, TaskLifecycleLogMiddleware, TimeLimitMiddleware
 from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqState
 from taskiq.brokers.shared_broker import async_shared_broker
@@ -36,6 +40,24 @@ broker.add_middlewares(
     TaskLifecycleLogMiddleware(),
 )
 
+health_app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+health_server = HealthServer(app=health_app, port=settings.taskiq_health_port)
+
+
+@health_app.get("/health-check", status_code=204)
+async def _health_check() -> Response:
+    return Response(status_code=204)
+
+
+@health_app.get("/readiness-check", status_code=204)
+async def _readiness_check() -> Response:
+    try:
+        await redis_health_check(redis_url=settings.taskiq_redis_url)
+        await sqlmodel_health_check()
+    except Exception:
+        return Response(status_code=503)
+    return Response(status_code=204)
+
 
 @broker.on_event(TaskiqEvents.WORKER_STARTUP)
 async def _on_worker_startup(state: TaskiqState) -> None:
@@ -49,10 +71,10 @@ async def _on_worker_startup(state: TaskiqState) -> None:
 
     async_shared_broker.default_broker(broker)
 
-    start_heartbeat_loop()
+    await health_server.start()
 
 
 @broker.on_event(TaskiqEvents.WORKER_SHUTDOWN)
 async def _on_worker_shutdown(state: TaskiqState) -> None:
-    await stop_heartbeat_loop()
+    await health_server.stop()
     await state.sqlmodel_engine.dispose()
