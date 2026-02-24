@@ -23,12 +23,6 @@ faststream = {extras = ["redis"], version = "^0.6.6"}
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "session"
 addopts = "--import-mode=importlib -p libs.tests_ext.sqlmodel_fixtures"
-env = [
-    "ENVIRONMENT=cicd",
-    "POSTGRES_DIRECT_DB_URL=postgresql+asyncpg://postgres:postgres@localhost:15432/wearables",
-    "TASKIQ_REDIS_URL=redis://localhost:16379",
-    "FASTSTREAM_REDIS_URL=redis://localhost:16379",
-]
 
 [build-system]
 requires = ["poetry-core"]
