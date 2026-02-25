@@ -4,6 +4,7 @@ from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
 from libs.faststream_ext import publish
 from messaging_contracts.events import HelloWorldEvent
+from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
 
 from api_gateway.messaging.main import broker as faststream_broker
 
@@ -44,4 +45,11 @@ async def get_hello_world_host() -> dict:
 async def publish_hello_world() -> dict[str, str]:
     event = HelloWorldEvent(message="Hello from API Gateway!")
     await publish(broker=faststream_broker, message=event)
+    return {"status": "published"}
+
+
+@router.post("/debug/publish-hello-world-async-command", status_code=status.HTTP_202_ACCEPTED)
+async def publish_hello_world_async_command() -> dict[str, str]:
+    command = HelloWorldAsyncCommand(greeting="Greetings from API Gateway!")
+    await publish(broker=faststream_broker, message=command)
     return {"status": "published"}

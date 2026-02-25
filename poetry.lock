@@ -226,7 +226,7 @@ trio = ["trio (>=0.31.0)", "trio (>=0.32.0)"]
 
 [[package]]
 name = "api-gateway"
-version = "0.11.0"
+version = "0.12.0"
 description = "API Gateway FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -237,8 +237,8 @@ develop = true
 fastapi = "^0.128.0"
 faststream = {version = "^0.6.6", extras = ["redis"]}
 httpx = "^0.28.0"
-myeshop-libs = "^0.17.0"
-myeshop-messaging-contracts = "^0.2.0"
+myeshop-libs = "^0.18.0"
+myeshop-messaging-contracts = "^0.3.0"
 pytest = "^9.0.2"
 ruff = "^0.14.14"
 uvicorn = {version = "^0.40.0", extras = ["standard"]}
@@ -1305,7 +1305,7 @@ files = [
 
 [[package]]
 name = "hello-world"
-version = "0.10.1"
+version = "0.11.0"
 description = "Simple Hello World FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -1315,8 +1315,8 @@ develop = true
 [package.dependencies]
 fastapi = "^0.128.0"
 faststream = {version = "^0.6.6", extras = ["cli", "redis"]}
-myeshop-libs = "^0.17.0"
-myeshop-messaging-contracts = "^0.2.0"
+myeshop-libs = "^0.18.0"
+myeshop-messaging-contracts = "^0.3.0"
 pytest = "^9.0.2"
 ruff = "^0.14.14"
 uvicorn = {version = "^0.40.0", extras = ["standard"]}
@@ -1864,7 +1864,7 @@ files = [
 
 [[package]]
 name = "myeshop-libs"
-version = "0.17.0"
+version = "0.18.0"
 description = "Shared library for MyEshop microservices"
 optional = false
 python-versions = "^3.14"
@@ -1895,7 +1895,7 @@ url = "src/libs"
 
 [[package]]
 name = "myeshop-messaging-contracts"
-version = "0.2.0"
+version = "0.3.0"
 description = "Cross-service messaging contracts for MyEshop"
 optional = false
 python-versions = "^3.14"
@@ -1903,7 +1903,7 @@ files = []
 develop = true
 
 [package.dependencies]
-myeshop-libs = "^0.17.0"
+myeshop-libs = "^0.18.0"
 
 [package.source]
 type = "directory"
@@ -3347,7 +3347,7 @@ files = [
 
 [[package]]
 name = "wearables"
-version = "0.16.0"
+version = "0.17.0"
 description = "Wearables webhook ingestion microservice"
 optional = false
 python-versions = "^3.14"
@@ -3358,8 +3358,8 @@ develop = true
 fastapi = "^0.128.0"
 faststream = {version = "^0.6.6", extras = ["redis"]}
 httpx = "^0.28.0"
-myeshop-libs = "^0.17.0"
-myeshop-messaging-contracts = "^0.2.0"
+myeshop-libs = "^0.18.0"
+myeshop-messaging-contracts = "^0.3.0"
 pydantic = "^2.11.0"
 pytest = "^9.0.2"
 pytest-asyncio = "^1.3.0"

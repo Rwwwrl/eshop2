@@ -5,6 +5,7 @@ from faststream.redis import RedisRouter, StreamSub
 from libs.faststream_ext import message_type_filter
 from messaging_contracts.consts import HELLO_WORLD_STREAM
 from messaging_contracts.events import HelloWorldEvent
+from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
 
 from hello_world.settings import settings
 
@@ -22,3 +23,8 @@ subscriber = router.subscriber(
 @subscriber(filter=message_type_filter(HelloWorldEvent))
 async def handle_hello_world_event(body: HelloWorldEvent) -> None:
     _logger.info("Received HelloWorldEvent: %s", body)
+
+
+@subscriber(filter=message_type_filter(HelloWorldAsyncCommand))
+async def handle_hello_world_async_command(body: HelloWorldAsyncCommand) -> None:
+    _logger.info("Received HelloWorldAsyncCommand: %s", body)
