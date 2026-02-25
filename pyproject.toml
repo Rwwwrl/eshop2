@@ -13,6 +13,7 @@ wearables = { path = "src/services/wearables", develop = true }
 myeshop-libs = { path = "src/libs", develop = true }
 myeshop-messaging-contracts = { path = "src/messaging_contracts", develop = true }
 pre-commit = "^4.5.1"
+pika = "^1.3.2"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^9.10.0"
