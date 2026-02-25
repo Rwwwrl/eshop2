@@ -117,7 +117,12 @@ from messaging_contracts.events import HelloWorldEvent
 router = RedisRouter()
 
 subscriber = router.subscriber(
-    stream=StreamSub(HELLO_WORLD_STREAM, max_records=settings.faststream_max_records),
+    stream=StreamSub(
+        HELLO_WORLD_STREAM,
+        group="hello-world",
+        consumer=socket.gethostname(),
+        max_records=settings.faststream_max_records,
+    ),
     ack_policy=AckPolicy.ACK,
 )
 
@@ -128,6 +133,7 @@ async def handle_hello_world_event(body: HelloWorldEvent) -> None:
 
 Rules:
 - Create a `RedisRouter()` — gets included into broker in `main.py`
+- `StreamSub` must always include `group` and `consumer` (both required together). `group` = service name, `consumer` = `socket.gethostname()` (unique per k8s pod). Without these, each replica reads all messages independently, causing duplicates.
 - `StreamSub` with `max_records` cap for backpressure
 - `AckPolicy.ACK` — explicit acknowledgment
 - `message_type_filter(EventClass)` checks `x-message-class` header for type discrimination
@@ -286,6 +292,7 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for Kubernetes 
 | Stream decorator | `@streams(...)` is mandatory on every message class |
 | Stream names | Centralized in `messaging_contracts/consts.py` |
 | Publishing | Always use `publish(broker, message)` helper, never `broker.publish()` directly |
+| Consumer group | `StreamSub` must set `group` (service name) and `consumer` (`socket.gethostname()`) — prevents duplicate delivery across replicas |
 | Type discrimination | `message_type_filter(EventClass)` on every subscriber handler |
 | Router pattern | `RedisRouter()` in `handlers.py`, included via `broker.include_router(router)` |
 | Worker command | `uvicorn <service>.messaging.main:app --host 0.0.0.0 --port 8001 --workers 1` |

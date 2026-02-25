@@ -1,3 +1,4 @@
+import socket
 from logging import getLogger
 
 from faststream.middlewares import AckPolicy
@@ -14,7 +15,12 @@ router = RedisRouter()
 
 
 subscriber = router.subscriber(
-    stream=StreamSub(WEARABLES_STREAM, max_records=settings.faststream_max_records),
+    stream=StreamSub(
+        WEARABLES_STREAM,
+        group="wearables",
+        consumer=socket.gethostname(),
+        max_records=settings.faststream_max_records,
+    ),
     ack_policy=AckPolicy.ACK,
 )
 

@@ -1305,7 +1305,7 @@ files = [
 
 [[package]]
 name = "hello-world"
-version = "0.11.0"
+version = "0.11.2"
 description = "Simple Hello World FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -3347,7 +3347,7 @@ files = [
 
 [[package]]
 name = "wearables"
-version = "0.17.0"
+version = "0.17.2"
 description = "Wearables webhook ingestion microservice"
 optional = false
 python-versions = "^3.14"

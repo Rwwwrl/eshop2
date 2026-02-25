@@ -1,3 +1,4 @@
+import socket
 from logging import getLogger
 
 from faststream.middlewares import AckPolicy
@@ -15,7 +16,12 @@ router = RedisRouter()
 
 
 subscriber = router.subscriber(
-    stream=StreamSub(HELLO_WORLD_STREAM, max_records=settings.faststream_max_records),
+    stream=StreamSub(
+        HELLO_WORLD_STREAM,
+        group="hello-world",
+        consumer=socket.gethostname(),
+        max_records=settings.faststream_max_records,
+    ),
     ack_policy=AckPolicy.ACK,
 )
 
