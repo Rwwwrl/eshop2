@@ -54,6 +54,9 @@ jobs:
       - name: Check formatting
         run: poetry run ruff format --check .
 
+      - name: Check import boundaries
+        run: poetry run lint-imports
+
       - name: Run tests
         run: poetry run pytest --cov --cov-fail-under=90
 

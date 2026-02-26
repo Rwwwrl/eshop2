@@ -99,6 +99,17 @@ poetry run ruff check --fix .
 poetry run ruff format .
 ```
 
+**Import boundaries:** Uses **import-linter** (config in `.importlinter`). Enforced rules:
+- `messaging_contracts` must not import `libs`
+- `libs` must not import any service (`hello_world`, `api_gateway`, `wearables`)
+- Services must not import each other (independence contract)
+
+When adding a new service, add it to the `services-independence` and `libs-no-services` contracts in `.importlinter`.
+
+```bash
+poetry run lint-imports
+```
+
 **Task runner:** Uses `just` (see `justfile` for available commands).
 
 ## Coding Standards

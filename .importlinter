@@ -1,0 +1,30 @@
+[importlinter]
+root_packages =
+    hello_world
+    api_gateway
+    wearables
+    libs
+    messaging_contracts
+
+[importlinter:contract:messaging-contracts-no-libs]
+name = messaging_contracts must not import libs
+type = forbidden
+source_modules = messaging_contracts
+forbidden_modules = libs
+
+[importlinter:contract:libs-no-services]
+name = libs must not import services
+type = forbidden
+source_modules = libs
+forbidden_modules =
+    hello_world
+    api_gateway
+    wearables
+
+[importlinter:contract:services-independence]
+name = Services must not import each other
+type = independence
+modules =
+    hello_world
+    api_gateway
+    wearables
