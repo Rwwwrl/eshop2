@@ -51,7 +51,7 @@ async def async_client(fastapi_app: FastAPI) -> AsyncGenerator[AsyncClient]:
         yield client
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def test_broker() -> AsyncGenerator[TestRabbitBroker]:
     async with TestRabbitBroker(faststream_broker) as br:
         yield br

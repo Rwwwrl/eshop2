@@ -247,7 +247,7 @@ class Settings(SentrySettingsMixin, FaststreamSettingsMixin, BaseAppSettings):
 from faststream.rabbit import TestRabbitBroker
 from <service>.messaging.main import broker as faststream_broker
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(scope="function")
 async def test_broker() -> AsyncGenerator[TestRabbitBroker]:
     async with TestRabbitBroker(faststream_broker) as br:
         yield br

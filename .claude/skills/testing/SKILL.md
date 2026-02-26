@@ -84,5 +84,5 @@ response_content = ProductListSchema(**response.json())
 | Internal fixtures | Prefix with `_` (e.g., `_clear_sqlmodel_tables`) |
 | Line length | E501 ignored in tests (`**/tests/**/*`) |
 | DB assertions | Use `Session()` directly, not through the API |
-| Fixture scope | Session for all fixtures (exception: `_clear_sqlmodel_tables`) |
+| Fixture scope | Session for all fixtures (exceptions: `_clear_sqlmodel_tables`, `test_broker`) |
 | Test marker | `@pytest.mark.asyncio(loop_scope="session")` always |
