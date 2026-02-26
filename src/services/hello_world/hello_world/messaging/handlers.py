@@ -1,29 +1,19 @@
 import socket
 from logging import getLogger
 
-from faststream.middlewares import AckPolicy
-from faststream.redis import RedisRouter, StreamSub
+from faststream.rabbit import RabbitQueue, RabbitRouter
 from libs.faststream_ext import message_type_filter
-from messaging_contracts.consts import HELLO_WORLD_STREAM
 from messaging_contracts.events import HelloWorldEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
-
-from hello_world.settings import settings
+from rabbitmq_topology.entities import HELLO_WORLD_QUEUE
 
 _logger = getLogger(__name__)
 
-router = RedisRouter()
+router = RabbitRouter()
 
+_QUEUE = RabbitQueue(name=HELLO_WORLD_QUEUE.name, declare=False)
 
-subscriber = router.subscriber(
-    stream=StreamSub(
-        HELLO_WORLD_STREAM,
-        group="hello-world",
-        consumer=socket.gethostname(),
-        max_records=settings.faststream_max_records,
-    ),
-    ack_policy=AckPolicy.ACK,
-)
+subscriber = router.subscriber(queue=_QUEUE)
 
 
 @subscriber(filter=message_type_filter(HelloWorldEvent))

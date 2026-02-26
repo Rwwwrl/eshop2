@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from faststream.redis import TestRedisBroker
+from faststream.rabbit import TestRabbitBroker
 from hello_world.http.routes import router
 from hello_world.messaging.main import broker as faststream_broker
 from httpx import ASGITransport, AsyncClient
@@ -26,6 +26,6 @@ async def async_client(fastapi_app: FastAPI) -> AsyncGenerator[AsyncClient]:
 
 
 @pytest_asyncio.fixture()
-async def test_broker() -> AsyncGenerator[TestRedisBroker]:
-    async with TestRedisBroker(faststream_broker) as br:
+async def test_broker() -> AsyncGenerator[TestRabbitBroker]:
+    async with TestRabbitBroker(faststream_broker) as br:
         yield br

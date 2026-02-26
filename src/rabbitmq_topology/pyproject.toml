@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "myeshop-rabbitmq-topology"
+version = "0.1.0"
+description = "RabbitMQ topology definitions for MyEshop"
+authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
+packages = [{ include = "rabbitmq_topology" }]
+
+[tool.poetry.dependencies]
+python = "^3.14"
+myeshop-messaging-contracts = "^0.4.0"
+faststream = { version = "^0.6.6", extras = ["rabbit"] }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

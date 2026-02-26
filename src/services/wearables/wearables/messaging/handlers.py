@@ -1,28 +1,18 @@
 import socket
 from logging import getLogger
 
-from faststream.middlewares import AckPolicy
-from faststream.redis import RedisRouter, StreamSub
+from faststream.rabbit import RabbitQueue, RabbitRouter
 from libs.faststream_ext import message_type_filter
-from messaging_contracts.consts import WEARABLES_STREAM
 from messaging_contracts.events import HelloWorldEvent
-
-from wearables.settings import settings
+from rabbitmq_topology.entities import WEARABLES_QUEUE
 
 _logger = getLogger(__name__)
 
-router = RedisRouter()
+router = RabbitRouter()
 
+_QUEUE = RabbitQueue(name=WEARABLES_QUEUE.name, declare=False)
 
-subscriber = router.subscriber(
-    stream=StreamSub(
-        WEARABLES_STREAM,
-        group="wearables",
-        consumer=socket.gethostname(),
-        max_records=settings.faststream_max_records,
-    ),
-    ack_policy=AckPolicy.ACK,
-)
+subscriber = router.subscriber(queue=_QUEUE)
 
 
 @subscriber(filter=message_type_filter(HelloWorldEvent))

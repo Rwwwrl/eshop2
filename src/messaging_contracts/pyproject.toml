@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "myeshop-messaging-contracts"
-version = "0.3.0"
+version = "0.4.0"
 description = "Cross-service messaging contracts for MyEshop"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "messaging_contracts" }]
 
 [tool.poetry.dependencies]
 python = "^3.14"
-myeshop-libs = "^0.18.0"
+pydantic = "^2.0"
 
 [build-system]
 requires = ["poetry-core"]

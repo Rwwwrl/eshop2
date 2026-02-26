@@ -58,7 +58,7 @@ spec:
 | Port | 8001 | HTTP server uses 8000 |
 | `--workers` | 1 | Scale horizontally via replicas, not threads |
 | `terminationGracePeriodSeconds` | 75 | `faststream_graceful_timeout (65s)` + 10s buffer |
-| Liveness probe | `GET /health` on port 8001 | `make_ping_asgi` pings Redis broker |
+| Liveness probe | `GET /health` on port 8001 | `make_ping_asgi` pings RabbitMQ broker |
 | Readiness probe | None | Liveness is sufficient for a worker |
 | Naming | `<service>-messaging` | Distinguishes from HTTP deployment |
 
@@ -70,7 +70,7 @@ SIGTERM → broker stops accepting → drains in-flight messages (graceful_timeo
 
 - `faststream_graceful_timeout` (65s) controls how long broker waits for in-flight messages
 - `terminationGracePeriodSeconds` (75s) must exceed graceful timeout + buffer
-- No `preStop` hook needed — workers pull from Redis, no ingress traffic to drain
+- No `preStop` hook needed — workers pull from RabbitMQ, no ingress traffic to drain
 - K8s sends SIGTERM, then SIGKILL when grace period expires
 
 ## Kustomization Structure

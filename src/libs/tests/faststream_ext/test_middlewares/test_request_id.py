@@ -2,12 +2,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from faststream import ContextRepo
-from faststream.redis import RedisBroker
+from faststream.rabbit import RabbitBroker
 from libs.context_vars import request_id_var
 from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER, REQUEST_ID_HEADER
 from libs.faststream_ext.middlewares import RequestIdMiddleware
-from libs.faststream_ext.schemas.dtos import Event
 from libs.faststream_ext.utils import publish
+from libs.utils import get_class_full_path
+from messaging_contracts.events import HelloWorldEvent
 
 
 class _StubMessage:
@@ -49,34 +50,29 @@ async def test_consume_scope_skips_when_no_header(context: ContextRepo) -> None:
         request_id_var.reset(token)
 
 
-class _FakeEvent(Event):
-    __streams__: tuple[str, ...] = ("test-stream",)
-    message: str
-
-
 @pytest.mark.asyncio
 async def test_publish_includes_request_id_header_when_set() -> None:
-    broker = RedisBroker()
+    broker = RabbitBroker()
     token = request_id_var.set("req-456")
 
     try:
         with patch.object(broker, "publish", new_callable=AsyncMock) as mock_publish:
-            await publish(broker=broker, message=_FakeEvent(message="hello"))
+            await publish(broker=broker, message=HelloWorldEvent(message="hello"))
 
         mock_publish.assert_awaited_once()
         headers = mock_publish.call_args.kwargs["headers"]
         assert headers[REQUEST_ID_HEADER] == "req-456"
-        assert headers[MESSAGE_CLASS_HEADER] == f"{_FakeEvent.__module__}.{_FakeEvent.__qualname__}"
+        assert headers[MESSAGE_CLASS_HEADER] == get_class_full_path(cls=HelloWorldEvent)
     finally:
         request_id_var.reset(token)
 
 
 @pytest.mark.asyncio
 async def test_publish_omits_request_id_header_when_not_set() -> None:
-    broker = RedisBroker()
+    broker = RabbitBroker()
 
     with patch.object(broker, "publish", new_callable=AsyncMock) as mock_publish:
-        await publish(broker=broker, message=_FakeEvent(message="hello"))
+        await publish(broker=broker, message=HelloWorldEvent(message="hello"))
 
     mock_publish.assert_awaited_once()
     headers = mock_publish.call_args.kwargs["headers"]

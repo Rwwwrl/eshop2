@@ -24,6 +24,12 @@ spec:
                 name: wearables-config
             - secretRef:
                 name: wearables-secrets
+          env:
+            - name: FASTSTREAM_RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: RABBITMQ_URL
           ports:
             - containerPort: 8001
               protocol: TCP

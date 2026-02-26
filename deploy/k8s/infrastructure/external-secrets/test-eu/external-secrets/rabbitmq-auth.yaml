@@ -1,7 +1,7 @@
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
-  name: api-gateway-secrets
+  name: rabbitmq-auth
 spec:
   refreshInterval: 1h
   refreshPolicy: OnChange
@@ -9,9 +9,9 @@ spec:
     name: gcp-cluster-store
     kind: ClusterSecretStore
   target:
-    name: api-gateway-secrets
+    name: rabbitmq-auth
     creationPolicy: Owner
   data:
-    - secretKey: SENTRY_DSN
+    - secretKey: RABBITMQ_URL
       remoteRef:
-        key: api-gateway-sentry-dsn
+        key: rabbitmq-url

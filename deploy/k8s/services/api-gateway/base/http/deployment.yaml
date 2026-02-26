@@ -31,6 +31,12 @@ spec:
                 name: api-gateway-config
             - secretRef:
                 name: api-gateway-secrets
+          env:
+            - name: FASTSTREAM_RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: RABBITMQ_URL
           ports:
             - containerPort: 8000
           resources:
