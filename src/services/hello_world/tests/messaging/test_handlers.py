@@ -10,7 +10,7 @@ from messaging_contracts.hello_world.async_commands import HelloWorldAsyncComman
 from rabbitmq_topology.entities import HELLO_WORLD_QUEUE
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_handle_hello_world_event_when_event_published(test_broker: TestRabbitBroker) -> None:
     event = HelloWorldEvent(message="Hello from test!")
     headers = {MESSAGE_CLASS_HEADER: get_class_full_path(cls=HelloWorldEvent)}
@@ -22,7 +22,7 @@ async def test_handle_hello_world_event_when_event_published(test_broker: TestRa
         mock_logger.info.assert_called_once_with("Received HelloWorldEvent: %s", event)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_handle_hello_world_async_command_when_command_published(test_broker: TestRabbitBroker) -> None:
     command = HelloWorldAsyncCommand(greeting="Hello from test!")
     headers = {MESSAGE_CLASS_HEADER: get_class_full_path(cls=HelloWorldAsyncCommand)}

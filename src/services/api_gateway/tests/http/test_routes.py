@@ -7,28 +7,28 @@ from httpx import AsyncClient
 from rabbitmq_topology.entities import HELLO_WORLD_ASYNC_COMMAND_EXCHANGE, HELLO_WORLD_EVENT_EXCHANGE
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_root_when_called(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/")
     assert response.status_code == 200
     assert response.json() == {"message": "API Gateway"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_health_when_called(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_readiness_check_when_called(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/readiness_check")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_hello_world_host_when_called(async_client: AsyncClient) -> None:
     mock_response = httpx.Response(status_code=200, json={"host": "test-host"})
 
@@ -44,7 +44,7 @@ async def test_get_hello_world_host_when_called(async_client: AsyncClient) -> No
     assert response.json() == {"host": "test-host"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_publish_hello_world_when_called(async_client: AsyncClient, test_broker: TestRabbitBroker) -> None:
     with patch.object(test_broker, "publish", new_callable=AsyncMock) as publish_mock:
         response = await async_client.post(url="/debug/publish-hello-world")
@@ -56,7 +56,7 @@ async def test_publish_hello_world_when_called(async_client: AsyncClient, test_b
     assert publish_mock.call_args_list[0].kwargs["exchange"] == HELLO_WORLD_EVENT_EXCHANGE
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_publish_hello_world_async_command_when_called(
     async_client: AsyncClient, test_broker: TestRabbitBroker
 ) -> None:

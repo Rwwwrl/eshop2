@@ -7,7 +7,7 @@ from httpx import ASGITransport, AsyncClient
 from libs.fastapi_ext.middlewares import UnhandledExceptionMiddleware
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def router() -> APIRouter:
     test_router = APIRouter()
 
@@ -22,7 +22,7 @@ def router() -> APIRouter:
     return test_router
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def app(router: APIRouter) -> FastAPI:
     test_app = FastAPI()
     test_app.add_middleware(UnhandledExceptionMiddleware)
@@ -30,21 +30,21 @@ def app(router: APIRouter) -> FastAPI:
     return test_app
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(scope="session")
 async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_unhandled_exception_middleware_when_request_succeeds(async_client: AsyncClient) -> None:
     response = await async_client.get("/ok")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_unhandled_exception_middleware_when_unhandled_exception(async_client: AsyncClient) -> None:
     response = await async_client.get("/fail")
     assert response.status_code == 500

@@ -5,41 +5,14 @@ description: Guides pytest test writing for MyEshop services. Covers async test 
 
 # Testing
 
-## Two Test Patterns
-
-### Unit Tests (no DB)
-
-For libs, api_gateway, hello_world. Function-scoped fixtures, self-contained.
+## Test Example
 
 ```python
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_debug_error_returns_500(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/debug/error")
     assert response.status_code == 500
     assert response.json() == {"detail": "Internal Server Error"}
-```
-
-### Integration Tests (with DB)
-
-For services with PostgreSQL. Session-scoped fixtures, shared DB infrastructure.
-
-```python
-@pytest.mark.asyncio(loop_scope="session")
-async def test_handle_webhook_when_valid_payload(async_client: AsyncClient) -> None:
-    payload = {
-        "user_id": 1,
-        "biomarker_name": "heart_rate",
-        "value": 72.5,
-        "timestamp": "2025-02-11T10:00:00Z",
-    }
-    response = await async_client.post(url="/webhook", json=payload)
-    assert response.status_code == 201
-
-    async with Session() as session, session.begin():
-        result = await session.execute(select(WearableEvent))
-        events = result.scalars().all()
-        assert len(events) == 1
-        assert events[0].user_id == 1
 ```
 
 ## Test Naming
@@ -67,9 +40,8 @@ src/services/wearables/
 ## Async Configuration
 
 - `asyncio_default_fixture_loop_scope = "session"` in pytest config
-- `@pytest.mark.asyncio` for unit tests (uses default session scope)
-- `@pytest.mark.asyncio(loop_scope="session")` explicit for DB integration tests
-- `@pytest_asyncio.fixture()` for async fixtures (not `@pytest.fixture`)
+- `@pytest.mark.asyncio(loop_scope="session")` on every async test — no exceptions
+- `@pytest_asyncio.fixture(scope="session")` for async fixtures (not `@pytest.fixture`)
 - `--import-mode=importlib` — no `__init__.py` in test dirs
 
 ## conftest.py Templates
@@ -112,4 +84,5 @@ response_content = ProductListSchema(**response.json())
 | Internal fixtures | Prefix with `_` (e.g., `_clear_sqlmodel_tables`) |
 | Line length | E501 ignored in tests (`**/tests/**/*`) |
 | DB assertions | Use `Session()` directly, not through the API |
-| Fixture scope | Function for unit tests, session for DB integration |
+| Fixture scope | Session for all fixtures (exception: `_clear_sqlmodel_tables`) |
+| Test marker | `@pytest.mark.asyncio(loop_scope="session")` always |

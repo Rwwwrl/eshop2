@@ -16,12 +16,12 @@ class _StubMessage:
         self.headers = headers
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def context() -> ContextRepo:
     return ContextRepo()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_consume_scope_sets_request_id_from_header(context: ContextRepo) -> None:
     middleware = RequestIdMiddleware(None, context=context)
     msg = _StubMessage(headers={REQUEST_ID_HEADER: "abc-123"})
@@ -35,7 +35,7 @@ async def test_consume_scope_sets_request_id_from_header(context: ContextRepo) -
     request_id_var.set(None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_consume_scope_skips_when_no_header(context: ContextRepo) -> None:
     middleware = RequestIdMiddleware(None, context=context)
     msg = _StubMessage(headers={})
@@ -50,7 +50,7 @@ async def test_consume_scope_skips_when_no_header(context: ContextRepo) -> None:
         request_id_var.reset(token)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_publish_includes_request_id_header_when_set() -> None:
     broker = RabbitBroker()
     token = request_id_var.set("req-456")
@@ -67,7 +67,7 @@ async def test_publish_includes_request_id_header_when_set() -> None:
         request_id_var.reset(token)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_publish_omits_request_id_header_when_not_set() -> None:
     broker = RabbitBroker()
 

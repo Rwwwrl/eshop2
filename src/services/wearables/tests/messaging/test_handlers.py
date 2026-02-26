@@ -9,7 +9,7 @@ from rabbitmq_topology.entities import WEARABLES_QUEUE
 from wearables.messaging.handlers import handle_hello_world_event
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_handle_hello_world_event_when_event_published(test_broker: TestRabbitBroker) -> None:
     event = HelloWorldEvent(message="Hello from test!")
     headers = {MESSAGE_CLASS_HEADER: get_class_full_path(cls=HelloWorldEvent)}
