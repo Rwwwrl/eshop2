@@ -1,0 +1,80 @@
+name: Deploy RabbitMQ Topology
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Get version
+        id: version
+        run: |
+          version=$(grep '^version = ' src/rabbitmq_topology/pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          IMAGE=${REGISTRY}/rabbitmq-topology
+          VERSION=${{ steps.version.outputs.version }}
+
+          export GCP_TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$GCP_TOKEN"
+
+          docker build \
+            --secret id=gcp_token,env=GCP_TOKEN \
+            --build-arg REGISTRY_URL="https://${{ vars.GCP_REGION }}-python.pkg.dev/${{ vars.GCP_PROJECT_ID }}/myeshop-python/simple/" \
+            -t ${IMAGE}:${VERSION} \
+            src/rabbitmq_topology
+
+          docker push ${IMAGE}:${VERSION}
+
+      - name: Install gke-gcloud-auth-plugin
+        run: gcloud components install gke-gcloud-auth-plugin --quiet
+
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials ${{ vars.GKE_CLUSTER_NAME }} \
+            --region ${{ vars.GCP_REGION }} \
+            --project ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Deploy topology job
+        id: deploy_topology
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          IMAGE=${REGISTRY}/rabbitmq-topology:${{ steps.version.outputs.version }}
+          kubectl delete job/rabbitmq-topology --ignore-not-found
+          sed "s|TOPOLOGY_IMAGE_PLACEHOLDER|${IMAGE}|" \
+            deploy/k8s/infrastructure/rabbitmq/topology-job.yaml \
+            | kubectl apply -f -
+          kubectl wait --for=condition=complete job/rabbitmq-topology --timeout=120s
+
+      - name: Show topology job logs on failure
+        if: failure() && steps.deploy_topology.outcome == 'failure'
+        run: kubectl logs job/rabbitmq-topology 2>/dev/null || echo "No topology job logs available"

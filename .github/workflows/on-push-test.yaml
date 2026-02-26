@@ -47,8 +47,15 @@ jobs:
       environment: test-eu
     secrets: inherit
 
+  deploy-rabbitmq-topology:
+    needs: [deploy-infrastructure, publish-rabbitmq-topology]
+    uses: ./.github/workflows/called-deploy-rabbitmq-topology.yaml
+    with:
+      environment: test-eu
+    secrets: inherit
+
   deploy-api-gateway:
-    needs: [deploy-infrastructure, publish-libs]
+    needs: [deploy-rabbitmq-topology, publish-libs]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
@@ -59,7 +66,7 @@ jobs:
     secrets: inherit
 
   deploy-hello-world:
-    needs: [deploy-infrastructure, publish-libs]
+    needs: [deploy-rabbitmq-topology, publish-libs]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
@@ -71,7 +78,7 @@ jobs:
     secrets: inherit
 
   deploy-wearables:
-    needs: [deploy-infrastructure, publish-libs]
+    needs: [deploy-rabbitmq-topology, publish-libs]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
