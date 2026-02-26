@@ -13,6 +13,13 @@ spec:
       labels:
         app: pgbouncer
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: pgbouncer
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: pgbouncer
           image: edoburu/pgbouncer:v1.25.1-p0
