@@ -6,4 +6,4 @@ spec:
   secretTargetRef:
     - parameter: password
       name: redis-auth
-      key: password
+      key: REDIS_PASSWORD

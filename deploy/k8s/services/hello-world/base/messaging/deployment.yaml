@@ -30,6 +30,11 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-auth
                   key: RABBITMQ_URL
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: sentry-auth
+                  key: SENTRY_DSN
           ports:
             - containerPort: 8001
               protocol: TCP

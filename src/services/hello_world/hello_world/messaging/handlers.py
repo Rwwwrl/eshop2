@@ -1,4 +1,3 @@
-import socket
 from logging import getLogger
 
 from faststream.rabbit import RabbitQueue, RabbitRouter

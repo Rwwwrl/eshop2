@@ -33,6 +33,12 @@ spec:
                 name: hello-world-config
             - secretRef:
                 name: hello-world-secrets
+          env:
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: sentry-auth
+                  key: SENTRY_DSN
           ports:
             - containerPort: 8000
           resources:
