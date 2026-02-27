@@ -2,7 +2,9 @@ from logging import getLogger
 
 from faststream import AckPolicy
 from faststream.rabbit import RabbitQueue, RabbitRouter
+from faststream.rabbit.annotations import ContextRepo as ContextRepoDep
 from libs.faststream_ext import message_type_filter
+from libs.faststream_ext.rabbitmq_ext.decorators import retry
 from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
 from rabbitmq_topology.entities import HELLO_WORLD_QUEUE
@@ -27,5 +29,7 @@ async def handle_hello_world_async_command(body: HelloWorldAsyncCommand) -> None
 
 
 @subscriber(filter=message_type_filter(OpenHealthResultReceivedEvent))
-async def handle_open_health_result_received(body: OpenHealthResultReceivedEvent) -> None:
+@retry(max_attempts=3, countdown=5, dlq=True)
+async def handle_open_health_result_received(body: OpenHealthResultReceivedEvent, context: ContextRepoDep) -> None:
     _logger.info("Received OpenHealthResultReceivedEvent: result_id=%s", body.result_id)
+    raise RuntimeError("Simulated failure for retry test")

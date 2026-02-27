@@ -1,0 +1,3 @@
+[group('run')]
+run-http:
+    poetry run uvicorn api_gateway.http.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 75

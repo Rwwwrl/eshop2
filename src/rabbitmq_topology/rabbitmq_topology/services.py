@@ -13,10 +13,13 @@ async def publish_to_delayed_retry_queue(
     broker: RabbitBroker,
     message: RabbitMessage,
     original_queue: RabbitQueue,
+    extra_headers: dict[str, str],
+    expiration: int,
 ) -> None:
     await broker.publish(
         message=message.body,
-        headers=message.headers,
+        headers={**message.headers, **extra_headers},
         exchange="",
         routing_key=get_delayed_retry_queue_name(queue=original_queue),
+        expiration=expiration,
     )

@@ -58,12 +58,20 @@ async def test_publish_to_delayed_retry_queue_sends_to_correct_queue() -> None:
     rabbit_message = MagicMock()
     rabbit_message.body = b'{"message": "test"}'
     rabbit_message.headers = {"x-message-class": "messaging_contracts.events.HelloWorldEvent", "X-Request-ID": "abc"}
+    extra_headers = {"x-retry-attempt": "1"}
 
-    await publish_to_delayed_retry_queue(broker=broker, message=rabbit_message, original_queue=HELLO_WORLD_QUEUE)
+    await publish_to_delayed_retry_queue(
+        broker=broker,
+        message=rabbit_message,
+        original_queue=HELLO_WORLD_QUEUE,
+        extra_headers=extra_headers,
+        expiration=5,
+    )
 
     broker.publish.assert_called_once_with(
         message=rabbit_message.body,
         exchange="",
         routing_key="hello-world.delayed-retry",
-        headers=rabbit_message.headers,
+        headers={**rabbit_message.headers, **extra_headers},
+        expiration=5,
     )
