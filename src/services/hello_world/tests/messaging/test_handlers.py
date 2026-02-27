@@ -43,8 +43,13 @@ async def test_handle_open_health_result_received_when_event_published(test_brok
     event = OpenHealthResultReceivedEvent(result_id=42)
     headers = {MESSAGE_CLASS_HEADER: get_class_full_path(cls=OpenHealthResultReceivedEvent)}
 
-    with patch("hello_world.messaging.handlers._logger") as mock_logger:
+    with (
+        patch("hello_world.messaging.handlers._logger") as mock_logger,
+        patch("libs.faststream_ext.rabbitmq_ext.decorators.publish_to_delayed_retry_queue") as mock_publish,
+        pytest.raises(RuntimeError, match="Simulated failure for retry test"),
+    ):
         await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name, headers=headers)
 
-        handle_open_health_result_received.mock.assert_called_once()
-        mock_logger.info.assert_called_once_with("Received OpenHealthResultReceivedEvent: result_id=%s", 42)
+    handle_open_health_result_received.mock.assert_called_once()
+    mock_logger.info.assert_called_once_with("Received OpenHealthResultReceivedEvent: result_id=%s", 42)
+    mock_publish.assert_called_once()
