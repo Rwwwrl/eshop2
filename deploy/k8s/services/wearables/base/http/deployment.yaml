@@ -36,11 +36,6 @@ spec:
                 secretKeyRef:
                   name: sentry-auth
                   key: SENTRY_DSN
-            - name: POSTGRES_POOLER_DB_URL
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-pooler-auth
-                  key: POSTGRES_POOLER_DB_URL
             - name: TASKIQ_REDIS_URL
               valueFrom:
                 secretKeyRef:
