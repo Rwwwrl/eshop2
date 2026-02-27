@@ -3,7 +3,7 @@ import os
 
 from faststream.rabbit import RabbitBroker
 
-from rabbitmq_topology.entities import BINDINGS, DEAD_LETTER_QUEUES, DELAYED_RETRY_QUEUES, EXCHANGES, QUEUES
+from rabbitmq_topology.resources import BINDINGS, DEAD_LETTER_QUEUES, DELAYED_RETRY_QUEUES, EXCHANGES, QUEUES
 
 
 async def apply_topology(amqp_url: str) -> None:

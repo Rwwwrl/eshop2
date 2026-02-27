@@ -61,6 +61,7 @@ Run: `kubectl get externalsecrets`
 |----------------|---------------|--------------|
 | redis-auth | redis-auth | `kubectl get externalsecret redis-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | rabbitmq-auth | rabbitmq-auth | `kubectl get externalsecret rabbitmq-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
+| sentry-auth | sentry-auth | `kubectl get externalsecret sentry-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | pgbouncer-config | pgbouncer-config | `kubectl get externalsecret pgbouncer-config -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | api-gateway-secrets | api-gateway-secrets | `kubectl get externalsecret api-gateway-secrets -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | hello-world-secrets | hello-world-secrets | `kubectl get externalsecret hello-world-secrets -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
@@ -70,7 +71,7 @@ Run: `kubectl get externalsecrets`
 
 Verify ESO created the target secrets:
 
-`kubectl get secret redis-auth rabbitmq-auth pgbouncer-config api-gateway-secrets hello-world-secrets wearables-secrets`
+`kubectl get secret redis-auth rabbitmq-auth sentry-auth pgbouncer-config api-gateway-secrets hello-world-secrets wearables-secrets`
 
 All must exist (no `NotFound`).
 
@@ -242,6 +243,7 @@ Verify: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.contain
 | wearables-messaging | 50m | 128Mi | 200m | 256Mi |
 | wearables-background-tasks | 50m | 205Mi | 200m | 430Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
+| wearables-scheduler | 25m | 100Mi | 100m | 200Mi |
 | redis-exporter | 50m | 64Mi | 100m | 128Mi |
 
 ## Summary Format

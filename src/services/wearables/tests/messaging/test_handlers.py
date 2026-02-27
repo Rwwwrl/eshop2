@@ -5,7 +5,7 @@ from faststream.rabbit import TestRabbitBroker
 from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER
 from libs.utils import get_class_full_path
 from messaging_contracts.events import HelloWorldEvent
-from rabbitmq_topology.entities import WEARABLES_QUEUE
+from rabbitmq_topology.resources import WEARABLES_QUEUE
 from wearables.messaging.handlers import handle_hello_world_event
 
 

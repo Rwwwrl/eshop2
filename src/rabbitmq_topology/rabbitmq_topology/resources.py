@@ -4,6 +4,7 @@ from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceived
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
 from messaging_contracts.utils import get_message_full_class_path
 
+from rabbitmq_topology.consts import SEVEN_DAYS_IN_MS, THREE_DAYS_IN_MS
 from rabbitmq_topology.schemas.dtos import RabbitBinding
 
 HELLO_WORLD_EVENT_EXCHANGE = RabbitExchange(
@@ -26,8 +27,14 @@ EXCHANGES: list[RabbitExchange] = [
     OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE,
 ]
 
-HELLO_WORLD_DLQ = RabbitQueue(name="hello-world.dlq")
-WEARABLES_DLQ = RabbitQueue(name="wearables.dlq")
+HELLO_WORLD_DLQ = RabbitQueue(
+    name="hello-world.dlq",
+    arguments={"x-message-ttl": SEVEN_DAYS_IN_MS},
+)
+WEARABLES_DLQ = RabbitQueue(
+    name="wearables.dlq",
+    arguments={"x-message-ttl": SEVEN_DAYS_IN_MS},
+)
 
 DEAD_LETTER_QUEUES: list[RabbitQueue] = [
     HELLO_WORLD_DLQ,
@@ -39,6 +46,7 @@ HELLO_WORLD_QUEUE = RabbitQueue(
     arguments={
         "x-dead-letter-exchange": "",
         "x-dead-letter-routing-key": HELLO_WORLD_DLQ.name,
+        "x-message-ttl": THREE_DAYS_IN_MS,
     },
 )
 WEARABLES_QUEUE = RabbitQueue(
@@ -46,6 +54,7 @@ WEARABLES_QUEUE = RabbitQueue(
     arguments={
         "x-dead-letter-exchange": "",
         "x-dead-letter-routing-key": WEARABLES_DLQ.name,
+        "x-message-ttl": THREE_DAYS_IN_MS,
     },
 )
 
