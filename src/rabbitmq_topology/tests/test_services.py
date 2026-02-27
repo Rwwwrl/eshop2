@@ -4,7 +4,7 @@ import pytest
 from faststream.rabbit import RabbitQueue
 from messaging_contracts.common import BaseMessage
 from messaging_contracts.events import HelloWorldEvent
-from rabbitmq_topology.entities import HELLO_WORLD_EVENT_EXCHANGE, HELLO_WORLD_QUEUE
+from rabbitmq_topology.resources import HELLO_WORLD_EVENT_EXCHANGE, HELLO_WORLD_QUEUE
 from rabbitmq_topology.services import publish, publish_to_delayed_retry_queue
 from rabbitmq_topology.utils import get_delayed_retry_queue_name, get_exchange_for_message
 

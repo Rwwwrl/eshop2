@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from rabbitmq_topology.apply import apply_topology
-from rabbitmq_topology.entities import BINDINGS, DEAD_LETTER_QUEUES, DELAYED_RETRY_QUEUES, EXCHANGES, QUEUES
+from rabbitmq_topology.resources import BINDINGS, DEAD_LETTER_QUEUES, DELAYED_RETRY_QUEUES, EXCHANGES, QUEUES
 
 _AMQP_URL = "amqp://guest:guest@localhost:5672/"
 

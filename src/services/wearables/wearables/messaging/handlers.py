@@ -4,7 +4,7 @@ from faststream import AckPolicy
 from faststream.rabbit import RabbitQueue, RabbitRouter
 from libs.faststream_ext import message_type_filter
 from messaging_contracts.events import HelloWorldEvent
-from rabbitmq_topology.entities import WEARABLES_QUEUE
+from rabbitmq_topology.resources import WEARABLES_QUEUE
 
 _logger = getLogger(__name__)
 

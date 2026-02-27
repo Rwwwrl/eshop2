@@ -7,7 +7,7 @@ from libs.faststream_ext import message_type_filter
 from libs.faststream_ext.rabbitmq_ext.decorators import retry
 from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
-from rabbitmq_topology.entities import HELLO_WORLD_QUEUE
+from rabbitmq_topology.resources import HELLO_WORLD_QUEUE
 
 _logger = getLogger(__name__)
 

@@ -4,7 +4,7 @@ import httpx
 import pytest
 from faststream.rabbit import TestRabbitBroker
 from httpx import AsyncClient
-from rabbitmq_topology.entities import (
+from rabbitmq_topology.resources import (
     HELLO_WORLD_ASYNC_COMMAND_EXCHANGE,
     HELLO_WORLD_EVENT_EXCHANGE,
     OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE,

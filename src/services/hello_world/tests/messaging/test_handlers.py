@@ -11,7 +11,7 @@ from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER
 from libs.utils import get_class_full_path
 from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
-from rabbitmq_topology.entities import HELLO_WORLD_QUEUE
+from rabbitmq_topology.resources import HELLO_WORLD_QUEUE
 
 
 @pytest.mark.asyncio(loop_scope="session")
