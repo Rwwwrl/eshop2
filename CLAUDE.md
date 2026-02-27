@@ -44,7 +44,7 @@ service_name/
     grpc/                    # Future — gRPC protocol support
         __init__.py
         main.py
-    background_tasks/        # Background tasks (TaskIQ + Redis)
+    background_tasks/        # Background tasks (TaskIQ + RabbitMQ)
         __init__.py
         main.py              # Broker setup, worker lifecycle
         tasks.py             # Task definitions

@@ -135,7 +135,7 @@ Rules:
 
 ## Bulk Dispatch Pattern
 
-Use `asyncio.Semaphore` + `asyncio.TaskGroup` to dispatch many tasks efficiently. The semaphore caps concurrent Redis calls; TaskGroup cancels all remaining tasks if one fails (e.g., Redis down).
+Use `asyncio.Semaphore` + `asyncio.TaskGroup` to dispatch many tasks efficiently. The semaphore caps concurrent broker calls; TaskGroup cancels all remaining tasks if one fails (e.g., RabbitMQ down).
 
 ```python
 @async_shared_broker.task(schedule=[{"cron": "*/5 * * * *"}])
@@ -247,7 +247,7 @@ async def readiness_check() -> dict[str, str]:
 
 ## Testing
 
-Use `InMemoryBroker` in tests — no Redis needed. Register via `async_shared_broker.default_broker(test_broker)`.
+Use `InMemoryBroker` in tests — no RabbitMQ needed. Register via `async_shared_broker.default_broker(test_broker)`.
 
 - Session-scoped `taskiq_broker` fixture in service `tests/conftest.py` — creates `InMemoryBroker`, calls startup/shutdown
 - `fastapi_app` fixture must depend on `taskiq_broker`
@@ -263,7 +263,7 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for Kubernetes 
 TaskIQ shutdown has **two sequential phases** after receiving SIGTERM:
 
 1. **Task drain** (`--wait-tasks-timeout`): prefetcher stops, runner waits for in-flight tasks
-2. **Broker cleanup** (`--shutdown-timeout`): event handlers, middleware shutdown, Redis close
+2. **Broker cleanup** (`--shutdown-timeout`): event handlers, middleware shutdown, broker close
 
 ```
 SIGTERM → prefetcher stops → runner drains tasks (phase 1) → broker.shutdown() (phase 2) → exit
@@ -275,7 +275,7 @@ Configuration must align with `TimeLimitMiddleware` timeout and k8s `termination
 |-----------|-------|-----------|
 | `TimeLimitMiddleware` | 60s | Max single task duration |
 | `--wait-tasks-timeout` | 65s | Task limit + 5s buffer |
-| `--shutdown-timeout` | 10s | Broker cleanup (engine dispose, Redis close) |
+| `--shutdown-timeout` | 10s | Broker cleanup (engine dispose, broker close) |
 | `terminationGracePeriodSeconds` | 80s | 65 + 10 + 5s buffer before SIGKILL |
 
 Rules:

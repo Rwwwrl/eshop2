@@ -181,7 +181,7 @@ terminationGracePeriodSeconds (80s)
 └── 5s buffer                 ← process overhead
 ```
 
-No `preStop` hook needed — background task workers pull from Redis, there's no ingress endpoint removal to wait for (unlike HTTP pods)
+No `preStop` hook needed — background task workers pull from RabbitMQ, there's no ingress endpoint removal to wait for (unlike HTTP pods)
 
 ## Liveness Probe
 

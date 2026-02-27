@@ -253,7 +253,7 @@ Infrastructure secrets (shared across services):
 
 | Secret Name          | Used By       |
 |----------------------|---------------|
-| `redis-password`     | redis-auth    |
+| `rabbitmq-url`       | rabbitmq-auth |
 | `pgbouncer-ini`      | pgbouncer     |
 | `pgbouncer-userlist` | pgbouncer     |
 
@@ -266,7 +266,6 @@ Per-service secrets:
 | `wearables-sentry-dsn`             | wearables   |
 | `wearables-postgres-direct-db-url` | wearables   |
 | `wearables-postgres-pooler-db-url` | wearables   |
-| `wearables-taskiq-redis-url`       | wearables   |
 
 #### Install External Secrets Operator
 
@@ -302,10 +301,10 @@ kubectl apply -f deploy/k8s/infrastructure/external-secrets/<ENV>/cluster-secret
 | `deploy/k8s/infrastructure/external-secrets/<ENV>/external-secrets/` | Infrastructure-level ExternalSecrets |
 | `deploy/k8s/infrastructure/external-secrets/<ENV>/cluster-secret-store.yaml` | ClusterSecretStore |
 
-### 10. Create Google Cloud Memorystore (Redis)
+### 10. Create CloudAMQP Instance (RabbitMQ)
 
-1. Create a Redis instance in Memorystore
-2. Store the Redis URL as `wearables-taskiq-redis-url` in GCP Secret Manager
+1. Create a RabbitMQ instance on [CloudAMQP](https://www.cloudamqp.com/)
+2. Store the AMQP URL as `rabbitmq-url` in GCP Secret Manager
 
 ---
 

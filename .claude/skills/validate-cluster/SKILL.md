@@ -37,12 +37,6 @@ Run in parallel:
 | PgBouncer strategy | `kubectl get deployment pgbouncer -o jsonpath='{.spec.strategy.type}'` | `RollingUpdate` |
 | PgBouncer probes | `kubectl get deployment pgbouncer -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | TCP socket on port 5432 |
 | KEDA operator | `kubectl get pods -n keda` | 3 pods Running (operator, metrics-apiserver, admission-webhooks) |
-| redis-exporter running | `kubectl get pods -l app=redis-exporter` | 1 pod Running |
-| redis-exporter pool | `kubectl get pods -l app=redis-exporter -o wide` | On `default-pool` |
-| redis-exporter strategy | `kubectl get deployment redis-exporter -o jsonpath='{.spec.strategy.type}'` | `Recreate` |
-| redis-exporter probes | `kubectl get deployment redis-exporter -o jsonpath='{.spec.template.spec.containers[0].livenessProbe}'` | HTTP GET `/health` port 9121 |
-| redis-exporter streams | `kubectl get deployment redis-exporter -o jsonpath='{.spec.template.spec.containers[0].args}'` | Contains `--check-streams=taskiq` |
-| redis-exporter monitoring | `kubectl get podmonitoring redis-exporter -o jsonpath='{.spec.endpoints[0].port}'` | `9121` |
 
 ## 3. External Secrets Operator
 
@@ -59,7 +53,6 @@ Run: `kubectl get externalsecrets`
 
 | ExternalSecret | Target Secret | Verify Ready |
 |----------------|---------------|--------------|
-| redis-auth | redis-auth | `kubectl get externalsecret redis-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | rabbitmq-auth | rabbitmq-auth | `kubectl get externalsecret rabbitmq-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | sentry-auth | sentry-auth | `kubectl get externalsecret sentry-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
 | pgbouncer-config | pgbouncer-config | `kubectl get externalsecret pgbouncer-config -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'` = `True` |
@@ -71,7 +64,7 @@ Run: `kubectl get externalsecrets`
 
 Verify ESO created the target secrets:
 
-`kubectl get secret redis-auth rabbitmq-auth sentry-auth pgbouncer-config api-gateway-secrets hello-world-secrets wearables-secrets`
+`kubectl get secret rabbitmq-auth sentry-auth pgbouncer-config api-gateway-secrets hello-world-secrets wearables-secrets`
 
 All must exist (no `NotFound`).
 
@@ -181,7 +174,7 @@ Run: `kubectl get pods -A`
 | ScaledObject target | `wearables-background-tasks` | jsonpath `{.spec.scaleTargetRef.name}` |
 | ScaledObject min/max | min=2, max=10 | jsonpath check |
 | HPA by KEDA | HPA exists for wearables-background-tasks | `kubectl get hpa` |
-| TriggerAuthentication | `kubectl get triggerauthentication redis-trigger-auth` — must exist |
+| TriggerAuthentication | `kubectl get triggerauthentication rabbitmq-trigger-auth` — must exist |
 
 ## 6. Ingress & TLS
 
@@ -209,7 +202,7 @@ curl -s -o /dev/null -w "%{http_code}" -H "Host: test.eshop-test.com" http://34.
 curl -s -o /dev/null -w "%{http_code}" -H "Host: wearables-test.eshop-test.com" http://34.159.106.171/health
 ```
 
-Both must return **308**.
+Both must return **301** (NGINX Inc ingress controller default).
 
 ### TLS Endpoints
 
@@ -244,7 +237,6 @@ Verify: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.contain
 | wearables-background-tasks | 50m | 205Mi | 200m | 430Mi |
 | pgbouncer | 50m | 64Mi | 200m | 128Mi |
 | wearables-scheduler | 25m | 100Mi | 100m | 200Mi |
-| redis-exporter | 50m | 64Mi | 100m | 128Mi |
 
 ## Summary Format
 

@@ -134,7 +134,7 @@ Rules:
 - Single `APIRouter()` per service, no prefix or tags
 - Include via `app.include_router(router=router)` with keyword arg
 - Every service has `/health` (liveness) and `/readiness_check` (readiness)
-- Readiness checks infrastructure dependencies (DB, Redis) if the service has them
+- Readiness checks infrastructure dependencies (DB, RabbitMQ) if the service has them
 - Status codes set in decorator: `@router.post("/webhook", status_code=status.HTTP_201_CREATED)`
 - Use `starlette.responses.Response` for bodyless responses: `return Response(status_code=status.HTTP_201_CREATED)`
 
