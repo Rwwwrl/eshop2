@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
-from faststream.redis import TestRedisBroker
+from faststream.rabbit import TestRabbitBroker
 from httpx import ASGITransport, AsyncClient
 from libs.sqlmodel_ext import BaseSqlModel, Session
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -51,7 +51,7 @@ async def async_client(fastapi_app: FastAPI) -> AsyncGenerator[AsyncClient]:
         yield client
 
 
-@pytest_asyncio.fixture(scope="session")
-async def test_broker() -> AsyncGenerator[TestRedisBroker]:
-    async with TestRedisBroker(faststream_broker) as br:
+@pytest_asyncio.fixture(scope="function")
+async def test_broker() -> AsyncGenerator[TestRabbitBroker]:
+    async with TestRabbitBroker(faststream_broker) as br:
         yield br

@@ -2,33 +2,37 @@ from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
-from faststream.redis import TestRedisBroker
+from faststream.rabbit import TestRabbitBroker
 from httpx import AsyncClient
-from messaging_contracts.consts import HELLO_WORLD_STREAM, WEARABLES_STREAM
+from rabbitmq_topology.entities import (
+    HELLO_WORLD_ASYNC_COMMAND_EXCHANGE,
+    HELLO_WORLD_EVENT_EXCHANGE,
+    OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE,
+)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_root_when_called(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/")
     assert response.status_code == 200
     assert response.json() == {"message": "API Gateway"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_health_when_called(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_readiness_check_when_called(async_client: AsyncClient) -> None:
     response = await async_client.get(url="/readiness_check")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_get_hello_world_host_when_called(async_client: AsyncClient) -> None:
     mock_response = httpx.Response(status_code=200, json={"host": "test-host"})
 
@@ -44,28 +48,39 @@ async def test_get_hello_world_host_when_called(async_client: AsyncClient) -> No
     assert response.json() == {"host": "test-host"}
 
 
-@pytest.mark.asyncio
-async def test_publish_hello_world_when_called(async_client: AsyncClient, test_broker: TestRedisBroker) -> None:
-    with patch.object(test_broker, "publish", wraps=test_broker.publish) as publish_spy:
+@pytest.mark.asyncio(loop_scope="session")
+async def test_publish_hello_world_when_called(async_client: AsyncClient, test_broker: TestRabbitBroker) -> None:
+    with patch.object(test_broker, "publish", new_callable=AsyncMock) as publish_mock:
         response = await async_client.post(url="/debug/publish-hello-world")
 
     assert response.status_code == 202
     assert response.json() == {"status": "published"}
 
-    assert publish_spy.call_count == 2
-    published_streams = {call.kwargs["stream"] for call in publish_spy.call_args_list}
-    assert published_streams == {HELLO_WORLD_STREAM, WEARABLES_STREAM}
+    assert publish_mock.call_count == 1
+    assert publish_mock.call_args_list[0].kwargs["exchange"] == HELLO_WORLD_EVENT_EXCHANGE
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_publish_hello_world_async_command_when_called(
-    async_client: AsyncClient, test_broker: TestRedisBroker
+    async_client: AsyncClient, test_broker: TestRabbitBroker
 ) -> None:
-    with patch.object(test_broker, "publish", wraps=test_broker.publish) as publish_spy:
+    with patch.object(test_broker, "publish", new_callable=AsyncMock) as publish_mock:
         response = await async_client.post(url="/debug/publish-hello-world-async-command")
 
     assert response.status_code == 202
     assert response.json() == {"status": "published"}
 
-    assert publish_spy.call_count == 1
-    assert publish_spy.call_args_list[0].kwargs["stream"] == HELLO_WORLD_STREAM
+    assert publish_mock.call_count == 1
+    assert publish_mock.call_args_list[0].kwargs["exchange"] == HELLO_WORLD_ASYNC_COMMAND_EXCHANGE
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_open_health_result_webhook_when_called(async_client: AsyncClient, test_broker: TestRabbitBroker) -> None:
+    with patch.object(test_broker, "publish", new_callable=AsyncMock) as publish_mock:
+        response = await async_client.post(url="/open-health/result-webhook", json={"result_id": 123})
+
+    assert response.status_code == 202
+    assert response.content == b""
+
+    assert publish_mock.call_count == 1
+    assert publish_mock.call_args_list[0].kwargs["exchange"] == OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE

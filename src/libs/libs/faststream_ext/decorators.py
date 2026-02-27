@@ -1,20 +1,19 @@
-from libs.faststream_ext.schemas.dtos import AsyncCommand, BaseMessage
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
+
+from faststream.exceptions import NackMessage
 
 
-def streams(*stream_names: str):
-    """Decorator assigning stream names. Events: 1+, AsyncCommand: exactly 1. Fails on duplicates within call."""
+def dlq(exceptions: tuple[type[Exception], ...] = (Exception,)) -> Callable[..., Any]:
+    def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(func)
+        async def _wrapper(*args: Any, **kwargs: Any) -> Any:
+            try:
+                return await func(*args, **kwargs)
+            except exceptions as exc:
+                raise NackMessage(requeue=False) from exc
 
-    def decorator[T: type[BaseMessage]](cls: T) -> T:
-        if not stream_names:
-            raise TypeError(f"{cls.__name__}: @streams requires at least one stream name")
+        return _wrapper
 
-        if issubclass(cls, AsyncCommand) and len(stream_names) != 1:
-            raise TypeError(f"{cls.__name__}: AsyncCommand must have exactly one stream, got {len(stream_names)}")
-
-        if len(stream_names) != len(set(stream_names)):
-            raise TypeError(f"{cls.__name__}: duplicate stream names in @streams")
-
-        cls.__streams__ = tuple(stream_names)
-        return cls
-
-    return decorator
+    return _decorator

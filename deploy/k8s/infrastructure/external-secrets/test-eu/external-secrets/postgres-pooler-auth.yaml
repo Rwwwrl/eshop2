@@ -1,0 +1,17 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: postgres-pooler-auth
+spec:
+  refreshInterval: 1h
+  refreshPolicy: OnChange
+  secretStoreRef:
+    name: gcp-cluster-store
+    kind: ClusterSecretStore
+  target:
+    name: postgres-pooler-auth
+    creationPolicy: Owner
+  data:
+    - secretKey: POSTGRES_POOLER_DB_URL
+      remoteRef:
+        key: postgres-pooler-db-url

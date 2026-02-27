@@ -4,8 +4,8 @@ from importlib.metadata import version
 
 from faststream import ContextRepo
 from faststream.asgi import AsgiFastStream, make_ping_asgi
-from faststream.redis import RedisBroker
-from faststream.redis.prometheus import RedisPrometheusMiddleware
+from faststream.rabbit import RabbitBroker
+from faststream.rabbit.prometheus import RabbitPrometheusMiddleware
 from libs.common.enums import ServiceNameEnum
 from libs.faststream_ext.middlewares import RequestIdMiddleware, TimeLimitMiddleware
 from libs.logging import setup_logging
@@ -20,10 +20,10 @@ from wearables.utils import init_sqlmodel_engine
 
 _registry = CollectorRegistry()
 
-broker = RedisBroker(
-    url=settings.faststream_redis_url,
+broker = RabbitBroker(
+    url=settings.faststream_rabbitmq_url,
     graceful_timeout=settings.faststream_graceful_timeout,
-    middlewares=[RedisPrometheusMiddleware(registry=_registry), RequestIdMiddleware, TimeLimitMiddleware],
+    middlewares=[RabbitPrometheusMiddleware(registry=_registry), RequestIdMiddleware, TimeLimitMiddleware],
 )
 broker.include_router(router)
 

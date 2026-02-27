@@ -12,6 +12,7 @@ api-gateway = { path = "src/services/api_gateway", develop = true }
 wearables = { path = "src/services/wearables", develop = true }
 myeshop-libs = { path = "src/libs", develop = true }
 myeshop-messaging-contracts = { path = "src/messaging_contracts", develop = true }
+myeshop-rabbitmq-topology = { path = "src/rabbitmq_topology", develop = true }
 pre-commit = "^4.5.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -20,6 +21,7 @@ google-cloud-storage = "^3.9.0"
 pyyaml = "^6.0.3"
 pytest-cov = "^7.0.0"
 pytest-env = "^1.5.0"
+import-linter = "^2.10"
 
 [build-system]
 requires = ["poetry-core"]
@@ -30,7 +32,7 @@ asyncio_default_fixture_loop_scope = "session"
 addopts = "--import-mode=importlib -p libs.tests_ext.sqlmodel_fixtures"
 env = [
     "ENVIRONMENT=cicd",
-    "FASTSTREAM_REDIS_URL=redis://localhost:16379",
+    "FASTSTREAM_RABBITMQ_URL=amqp://guest:guest@localhost:15672/",
     "POSTGRES_DIRECT_DB_URL=postgresql+asyncpg://postgres:postgres@localhost:15432/postgres",
     # NOTE @sosov: No pooler in CI — reuse direct URL to satisfy the required setting.
     "POSTGRES_POOLER_DB_URL=postgresql+asyncpg://postgres:postgres@localhost:15432/postgres",
@@ -38,6 +40,7 @@ env = [
 ]
 testpaths = [
     "src/libs/tests",
+    "src/rabbitmq_topology/tests",
     "src/services/hello_world/tests",
     "src/services/api_gateway/tests",
     "src/services/wearables/tests",

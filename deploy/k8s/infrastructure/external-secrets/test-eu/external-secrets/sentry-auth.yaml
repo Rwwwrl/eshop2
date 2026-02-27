@@ -1,0 +1,17 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: sentry-auth
+spec:
+  refreshInterval: 1h
+  refreshPolicy: OnChange
+  secretStoreRef:
+    name: gcp-cluster-store
+    kind: ClusterSecretStore
+  target:
+    name: sentry-auth
+    creationPolicy: Owner
+  data:
+    - secretKey: SENTRY_DSN
+      remoteRef:
+        key: sentry-dsn

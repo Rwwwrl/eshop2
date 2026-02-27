@@ -1,0 +1,17 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: rabbitmq-auth
+spec:
+  refreshInterval: 1h
+  refreshPolicy: OnChange
+  secretStoreRef:
+    name: gcp-cluster-store
+    kind: ClusterSecretStore
+  target:
+    name: rabbitmq-auth
+    creationPolicy: Owner
+  data:
+    - secretKey: RABBITMQ_URL
+      remoteRef:
+        key: rabbitmq-url

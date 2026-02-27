@@ -14,6 +14,7 @@ user_invocable: true
 |---------|------|
 | `myeshop-libs` | `src/libs/pyproject.toml` |
 | `myeshop-messaging-contracts` | `src/messaging_contracts/pyproject.toml` |
+| `myeshop-rabbitmq-topology` | `src/rabbitmq_topology/pyproject.toml` |
 
 ### Services
 
@@ -28,21 +29,25 @@ user_invocable: true
 ```
 services (api_gateway, hello_world, wearables)
   ├── myeshop-libs
-  └── myeshop-messaging-contracts
-        └── myeshop-libs
+  │     ├── myeshop-messaging-contracts
+  │     └── myeshop-rabbitmq-topology
+  ├── myeshop-messaging-contracts
+  └── myeshop-rabbitmq-topology
+        └── myeshop-messaging-contracts
 ```
 
-Both shared packages are path dependencies in the root `pyproject.toml`. Services depend on both.
+All shared packages are path dependencies in the root `pyproject.toml`. Services depend on all three. `myeshop-libs` depends on `myeshop-messaging-contracts` and `myeshop-rabbitmq-topology`. `myeshop-rabbitmq-topology` depends on `myeshop-messaging-contracts`.
 
 ## Instructions
 
 1. Read the `version` field from every pyproject.toml listed above.
-2. Read the `myeshop-libs` and `myeshop-messaging-contracts` dependency versions from every service pyproject.toml. Also read the `myeshop-libs` dependency version from `messaging_contracts/pyproject.toml`.
-3. Display a table with columns: **Package**, **Version**, **myeshop-libs dep**, **myeshop-messaging-contracts dep**.
+2. Read dependency versions (`myeshop-libs`, `myeshop-messaging-contracts`, `myeshop-rabbitmq-topology`) from every consumer pyproject.toml.
+3. Display a table with columns: **Package**, **Version**, **myeshop-libs dep**, **myeshop-messaging-contracts dep**, **myeshop-rabbitmq-topology dep**.
 4. Check for issues:
    - For 0.x versions, `^0.Y.0` only matches `0.Y.*`, so consumers MUST match the minor version of the shared package.
-   - If `myeshop-libs` version in libs pyproject.toml is `0.Y.Z`, then every consumer (services + messaging-contracts) must have `myeshop-libs = "^0.Y.0"`.
-   - If `myeshop-messaging-contracts` version is `0.Y.Z`, then every service must have `myeshop-messaging-contracts = "^0.Y.0"`.
+   - If `myeshop-libs` version is `0.Y.Z`, then every consumer (services) must have `myeshop-libs = "^0.Y.0"`.
+   - If `myeshop-messaging-contracts` version is `0.Y.Z`, then every consumer (services, libs, rabbitmq_topology) must have `myeshop-messaging-contracts = "^0.Y.0"`.
+   - If `myeshop-rabbitmq-topology` version is `0.Y.Z`, then every consumer (services, libs) must have `myeshop-rabbitmq-topology = "^0.Y.0"`.
    - Flag any consumer whose constraint does not satisfy the current shared package version.
 5. If the user asked to **bump**: ask which packages to bump and by what level (patch/minor/major), then apply the changes. After bumping a shared package, check whether the new version is still covered by existing consumer constraints. If it is (e.g., `0.9.0` → `0.9.1` and consumers have `^0.9.0`), no consumer changes needed. If it is **not** (e.g., `0.9.x` → `0.10.0` and consumers have `^0.9.0`), update all consumer constraints to match — and since their `pyproject.toml` files change, bump all consumer versions too (at least patch level).
-6. After any version edits: run `cd src/libs && poetry lock --no-update` then `cd ../.. && poetry lock --no-update` then `poetry install`.
+6. After any version edits: run `poetry lock --no-update` then `poetry install` from the project root.

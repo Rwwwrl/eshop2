@@ -16,20 +16,28 @@ jobs:
       environment: test-eu
     secrets: inherit
 
-  publish-libs:
+  publish-messaging-contracts:
     needs: [apply-infrastructure-secrets]
     uses: ./.github/workflows/called-publish-python-package.yaml
     with:
       environment: test-eu
-      package_path: src/libs
+      package_path: src/messaging_contracts
     secrets: inherit
 
-  publish-messaging-contracts:
-    needs: [publish-libs]
+  publish-rabbitmq-topology:
+    needs: [publish-messaging-contracts]
     uses: ./.github/workflows/called-publish-python-package.yaml
     with:
       environment: test-eu
-      package_path: src/messaging_contracts
+      package_path: src/rabbitmq_topology
+    secrets: inherit
+
+  publish-libs:
+    needs: [publish-rabbitmq-topology]
+    uses: ./.github/workflows/called-publish-python-package.yaml
+    with:
+      environment: test-eu
+      package_path: src/libs
     secrets: inherit
 
   deploy-infrastructure:
@@ -39,8 +47,15 @@ jobs:
       environment: test-eu
     secrets: inherit
 
+  deploy-rabbitmq-topology:
+    needs: [deploy-infrastructure, publish-rabbitmq-topology]
+    uses: ./.github/workflows/called-deploy-rabbitmq-topology.yaml
+    with:
+      environment: test-eu
+    secrets: inherit
+
   deploy-api-gateway:
-    needs: [deploy-infrastructure, publish-libs, publish-messaging-contracts]
+    needs: [deploy-rabbitmq-topology, publish-libs]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
@@ -51,7 +66,7 @@ jobs:
     secrets: inherit
 
   deploy-hello-world:
-    needs: [deploy-infrastructure, publish-libs, publish-messaging-contracts]
+    needs: [deploy-rabbitmq-topology, publish-libs]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
@@ -63,7 +78,7 @@ jobs:
     secrets: inherit
 
   deploy-wearables:
-    needs: [deploy-infrastructure, publish-libs, publish-messaging-contracts]
+    needs: [deploy-rabbitmq-topology, publish-libs]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu

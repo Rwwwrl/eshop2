@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rabbitmq-topology
+  annotations:
+    description: "Declares RabbitMQ exchanges, queues, and bindings via rabbitmq_topology.apply"
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: topology
+          image: TOPOLOGY_IMAGE_PLACEHOLDER
+          command:
+            - poetry
+            - run
+            - python
+            - -m
+            - rabbitmq_topology.apply
+          envFrom:
+            - secretRef:
+                name: rabbitmq-auth
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

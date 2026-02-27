@@ -1,5 +1,5 @@
-from faststream.redis import RedisBroker
+from faststream.rabbit import RabbitBroker
 
 from api_gateway.settings import settings
 
-broker = RedisBroker(url=settings.faststream_redis_url)
+broker = RabbitBroker(url=settings.faststream_rabbitmq_url)

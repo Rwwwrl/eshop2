@@ -7,7 +7,7 @@ from httpx import ASGITransport, AsyncClient
 from libs.fastapi_ext.middlewares import SecurityHeadersMiddleware
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def app() -> FastAPI:
     test_app = FastAPI()
     test_app.add_middleware(SecurityHeadersMiddleware)
@@ -22,14 +22,14 @@ def app() -> FastAPI:
     return test_app
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(scope="session")
 async def async_client(app: FastAPI) -> AsyncGenerator[AsyncClient]:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_security_headers_middleware_when_success_adds_x_content_type_options(async_client: AsyncClient) -> None:
     response = await async_client.get("/test")
 
@@ -37,7 +37,7 @@ async def test_security_headers_middleware_when_success_adds_x_content_type_opti
     assert response.headers["X-Content-Type-Options"] == "nosniff"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_security_headers_middleware_when_success_adds_strict_transport_security(
     async_client: AsyncClient,
 ) -> None:
@@ -47,7 +47,7 @@ async def test_security_headers_middleware_when_success_adds_strict_transport_se
     assert response.headers["Strict-Transport-Security"] == "max-age=63072000; includeSubDomains"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_security_headers_middleware_when_error_response(async_client: AsyncClient) -> None:
     response = await async_client.get("/nonexistent")
 

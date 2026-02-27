@@ -99,6 +99,12 @@ poetry run ruff check --fix .
 poetry run ruff format .
 ```
 
+**Import boundaries:** Uses **import-linter** (config in `.importlinter`). When adding a new service, update the contracts in `.importlinter`.
+
+```bash
+poetry run lint-imports
+```
+
 **Task runner:** Uses `just` (see `justfile` for available commands).
 
 ## Coding Standards

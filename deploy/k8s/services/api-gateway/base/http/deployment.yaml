@@ -31,6 +31,17 @@ spec:
                 name: api-gateway-config
             - secretRef:
                 name: api-gateway-secrets
+          env:
+            - name: FASTSTREAM_RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: RABBITMQ_URL
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: sentry-auth
+                  key: SENTRY_DSN
           ports:
             - containerPort: 8000
           resources:

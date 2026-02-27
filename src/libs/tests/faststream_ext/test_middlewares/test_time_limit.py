@@ -6,12 +6,12 @@ from faststream import ContextRepo
 from libs.faststream_ext.middlewares import TimeLimitMiddleware
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def context() -> ContextRepo:
     return ContextRepo()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_completes_within_timeout(context: ContextRepo) -> None:
     middleware = partial(TimeLimitMiddleware, timeout_seconds=1.0)(None, context=context)
 
@@ -23,7 +23,7 @@ async def test_completes_within_timeout(context: ContextRepo) -> None:
     assert result == "ok"
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_raises_timeout_error_when_exceeded(context: ContextRepo) -> None:
     middleware = partial(TimeLimitMiddleware, timeout_seconds=0.05)(None, context=context)
 
@@ -35,7 +35,7 @@ async def test_raises_timeout_error_when_exceeded(context: ContextRepo) -> None:
         await middleware.consume_scope(call_next=_slow_handler, msg=None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_uses_default_timeout(context: ContextRepo) -> None:
     middleware = TimeLimitMiddleware(None, context=context)
 
