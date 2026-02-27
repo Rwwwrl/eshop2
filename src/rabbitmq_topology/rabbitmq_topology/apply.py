@@ -3,7 +3,7 @@ import os
 
 from faststream.rabbit import RabbitBroker
 
-from rabbitmq_topology.entities import BINDINGS, DEAD_LETTER_QUEUES, EXCHANGES, QUEUES
+from rabbitmq_topology.entities import BINDINGS, DEAD_LETTER_QUEUES, DELAYED_RETRY_QUEUES, EXCHANGES, QUEUES
 
 
 async def apply_topology(amqp_url: str) -> None:
@@ -20,6 +20,9 @@ async def apply_topology(amqp_url: str) -> None:
             declared_queues[rabbit_queue.name] = await broker.declare_queue(rabbit_queue)
 
         for rabbit_queue in QUEUES:
+            declared_queues[rabbit_queue.name] = await broker.declare_queue(rabbit_queue)
+
+        for rabbit_queue in DELAYED_RETRY_QUEUES:
             declared_queues[rabbit_queue.name] = await broker.declare_queue(rabbit_queue)
 
         for binding in BINDINGS:

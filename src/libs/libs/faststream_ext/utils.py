@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from faststream.rabbit import RabbitBroker, RabbitMessage
 from messaging_contracts.common import BaseMessage
-from rabbitmq_topology.services import get_exchange_for_message
+from rabbitmq_topology.services import publish as topology_publish
 
 from libs.context_vars import request_id_var
 from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER, REQUEST_ID_HEADER
@@ -19,12 +19,10 @@ def message_type_filter(message_class: type[BaseMessage]) -> Callable[[RabbitMes
 
 
 async def publish(broker: RabbitBroker, message: BaseMessage) -> None:
-    exchange = get_exchange_for_message(message_class=type(message))
-
     headers: dict[str, str] = {MESSAGE_CLASS_HEADER: get_class_full_path(cls=type(message))}
 
     request_id = request_id_var.get()
     if request_id is not None:
         headers[REQUEST_ID_HEADER] = request_id
 
-    await broker.publish(message=message, exchange=exchange, headers=headers)
+    await topology_publish(broker=broker, message=message, headers=headers)

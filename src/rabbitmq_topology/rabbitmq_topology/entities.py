@@ -54,6 +54,26 @@ QUEUES: list[RabbitQueue] = [
     WEARABLES_QUEUE,
 ]
 
+HELLO_WORLD_DELAYED_RETRY = RabbitQueue(
+    name=f"{HELLO_WORLD_QUEUE.name}.delayed-retry",
+    arguments={
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": HELLO_WORLD_QUEUE.name,
+    },
+)
+WEARABLES_DELAYED_RETRY = RabbitQueue(
+    name=f"{WEARABLES_QUEUE.name}.delayed-retry",
+    arguments={
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": WEARABLES_QUEUE.name,
+    },
+)
+
+DELAYED_RETRY_QUEUES: list[RabbitQueue] = [
+    HELLO_WORLD_DELAYED_RETRY,
+    WEARABLES_DELAYED_RETRY,
+]
+
 BINDINGS: list[RabbitBinding] = [
     RabbitBinding(
         exchange=HELLO_WORLD_EVENT_EXCHANGE,

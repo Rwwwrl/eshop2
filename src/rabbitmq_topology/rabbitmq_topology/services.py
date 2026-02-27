@@ -1,15 +1,22 @@
-from faststream.rabbit import RabbitExchange
+from faststream.rabbit import RabbitBroker, RabbitMessage, RabbitQueue
 from messaging_contracts.common import BaseMessage
-from messaging_contracts.utils import get_message_full_class_path
 
-from rabbitmq_topology.entities import EXCHANGES
-
-_EXCHANGE_BY_NAME: dict[str, RabbitExchange] = {ex.name: ex for ex in EXCHANGES}
+from rabbitmq_topology.utils import get_delayed_retry_queue_name, get_exchange_for_message
 
 
-def get_exchange_for_message(message_class: type[BaseMessage]) -> RabbitExchange:
-    class_path = get_message_full_class_path(message_class=message_class)
-    try:
-        return _EXCHANGE_BY_NAME[class_path]
-    except KeyError as exc:
-        raise ValueError(f"No exchange defined for {class_path}. Add it to rabbitmq_topology/entities.py") from exc
+async def publish(broker: RabbitBroker, message: BaseMessage, headers: dict[str, str]) -> None:
+    exchange = get_exchange_for_message(message_class=type(message))
+    await broker.publish(message=message, exchange=exchange, headers=headers)
+
+
+async def publish_to_delayed_retry_queue(
+    broker: RabbitBroker,
+    message: RabbitMessage,
+    original_queue: RabbitQueue,
+) -> None:
+    await broker.publish(
+        message=message.body,
+        headers=message.headers,
+        exchange="",
+        routing_key=get_delayed_retry_queue_name(queue=original_queue),
+    )
