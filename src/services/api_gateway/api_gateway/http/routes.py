@@ -3,9 +3,11 @@ from fastapi import APIRouter, status
 from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
 from libs.faststream_ext import publish
-from messaging_contracts.events import HelloWorldEvent
+from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
+from starlette.responses import Response
 
+from api_gateway.http.schemas.request_schemas import OpenHealthResultWebhookPayload
 from api_gateway.messaging.main import broker as faststream_broker
 
 router = APIRouter()
@@ -53,3 +55,10 @@ async def publish_hello_world_async_command() -> dict[str, str]:
     command = HelloWorldAsyncCommand(greeting="Greetings from API Gateway!")
     await publish(broker=faststream_broker, message=command)
     return {"status": "published"}
+
+
+@router.post("/open-health/result-webhook", status_code=status.HTTP_202_ACCEPTED)
+async def open_health_result_webhook(body: OpenHealthResultWebhookPayload) -> Response:
+    event = OpenHealthResultReceivedEvent(result_id=body.result_id)
+    await publish(broker=faststream_broker, message=event)
+    return Response(status_code=status.HTTP_202_ACCEPTED)

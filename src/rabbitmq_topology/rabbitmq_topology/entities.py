@@ -1,6 +1,6 @@
 from faststream.rabbit import RabbitExchange, RabbitQueue
 from faststream.rabbit.schemas import ExchangeType
-from messaging_contracts.events import HelloWorldEvent
+from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
 from messaging_contracts.utils import get_message_full_class_path
 
@@ -15,9 +15,15 @@ HELLO_WORLD_ASYNC_COMMAND_EXCHANGE = RabbitExchange(
     type=ExchangeType.FANOUT,
 )
 
+OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE = RabbitExchange(
+    name=get_message_full_class_path(message_class=OpenHealthResultReceivedEvent),
+    type=ExchangeType.FANOUT,
+)
+
 EXCHANGES: list[RabbitExchange] = [
     HELLO_WORLD_EVENT_EXCHANGE,
     HELLO_WORLD_ASYNC_COMMAND_EXCHANGE,
+    OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE,
 ]
 
 HELLO_WORLD_DLQ = RabbitQueue(name="hello-world.dlq")
@@ -55,6 +61,10 @@ BINDINGS: list[RabbitBinding] = [
     ),
     RabbitBinding(
         exchange=HELLO_WORLD_ASYNC_COMMAND_EXCHANGE,
+        queues=[HELLO_WORLD_QUEUE],
+    ),
+    RabbitBinding(
+        exchange=OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE,
         queues=[HELLO_WORLD_QUEUE],
     ),
 ]

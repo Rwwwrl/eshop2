@@ -37,10 +37,10 @@ async def test_dlq_when_handler_raises_nack_message_with_requeue_false() -> None
     async def handler() -> None:
         raise ValueError("boom")
 
-    try:
+    with pytest.raises(NackMessage) as exc_info:
         await handler()
-    except NackMessage as exc:
-        assert exc.extra_options == {"requeue": False}
+
+    assert exc_info.value.extra_options == {"requeue": False}
 
 
 @pytest.mark.asyncio(loop_scope="session")

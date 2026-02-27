@@ -4,7 +4,11 @@ import httpx
 import pytest
 from faststream.rabbit import TestRabbitBroker
 from httpx import AsyncClient
-from rabbitmq_topology.entities import HELLO_WORLD_ASYNC_COMMAND_EXCHANGE, HELLO_WORLD_EVENT_EXCHANGE
+from rabbitmq_topology.entities import (
+    HELLO_WORLD_ASYNC_COMMAND_EXCHANGE,
+    HELLO_WORLD_EVENT_EXCHANGE,
+    OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE,
+)
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -68,3 +72,15 @@ async def test_publish_hello_world_async_command_when_called(
 
     assert publish_mock.call_count == 1
     assert publish_mock.call_args_list[0].kwargs["exchange"] == HELLO_WORLD_ASYNC_COMMAND_EXCHANGE
+
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_open_health_result_webhook_when_called(async_client: AsyncClient, test_broker: TestRabbitBroker) -> None:
+    with patch.object(test_broker, "publish", new_callable=AsyncMock) as publish_mock:
+        response = await async_client.post(url="/open-health/result-webhook", json={"result_id": 123})
+
+    assert response.status_code == 202
+    assert response.content == b""
+
+    assert publish_mock.call_count == 1
+    assert publish_mock.call_args_list[0].kwargs["exchange"] == OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE

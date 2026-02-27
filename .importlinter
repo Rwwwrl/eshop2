@@ -19,6 +19,15 @@ type = forbidden
 source_modules = messaging_contracts
 forbidden_modules = rabbitmq_topology
 
+[importlinter:contract:messaging-contracts-no-services]
+name = messaging_contracts must not import services
+type = forbidden
+source_modules = messaging_contracts
+forbidden_modules =
+    hello_world
+    api_gateway
+    wearables
+
 [importlinter:contract:rabbitmq-topology-no-libs]
 name = rabbitmq_topology must not import libs
 type = forbidden

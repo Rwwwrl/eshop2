@@ -11,8 +11,8 @@ def dlq(exceptions: tuple[type[Exception], ...] = (Exception,)) -> Callable[...,
         async def _wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 return await func(*args, **kwargs)
-            except exceptions:
-                raise NackMessage(requeue=False)
+            except exceptions as exc:
+                raise NackMessage(requeue=False) from exc
 
         return _wrapper
 
