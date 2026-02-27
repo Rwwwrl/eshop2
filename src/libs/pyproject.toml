@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "myeshop-libs"
-version = "0.22.0"
+version = "0.22.1"
 description = "Shared library for MyEshop microservices"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "libs" }]
@@ -19,7 +19,6 @@ asyncpg = "^0.31.0"
 greenlet = "^3.3.1"
 sentry-sdk = "^2.35"
 taskiq = "^0.12.1"
-redis = "^7.1.1"
 prometheus-client = "^0.24.1"
 prometheus-fastapi-instrumentator = "^7.1.0"
 faststream = {extras = ["rabbit", "cli", "prometheus"], version = "^0.6.6"}
