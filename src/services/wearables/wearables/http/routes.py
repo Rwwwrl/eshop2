@@ -1,7 +1,7 @@
 from logging import getLogger
 
 from fastapi import APIRouter, Response, status
-from libs.redis_ext.utils import health_check as redis_health_check
+from libs.rabbitmq_ext.utils import health_check as rabbitmq_health_check
 from libs.sqlmodel_ext import Session
 from libs.sqlmodel_ext.utils import health_check as postgres_health_check
 
@@ -24,7 +24,7 @@ async def health() -> dict[str, str]:
 @router.get("/readiness_check")
 async def readiness_check() -> dict[str, str]:
     await postgres_health_check()
-    await redis_health_check(redis_url=settings.taskiq_redis_url)
+    await rabbitmq_health_check(rabbitmq_url=settings.rabbitmq_url)
     return {"status": "ok"}
 
 

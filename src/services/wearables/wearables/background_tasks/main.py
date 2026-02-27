@@ -5,7 +5,7 @@ from fastapi.responses import Response
 from libs.common.enums import ServiceNameEnum
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
-from libs.redis_ext.utils import health_check as redis_health_check
+from libs.rabbitmq_ext.utils import health_check as rabbitmq_health_check
 from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 from libs.sqlmodel_ext.utils import health_check as sqlmodel_health_check
@@ -15,16 +15,15 @@ from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqSt
 from taskiq.brokers.shared_broker import async_shared_broker
 from taskiq.middlewares.prometheus_middleware import PrometheusMiddleware
 from taskiq.schedule_sources import LabelScheduleSource
-from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
+from taskiq_aio_pika import AioPikaBroker
 
 from wearables.settings import settings
 from wearables.utils import init_sqlmodel_engine
 
-broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
-    result_backend=RedisAsyncResultBackend(
-        redis_url=settings.taskiq_redis_url,
-        result_ex_time=7 * 60 * 60 * 24,  # 1 week
-    )
+broker = AioPikaBroker(
+    url=settings.rabbitmq_url,
+    exchange_name="taskiq-wearables",
+    queue_name="taskiq-wearables",
 )
 
 scheduler = TaskiqScheduler(
@@ -52,7 +51,7 @@ async def _health_check() -> Response:
 @health_app.get("/readiness-check", status_code=204)
 async def _readiness_check() -> Response:
     try:
-        await redis_health_check(redis_url=settings.taskiq_redis_url)
+        await rabbitmq_health_check(rabbitmq_url=settings.rabbitmq_url)
         await sqlmodel_health_check()
     except Exception:
         return Response(status_code=503)

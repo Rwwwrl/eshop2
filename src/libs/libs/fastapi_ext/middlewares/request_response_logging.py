@@ -26,7 +26,7 @@ _SAFE_HEADERS: frozenset[str] = frozenset(
     }
 )
 
-_SKIP_PATHS: frozenset[str] = frozenset({"/health", "/readiness_check"})
+_SKIP_PATHS: frozenset[str] = frozenset({"/health", "/readiness_check", "/metrics"})
 
 _MAX_BODY_LOG_SIZE: int = 10_000
 

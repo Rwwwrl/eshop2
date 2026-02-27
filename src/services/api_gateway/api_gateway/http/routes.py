@@ -3,12 +3,14 @@ from fastapi import APIRouter, status
 from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
 from libs.faststream_ext import publish
+from libs.rabbitmq_ext.utils import health_check as rabbitmq_health_check
 from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
 from starlette.responses import Response
 
 from api_gateway.http.schemas.request_schemas import OpenHealthResultWebhookPayload
 from api_gateway.messaging.main import broker as faststream_broker
+from api_gateway.settings import settings
 
 router = APIRouter()
 
@@ -27,6 +29,7 @@ async def health() -> dict[str, str]:
 
 @router.get("/readiness_check")
 async def readiness_check() -> dict[str, str]:
+    await rabbitmq_health_check(rabbitmq_url=settings.rabbitmq_url)
     return {"status": "ok"}
 
 

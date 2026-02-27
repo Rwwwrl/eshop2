@@ -19,7 +19,7 @@ from hello_world.settings import settings
 _registry = CollectorRegistry()
 
 broker = RabbitBroker(
-    url=settings.faststream_rabbitmq_url,
+    url=settings.rabbitmq_url,
     graceful_timeout=settings.faststream_graceful_timeout,
     middlewares=[RabbitPrometheusMiddleware(registry=_registry), RequestIdMiddleware, TimeLimitMiddleware],
 )

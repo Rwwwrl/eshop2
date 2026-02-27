@@ -161,14 +161,14 @@ TaskIQ shutdown sequence after SIGTERM:
 SIGTERM
   ↓
 1. Process manager sends SIGINT to worker child process
-2. Worker sets shutdown_event → prefetcher stops pulling from Redis
-3. Prefetched-but-unstarted messages stay in Redis (picked up by other workers)
+2. Worker sets shutdown_event → prefetcher stops pulling from RabbitMQ
+3. Prefetched-but-unstarted messages stay in RabbitMQ (picked up by other workers)
 4. QUEUE_DONE sentinel placed on internal queue
 5. Runner calls: asyncio.wait(tasks, timeout=wait_tasks_timeout)  ← Phase 1
 6. broker.shutdown() called with asyncio.wait_for(timeout=shutdown_timeout)  ← Phase 2
    - WORKER_SHUTDOWN event handlers (engine dispose, heartbeat stop)
    - Middleware shutdown
-   - Result backend close (Redis)
+   - RabbitMQ connection close
 7. Process exits
 ```
 

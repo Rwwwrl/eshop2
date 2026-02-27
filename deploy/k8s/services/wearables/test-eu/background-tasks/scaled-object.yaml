@@ -10,12 +10,11 @@ spec:
   minReplicaCount: 2
   maxReplicaCount: 10
   triggers:
-    - type: redis-streams
+    - type: rabbitmq
       metadata:
-        address: redis-13702.fcrce259.eu-central-1-3.ec2.cloud.redislabs.com:13702
-        stream: taskiq
-        consumerGroup: taskiq
-        lagCount: "300"
-        databaseIndex: "0"
+        protocol: http
+        queueName: taskiq-wearables
+        mode: QueueLength
+        value: "300"
       authenticationRef:
-        name: redis-trigger-auth
+        name: rabbitmq-trigger-auth

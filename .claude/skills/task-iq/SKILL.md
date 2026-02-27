@@ -5,7 +5,7 @@ description: Guides TaskIQ async task queue integration in MyEshop. Use when add
 
 # TaskIQ
 
-Async task queue (like Celery, but async-native). Uses Redis Streams as broker and Redis as result backend.
+Async task queue (like Celery, but async-native). Uses RabbitMQ as broker via `taskiq-aio-pika` (fire-and-forget, no result backend).
 
 ## Quick Reference
 
@@ -17,7 +17,7 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 | RequestIdMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import RequestIdMiddleware` |
 | TimeLimitMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import TimeLimitMiddleware` |
 | Heartbeat loop | `libs/taskiq_ext/liveness_check.py` | `from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop` |
-| Redis health check | `libs/redis_ext/utils.py` | `from libs.redis_ext.utils import health_check as redis_health_check` |
+| RabbitMQ health check | `libs/rabbitmq_ext/utils.py` | `from libs.rabbitmq_ext.utils import health_check as rabbitmq_health_check` |
 
 ## File Structure
 
@@ -36,7 +36,7 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 - Scheduler runs as a **third process** — dispatches scheduled tasks to the broker on cron/interval
 - One worker process per pod (`--workers 1`), scale horizontally with k8s replicas
 - Exactly **one scheduler replica** — multiple replicas = duplicate task dispatches
-- `background_tasks/main.py` configures the real Redis broker, scheduler, and worker lifecycle
+- `background_tasks/main.py` configures the real RabbitMQ broker, scheduler, and worker lifecycle
 - `background_tasks/tasks.py` defines tasks via `@async_shared_broker.task()` — decoupled from concrete broker
 - HTTP routes enqueue tasks by importing task functions and calling `.kiq()`
 - `async_shared_broker.default_broker(broker)` wires the real broker at worker startup
@@ -47,13 +47,15 @@ Async task queue (like Celery, but async-native). Uses Redis Streams as broker a
 from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqState
 from taskiq.brokers.shared_broker import async_shared_broker
 from taskiq.schedule_sources import LabelScheduleSource
-from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
+from taskiq_aio_pika import AioPikaBroker
 
 from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop
 from libs.taskiq_ext.middlewares import RequestIdMiddleware, TimeLimitMiddleware
 
-broker = RedisStreamBroker(url=settings.taskiq_redis_url).with_result_backend(
-    result_backend=RedisAsyncResultBackend(redis_url=settings.taskiq_redis_url)
+broker = AioPikaBroker(
+    url=settings.rabbitmq_url,
+    exchange_name="taskiq-<service>",
+    queue_name="taskiq-<service>",
 )
 
 scheduler = TaskiqScheduler(
@@ -152,7 +154,7 @@ async def dispatch_wearable_events() -> str:
 ```
 
 Rules:
-- Semaphore concurrency (~200) should roughly match Redis connection pool size
+- Semaphore concurrency (~200) should roughly match RabbitMQ channel pool size
 - TaskGroup over `asyncio.gather` — fail-fast cancellation on errors
 - No built-in bulk dispatch API in TaskIQ — this is the standard asyncio pattern
 - Scales from 1,500 to 30,000+ by changing the count; semaphore ensures backpressure
@@ -206,30 +208,30 @@ class Settings(SentrySettingsMixin, PostgresSettingsMixin, TaskiqSettingsMixin, 
     model_config = SettingsConfigDict(yaml_file=str(_BASE_DIR / "env.yaml"), extra="ignore")
 ```
 
-Adds `taskiq_redis_url: str` to the settings.
+Adds `rabbitmq_url: str` to the settings (shared with FastStream).
 
 ## Adding TaskIQ to a New Service
 
-1. Add dependencies: `poetry add taskiq taskiq-redis`
+1. Add dependencies: `poetry add taskiq taskiq-aio-pika`
 2. Mix `TaskiqSettingsMixin` into the service's `Settings` class
-3. Add `taskiq_redis_url` to `env.yaml` and k8s ConfigMaps
+3. Add `rabbitmq_url` to `env.yaml` (shared with FastStream if also used)
 4. Create `background_tasks/__init__.py`, `background_tasks/main.py`, `background_tasks/tasks.py`
 5. Copy broker setup pattern from wearables — adjust service name in logging/sentry calls
 6. Add k8s manifests: `base/background-tasks/workers-deployment.yaml`, `scheduler-deployment.yaml`, `kustomization.yaml`, plus environment overlays
 7. Set `run_background_tasks_deployment: true` in CI/CD workflow call
    - CI waits for both `<service>-background-tasks` and `<service>-scheduler` rollouts
 8. Add `taskiq_broker` fixture to service `tests/conftest.py`
-9. Add Redis health check to HTTP `/readiness_check` endpoint
+9. Add RabbitMQ health check to HTTP `/readiness_check` endpoint
 
 ## Readiness Check
 
-The HTTP readiness endpoint must verify Redis alongside Postgres:
+The HTTP readiness endpoint must verify RabbitMQ alongside Postgres:
 
 ```python
 @router.get("/readiness_check")
 async def readiness_check() -> dict[str, str]:
     await postgres_health_check()
-    await redis_health_check(redis_url=settings.taskiq_redis_url)
+    await rabbitmq_health_check(rabbitmq_url=settings.rabbitmq_url)
     return {"status": "ok"}
 ```
 
@@ -279,7 +281,7 @@ Configuration must align with `TimeLimitMiddleware` timeout and k8s `termination
 Rules:
 - Always set `--wait-tasks-timeout` explicitly — default `None` waits forever, risks SIGKILL
 - `terminationGracePeriodSeconds` must be > `wait-tasks-timeout` + `shutdown-timeout`
-- No `preStop` hook needed for background task workers (they pull from Redis, no ingress traffic to drain)
+- No `preStop` hook needed for background task workers (they pull from RabbitMQ, no ingress traffic to drain)
 - K8s sends exactly one SIGTERM, then one SIGKILL when grace period expires — no retries
 
 See [references/k8s_deployment.md](references/k8s_deployment.md) for the full deployment manifest and shutdown details.

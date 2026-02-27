@@ -15,3 +15,6 @@ spec:
     - secretKey: RABBITMQ_URL
       remoteRef:
         key: rabbitmq-url
+    - secretKey: RABBITMQ_HTTP_URL
+      remoteRef:
+        key: rabbitmq-http-url
