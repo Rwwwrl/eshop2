@@ -1,9 +1,9 @@
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: redis-trigger-auth
+  name: rabbitmq-trigger-auth
 spec:
   secretTargetRef:
-    - parameter: password
-      name: redis-auth
-      key: REDIS_PASSWORD
+    - parameter: host
+      name: rabbitmq-auth
+      key: RABBITMQ_HTTP_URL

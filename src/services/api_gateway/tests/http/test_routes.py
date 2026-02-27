@@ -27,7 +27,8 @@ async def test_health_when_called(async_client: AsyncClient) -> None:
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_readiness_check_when_called(async_client: AsyncClient) -> None:
-    response = await async_client.get(url="/readiness_check")
+    with patch("api_gateway.http.routes.rabbitmq_health_check", new_callable=AsyncMock):
+        response = await async_client.get(url="/readiness_check")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 

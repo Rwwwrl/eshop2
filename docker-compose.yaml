@@ -18,19 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:8.4-alpine
-    container_name: redis
-    ports:
-      - "16379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   rabbitmq:
     image: rabbitmq:4-management-alpine
     container_name: rabbitmq
@@ -47,7 +34,6 @@ services:
 
 volumes:
   postgresdb_data:
-  redis_data:
   rabbitmq_data:
 
 configs:

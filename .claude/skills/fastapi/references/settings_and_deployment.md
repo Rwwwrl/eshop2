@@ -9,8 +9,8 @@
 | `LoggingSettingsMixin` | `environment: EnvironmentEnum`, `log_level` (default: `INFO`) |
 | `PostgresSettingsMixin` | `postgres_direct_db_url`, `postgres_pooler_db_url` (optional) |
 | `SentrySettingsMixin` | `sentry_dsn`, `sentry_send_pii`, `sentry_traces_sample_rate` — required for stand envs, forbidden otherwise |
-| `FaststreamSettingsMixin` | `faststream_rabbitmq_url`, `faststream_graceful_timeout` (default: 65.0) |
-| `TaskiqSettingsMixin` | `taskiq_redis_url`, `taskiq_metrics_port` (default: 9090), `taskiq_health_port` (default: 8081) |
+| `FaststreamSettingsMixin` | `rabbitmq_url`, `faststream_graceful_timeout` (default: 65.0) |
+| `TaskiqSettingsMixin` | `rabbitmq_url`, `taskiq_metrics_port` (default: 9090), `taskiq_health_port` (default: 8081) |
 
 Services compose only the mixins they need:
 
@@ -38,7 +38,7 @@ Always end with `settings = Settings()` singleton.
 ```yaml
 environment: "dev"
 log_level: "DEBUG"
-faststream_rabbitmq_url: "amqp://guest:guest@localhost:15672/"
+rabbitmq_url: "amqp://guest:guest@localhost:15672/"
 # Add more settings as needed
 ```
 

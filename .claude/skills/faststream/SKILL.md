@@ -171,7 +171,7 @@ No `AsgiFastStream` needed. Bare broker connected in FastAPI lifespan:
 ```python
 # <service>/messaging/main.py
 from faststream.rabbit import RabbitBroker
-broker = RabbitBroker(url=settings.faststream_rabbitmq_url)
+broker = RabbitBroker(url=settings.rabbitmq_url)
 
 # <service>/http/main.py
 @asynccontextmanager
@@ -359,7 +359,7 @@ from faststream.rabbit.prometheus import RabbitPrometheusMiddleware
 _registry = CollectorRegistry()
 
 broker = RabbitBroker(
-    url=settings.faststream_rabbitmq_url,
+    url=settings.rabbitmq_url,
     graceful_timeout=settings.faststream_graceful_timeout,
     middlewares=[RabbitPrometheusMiddleware(registry=_registry), RequestIdMiddleware, TimeLimitMiddleware],
 )
@@ -390,7 +390,7 @@ class Settings(SentrySettingsMixin, FaststreamSettingsMixin, BaseAppSettings):
 
 | Setting | Type | Default | Purpose |
 |---------|------|---------|---------|
-| `faststream_rabbitmq_url` | `str` | required | RabbitMQ AMQP connection URL |
+| `rabbitmq_url` | `str` | required | RabbitMQ AMQP connection URL |
 | `faststream_graceful_timeout` | `float` | `65.0` | Broker wait for in-flight messages on shutdown |
 
 ## Testing
@@ -466,16 +466,7 @@ spec:
         key: rabbitmq-url
 ```
 
-Services map `RABBITMQ_URL` to `FASTSTREAM_RABBITMQ_URL` via explicit env entry:
-
-```yaml
-env:
-  - name: FASTSTREAM_RABBITMQ_URL
-    valueFrom:
-      secretKeyRef:
-        name: rabbitmq-auth
-        key: RABBITMQ_URL
-```
+Services use `envFrom: secretRef` to pick up `RABBITMQ_URL` automatically from their ExternalSecret.
 
 ### Topology Job
 
@@ -495,8 +486,8 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for deployment 
 1. Add dependencies: `poetry add 'faststream[rabbit,cli]'`
 2. Add `myeshop-messaging-contracts`, `myeshop-rabbitmq-topology` path dependencies
 3. Mix `FaststreamSettingsMixin` into the service `Settings` class
-4. Add `faststream_rabbitmq_url` to `env.yaml`
-5. Add `FASTSTREAM_RABBITMQ_URL` env entry mapped from `rabbitmq-auth` secret in k8s deployment
+4. Add `rabbitmq_url` to `env.yaml`
+5. Add `RABBITMQ_URL` to the service's ExternalSecret (mapped from `rabbitmq-url` GCP secret)
 6. Create `messaging/__init__.py`, `messaging/main.py`, `messaging/handlers.py`
 7. Copy broker + `AsgiFastStream` setup from an existing service (e.g., `hello_world`)
 8. Define message types in `messaging_contracts/` (or reuse existing ones)
