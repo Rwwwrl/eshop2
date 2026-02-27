@@ -1,5 +1,6 @@
 from logging import getLogger
 
+from faststream import AckPolicy
 from faststream.rabbit import RabbitQueue, RabbitRouter
 from libs.faststream_ext import message_type_filter
 from messaging_contracts.events import HelloWorldEvent
@@ -12,7 +13,7 @@ router = RabbitRouter()
 
 _QUEUE = RabbitQueue(name=HELLO_WORLD_QUEUE.name, declare=False)
 
-subscriber = router.subscriber(queue=_QUEUE)
+subscriber = router.subscriber(queue=_QUEUE, ack_policy=AckPolicy.ACK)
 
 
 @subscriber(filter=message_type_filter(HelloWorldEvent))

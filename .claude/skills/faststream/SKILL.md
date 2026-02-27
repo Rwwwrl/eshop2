@@ -40,10 +40,11 @@ services             (depends on: libs, messaging_contracts, rabbitmq_topology)
 | `get_class_full_path()` | `libs/utils.py` | `from libs.utils import get_class_full_path` |
 | `publish()` | `libs/faststream_ext/utils.py` | `from libs.faststream_ext import publish` |
 | `message_type_filter()` | `libs/faststream_ext/utils.py` | `from libs.faststream_ext import message_type_filter` |
+| `dlq()` | `libs/faststream_ext/decorators.py` | `from libs.faststream_ext.decorators import dlq` |
 | `FaststreamSettingsMixin` | `libs/faststream_ext/settings.py` | `from libs.faststream_ext.settings import FaststreamSettingsMixin` |
 | `RequestIdMiddleware` | `libs/faststream_ext/middlewares.py` | `from libs.faststream_ext.middlewares import RequestIdMiddleware` |
 | `TimeLimitMiddleware` | `libs/faststream_ext/middlewares.py` | `from libs.faststream_ext.middlewares import TimeLimitMiddleware` |
-| Topology entities | `rabbitmq_topology/entities.py` | `from rabbitmq_topology.entities import HELLO_WORLD_QUEUE, HELLO_WORLD_EVENT_EXCHANGE` |
+| Topology entities | `rabbitmq_topology/entities.py` | `from rabbitmq_topology.entities import HELLO_WORLD_QUEUE, HELLO_WORLD_DLQ, HELLO_WORLD_EVENT_EXCHANGE` |
 | `get_exchange_for_message()` | `rabbitmq_topology/services.py` | `from rabbitmq_topology.services import get_exchange_for_message` |
 | Event definitions | `messaging_contracts/events.py` | `from messaging_contracts.events import HelloWorldEvent` |
 
@@ -62,7 +63,7 @@ src/messaging_contracts/         # Message definitions (no libs dependency)
 
 src/rabbitmq_topology/           # Exchange/queue/binding declarations + apply script
     rabbitmq_topology/
-        entities.py              # EXCHANGES, QUEUES, BINDINGS
+        entities.py              # EXCHANGES, QUEUES, DEAD_LETTER_QUEUES, BINDINGS
         schemas/
             __init__.py          # Exports RabbitBinding
             dtos.py              # RabbitBinding DTO
@@ -117,17 +118,29 @@ HELLO_WORLD_EVENT_EXCHANGE = RabbitExchange(
     type=ExchangeType.FANOUT,
 )
 
-HELLO_WORLD_QUEUE = RabbitQueue(name="hello-world")
-WEARABLES_QUEUE = RabbitQueue(name="wearables")
+# DLQ queues — declared before main queues
+HELLO_WORLD_DLQ = RabbitQueue(name="hello-world.dlq")
+DEAD_LETTER_QUEUES: list[RabbitQueue] = [HELLO_WORLD_DLQ]
+
+# Main queues — with DLX arguments pointing to DLQ
+HELLO_WORLD_QUEUE = RabbitQueue(
+    name="hello-world",
+    arguments={
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": HELLO_WORLD_DLQ.name,
+    },
+)
 
 BINDINGS: list[RabbitBinding] = [
-    RabbitBinding(exchange=HELLO_WORLD_EVENT_EXCHANGE, queues=[HELLO_WORLD_QUEUE, WEARABLES_QUEUE]),
+    RabbitBinding(exchange=HELLO_WORLD_EVENT_EXCHANGE, queues=[HELLO_WORLD_QUEUE]),
 ]
 ```
 
 Apply topology locally: `RABBITMQ_URL=amqp://guest:guest@localhost:15672/ poetry run python -m rabbitmq_topology.apply`
 
 All operations are **idempotent** — safe to run on every deploy.
+
+**Migration note:** Adding `arguments` to existing queues requires deleting and recreating them in RabbitMQ (queue arguments are immutable). Delete via Management UI locally, or delete queues before deploying the topology Job in test-eu.
 
 ## Publishing
 
@@ -167,6 +180,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 ## Subscribing
 
 ```python
+from faststream import AckPolicy
 from faststream.rabbit import RabbitQueue, RabbitRouter
 from libs.faststream_ext import message_type_filter
 from messaging_contracts.events import HelloWorldEvent
@@ -176,7 +190,7 @@ router = RabbitRouter()
 
 _QUEUE = RabbitQueue(name=HELLO_WORLD_QUEUE.name, declare=False)
 
-subscriber = router.subscriber(queue=_QUEUE)
+subscriber = router.subscriber(queue=_QUEUE, ack_policy=AckPolicy.ACK)
 
 @subscriber(filter=message_type_filter(HelloWorldEvent))
 async def handle_hello_world_event(body: HelloWorldEvent) -> None:
@@ -187,9 +201,61 @@ Rules:
 - `RabbitRouter()` in `handlers.py`, included via `broker.include_router(router)` in `main.py`
 - Import queue name from `rabbitmq_topology.entities` — consumer only knows its queue
 - `declare=False` — fail-fast if topology Job hasn't run
+- `ack_policy=AckPolicy.ACK` — always ack (FastStream default is `REJECT_ON_ERROR`, we override)
 - `message_type_filter(MessageClass)` checks `x-message-class` header for type discrimination
 - Multiple handlers can share one subscriber (different message types on the same queue)
+- `ack_policy` is per-subscriber, not per-handler — all handlers on one subscriber share the same policy
 - **Zero knowledge of exchanges or bindings** in consumer code
+
+## Dead Letter Queue (DLQ)
+
+Failed messages are routed to DLQ via RabbitMQ's native DLX mechanism. The `dlq` decorator catches exceptions in handlers and raises `NackMessage(requeue=False)`, which triggers DLX routing.
+
+**How it works:**
+1. Main queue has `x-dead-letter-exchange: ""` and `x-dead-letter-routing-key: <queue>.dlq` arguments
+2. `ack_policy=AckPolicy.ACK` on subscriber — unhandled exceptions still ack (safe default, no message loops)
+3. `@dlq()` decorator on handler — catches exceptions, raises `NackMessage(requeue=False)`
+4. RabbitMQ sees nack without requeue → routes to DLX → lands in `<queue>.dlq`
+
+### `dlq` decorator
+
+```python
+from libs.faststream_ext.decorators import dlq
+
+@subscriber(filter=message_type_filter(HelloWorldEvent))
+@dlq()  # catches all exceptions
+async def handle_event(body: HelloWorldEvent) -> None:
+    process(body)
+
+@subscriber(filter=message_type_filter(SomeCommand))
+@dlq(exceptions=(ValueError, TimeoutError))  # catches only specific exceptions
+async def handle_command(body: SomeCommand) -> None:
+    process(body)
+```
+
+Rules:
+- `@dlq()` goes **between** `@subscriber(filter=...)` and the handler function
+- Default `exceptions=(Exception,)` — catches all exceptions
+- Uses `@functools.wraps` — preserves handler signature for FastStream's DI
+- `NackMessage` is a `HandlerException` subclass — overrides `ack_policy` and is suppressed (not propagated)
+- Without `@dlq()`, exceptions are acked (due to `AckPolicy.ACK`) and the message is lost
+
+### Adding DLQ to a new queue
+
+1. Add DLQ queue in `rabbitmq_topology/entities.py`: `MY_QUEUE_DLQ = RabbitQueue(name="my-queue.dlq")`
+2. Add to `DEAD_LETTER_QUEUES` list
+3. Add DLX arguments to the main queue:
+   ```python
+   MY_QUEUE = RabbitQueue(
+       name="my-queue",
+       arguments={
+           "x-dead-letter-exchange": "",
+           "x-dead-letter-routing-key": MY_QUEUE_DLQ.name,
+       },
+   )
+   ```
+4. `apply.py` declares `DEAD_LETTER_QUEUES` before `QUEUES` automatically
+5. Add `@dlq()` to handlers that should route failures to DLQ
 
 ## Worker Setup
 
@@ -380,6 +446,9 @@ FASTSTREAM_CLI_RICH_MODE=none poetry run faststream run <service>.messaging.main
 | Exchange type | Always `FANOUT` |
 | Topology management | Centralized in `rabbitmq_topology/entities.py`, applied by k8s Job |
 | Publishing | Always `publish(broker, message)`, never `broker.publish()` directly |
+| Ack policy | Always `ack_policy=AckPolicy.ACK` on subscriber (override FastStream default) |
+| DLQ decorator | `@dlq()` on handlers that should route failures to DLQ |
+| DLQ naming | `<queue-name>.dlq` (e.g., `hello-world.dlq`) |
 | Consumer queue | `declare=False` — fail-fast if topology not applied |
 | Type discrimination | `message_type_filter(MessageClass)` on every subscriber handler |
 | Router pattern | `RabbitRouter()` in `handlers.py`, included via `broker.include_router(router)` |

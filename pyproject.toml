@@ -40,6 +40,7 @@ env = [
 ]
 testpaths = [
     "src/libs/tests",
+    "src/rabbitmq_topology/tests",
     "src/services/hello_world/tests",
     "src/services/api_gateway/tests",
     "src/services/wearables/tests",

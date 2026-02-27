@@ -20,8 +20,28 @@ EXCHANGES: list[RabbitExchange] = [
     HELLO_WORLD_ASYNC_COMMAND_EXCHANGE,
 ]
 
-HELLO_WORLD_QUEUE = RabbitQueue(name="hello-world")
-WEARABLES_QUEUE = RabbitQueue(name="wearables")
+HELLO_WORLD_DLQ = RabbitQueue(name="hello-world.dlq")
+WEARABLES_DLQ = RabbitQueue(name="wearables.dlq")
+
+DEAD_LETTER_QUEUES: list[RabbitQueue] = [
+    HELLO_WORLD_DLQ,
+    WEARABLES_DLQ,
+]
+
+HELLO_WORLD_QUEUE = RabbitQueue(
+    name="hello-world",
+    arguments={
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": HELLO_WORLD_DLQ.name,
+    },
+)
+WEARABLES_QUEUE = RabbitQueue(
+    name="wearables",
+    arguments={
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": WEARABLES_DLQ.name,
+    },
+)
 
 QUEUES: list[RabbitQueue] = [
     HELLO_WORLD_QUEUE,
