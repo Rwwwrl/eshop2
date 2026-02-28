@@ -15,7 +15,7 @@ description: Guides PostgreSQL, TimescaleDB, SQLModel, and Alembic work in MyEsh
 | `health_check()` | `libs/sqlmodel_ext/utils.py` | `from libs.sqlmodel_ext.utils import health_check` |
 | `utc_now()` | `libs/datetime_ext/utils.py` | `from libs.datetime_ext.utils import utc_now` |
 | TimescaleDB ops | `libs/alembic_ext/timescale_ops.py` | See [references/timescale.md](references/timescale.md) |
-| `run_async_alembic()` | `libs/alembic_ext/env_helpers.py` | `from libs.alembic_ext.env_helpers import run_async_alembic` |
+| `run_alembic()` | `libs/alembic_ext/env_helpers.py` | `from libs.alembic_ext.env_helpers import run_alembic` |
 
 ## Model Pattern
 

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wearables"
-version = "0.27.0"
+version = "0.28.2"
 description = "Wearables webhook ingestion microservice"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "wearables" }]
@@ -10,9 +10,9 @@ python = "^3.14"
 fastapi = "^0.128.0"
 uvicorn = {extras = ["standard"], version = "^0.40.0"}
 pydantic = "^2.11.0"
-myeshop-libs = "^0.28.0"
+myeshop-libs = "^0.29.0"
 myeshop-messaging-contracts = "^0.10.0"
-myeshop-rabbitmq-topology = "^0.9.0"
+myeshop-rabbitmq-topology = "^0.10.0"
 pytest = "^9.0.2"
 pytest-asyncio = "^1.3.0"
 ruff = "^0.14.14"
