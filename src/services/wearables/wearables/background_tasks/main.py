@@ -24,6 +24,8 @@ broker = AioPikaBroker(
     url=settings.rabbitmq_url,
     exchange_name="taskiq-wearables",
     queue_name="taskiq-wearables",
+    declare_exchange_kwargs={"durable": True},
+    declare_queues_kwargs={"durable": True},
 )
 
 scheduler = TaskiqScheduler(

@@ -5,7 +5,7 @@ description: Guides TaskIQ async task queue integration in MyEshop. Use when add
 
 # TaskIQ
 
-Async task queue (like Celery, but async-native). Uses RabbitMQ as broker via `taskiq-aio-pika` (fire-and-forget, no result backend).
+Async task queue (like Celery, but async-native). Uses RabbitMQ as broker via `taskiq-aio-pika` (fire-and-forget, no result backend, durable queues/exchanges).
 
 ## Quick Reference
 
@@ -56,6 +56,8 @@ broker = AioPikaBroker(
     url=settings.rabbitmq_url,
     exchange_name="taskiq-<service>",
     queue_name="taskiq-<service>",
+    declare_exchange_kwargs={"durable": True},
+    declare_queues_kwargs={"durable": True},
 )
 
 scheduler = TaskiqScheduler(
@@ -89,6 +91,22 @@ async def _on_worker_shutdown(state: TaskiqState) -> None:
     await stop_heartbeat_loop()
     await state.sqlmodel_engine.dispose()
 ```
+
+## Durability
+
+`taskiq-aio-pika` v0.5.0 does NOT declare durable queues/exchanges by default — always pass `declare_exchange_kwargs` and `declare_queues_kwargs` explicitly.
+
+| Feature | Default in v0.5.0 | Our config |
+|---|---|---|
+| Publisher confirms | On (aio-pika `RobustChannel` default) | Inherited — no action needed |
+| Durable exchanges | **Off** (`durable=False`) | `declare_exchange_kwargs={"durable": True}` |
+| Durable queues | **Off** (`durable=False`) | `declare_queues_kwargs={"durable": True}` |
+| Persistent messages | On (hardcoded `DeliveryMode.PERSISTENT`) | Inherited — no action needed |
+
+Rules:
+- Always set `declare_exchange_kwargs={"durable": True}` and `declare_queues_kwargs={"durable": True}` on `AioPikaBroker`
+- Without durable queues, persistent messages are useless — both are needed for RabbitMQ restart survival
+- Changing durability on an existing queue/exchange requires deleting it in RabbitMQ first (or using a new name)
 
 ## Task Definition Pattern (background_tasks/tasks.py)
 
