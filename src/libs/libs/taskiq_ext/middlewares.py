@@ -3,9 +3,11 @@ from typing import Any
 
 from taskiq.abc.middleware import TaskiqMiddleware
 from taskiq.message import TaskiqMessage
+from taskiq.middlewares.smart_retry_middleware import SmartRetryMiddleware
 from taskiq.result import TaskiqResult
 
 from libs.context_vars import request_id_var
+from libs.taskiq_ext.exceptions import DuplicateTaskMessageError
 
 _logger = getLogger(__name__)
 
@@ -70,3 +72,22 @@ class TaskLifecycleLogMiddleware(TaskiqMiddleware):
                 message.task_id,
                 result.execution_time,
             )
+
+
+class SmartRetryWithBlacklistMiddleware(SmartRetryMiddleware):
+    """SmartRetryMiddleware that skips retries for exceptions listed in ``_no_retry_exceptions``.
+
+    Inherits all SmartRetryMiddleware behavior (delay, jitter, exponential backoff)
+    but never retries when a task raises an exception matching ``_no_retry_exceptions``.
+    The exception still propagates as a failure.
+    """
+
+    _no_retry_exceptions: tuple[type[BaseException], ...] = (DuplicateTaskMessageError,)
+
+    async def on_error(self, message: TaskiqMessage, result: TaskiqResult[Any], exception: BaseException) -> None:
+        if isinstance(exception, self._no_retry_exceptions):
+            # NOTE @sosov: on_error return value is ignored by the receiver (receiver.py:309-318).
+            # The exception is already captured in TaskiqResult.error. Returning early skips retry scheduling.
+            return
+
+        return await super().on_error(message=message, result=result, exception=exception)

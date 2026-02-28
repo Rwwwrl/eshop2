@@ -14,6 +14,11 @@ Async task queue (like Celery, but async-native). Uses RabbitMQ as broker via `t
 | Broker setup | `<service>/background_tasks/main.py` | — |
 | Task definitions | `<service>/background_tasks/tasks.py` | `from taskiq.brokers.shared_broker import async_shared_broker` |
 | Settings mixin | `libs/taskiq_ext/settings.py` | `from libs.taskiq_ext import TaskiqSettingsMixin` |
+| BaseTaskMessage | `libs/taskiq_ext/schemas/task_messages.py` | `from libs.taskiq_ext.schemas.task_messages import BaseTaskMessage` |
+| ProcessedTaskMessage | `libs/taskiq_ext/models.py` | `from libs.taskiq_ext.models import ProcessedTaskMessage` |
+| ProcessedTaskMessageRepository | `libs/taskiq_ext/repositories.py` | `from libs.taskiq_ext.repositories import ProcessedTaskMessageRepository` |
+| DuplicateTaskMessageError | `libs/taskiq_ext/exceptions.py` | `from libs.taskiq_ext.exceptions import DuplicateTaskMessageError` |
+| SmartRetryWithBlacklistMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import SmartRetryWithBlacklistMiddleware` |
 | RequestIdMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import RequestIdMiddleware` |
 | TimeLimitMiddleware | `libs/taskiq_ext/middlewares.py` | `from libs.taskiq_ext.middlewares import TimeLimitMiddleware` |
 | Heartbeat loop | `libs/taskiq_ext/liveness_check.py` | `from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop` |
@@ -44,13 +49,17 @@ Async task queue (like Celery, but async-native). Uses RabbitMQ as broker via `t
 ## Broker & Scheduler Setup (background_tasks/main.py)
 
 ```python
-from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqState
+from taskiq import TaskiqEvents, TaskiqScheduler, TaskiqState
 from taskiq.brokers.shared_broker import async_shared_broker
 from taskiq.schedule_sources import LabelScheduleSource
 from taskiq_aio_pika import AioPikaBroker
 
 from libs.taskiq_ext.liveness_check import start_heartbeat_loop, stop_heartbeat_loop
-from libs.taskiq_ext.middlewares import RequestIdMiddleware, TimeLimitMiddleware
+from libs.taskiq_ext.middlewares import (
+    RequestIdMiddleware,
+    SmartRetryWithBlacklistMiddleware,
+    TimeLimitMiddleware,
+)
 
 broker = AioPikaBroker(
     url=settings.rabbitmq_url,
@@ -68,7 +77,7 @@ scheduler = TaskiqScheduler(
 broker.add_middlewares(
     RequestIdMiddleware(),
     TimeLimitMiddleware(default_timeout_seconds=60),
-    SmartRetryMiddleware(use_jitter=True),
+    SmartRetryWithBlacklistMiddleware(use_jitter=True),
 )
 
 
@@ -108,24 +117,92 @@ Rules:
 - Without durable queues, persistent messages are useless — both are needed for RabbitMQ restart survival
 - Changing durability on an existing queue/exchange requires deleting it in RabbitMQ first (or using a new name)
 
-## Task Definition Pattern (background_tasks/tasks.py)
+## Idempotency (At-Least-Once → Exactly-Once)
+
+TaskIQ uses at-least-once delivery. `BaseTaskMessage` + `ProcessedTaskMessage` + `SmartRetryWithBlacklistMiddleware` provide exactly-once processing, mirroring the FastStream idempotency pattern.
+
+### BaseTaskMessage
+
+Frozen Pydantic model — all task messages subclass it. Mirrors `messaging_contracts/common/base_messages.py`. Define subclasses in `<service>/schemas/task_messages.py` (not in `tasks.py`):
 
 ```python
-from typing import Annotated
+# wearables/schemas/task_messages.py
+from typing import ClassVar
+from uuid import UUID
 
-from taskiq import Context, TaskiqDepends
-from taskiq.brokers.shared_broker import async_shared_broker
+from libs.taskiq_ext.schemas.task_messages import BaseTaskMessage
 
 
-@async_shared_broker.task(retry_on_error=True, max_retries=3)
-async def hello_world_task(context: Annotated[Context, TaskiqDepends()]) -> str:
-    retries = int(context.message.labels.get("_retries", 0))
-    return "Hello from TaskIQ!"
+class HelloWorldTaskMessage(BaseTaskMessage):
+    code: ClassVar[int] = 100
+
+
+class Process5MinBatchTaskMessage(BaseTaskMessage):
+    code: ClassVar[int] = 101
+    batch_id: UUID
 ```
 
 Rules:
+- Every subclass must define a unique `code: ClassVar[int]` — registry enforces uniqueness at class definition time
+- `logical_id: UUID` and `created_at: datetime` are inherited
+- Frozen, `extra="forbid"` — immutable after creation
+- `code` is injected into serialization output and stripped from input (same as `BaseMessage`)
+- TaskIQ handles Pydantic natively: `model_dump()` on send, `TypeAdapter.validate_python()` on receive
+- Scheduler tasks (cron/interval) don't use `BaseTaskMessage` — they run on every tick and don't need idempotency
+
+### Idempotent Task Handler Pattern
+
+```python
+# wearables/background_tasks/tasks.py
+from libs.sqlmodel_ext import Session
+from libs.taskiq_ext.exceptions import DuplicateTaskMessageError
+from libs.taskiq_ext.repositories import ProcessedTaskMessageRepository
+from libs.utils import execute_business_logic
+from sqlalchemy.exc import IntegrityError
+from taskiq.brokers.shared_broker import async_shared_broker
+from wearables.schemas.task_messages import HelloWorldTaskMessage
+
+
+@async_shared_broker.task(retry_on_error=True, max_retries=3)
+async def hello_world_task(body: HelloWorldTaskMessage) -> None:
+    async with Session() as session, session.begin():
+        try:
+            await ProcessedTaskMessageRepository.save(
+                session=session,
+                logical_id=body.logical_id,
+                task_message_code=body.code,
+            )
+        except IntegrityError as exc:
+            raise DuplicateTaskMessageError from exc
+
+        await execute_business_logic(session=session, body=body)
+```
+
+Rules:
+- Type-hint `body: MyTaskMessage` directly — TaskIQ deserializes via Pydantic
+- All tasks return `None` (no ResultBackend in use)
+- `ProcessedTaskMessageRepository.save()` + `IntegrityError` → `DuplicateTaskMessageError` (same pattern as FastStream handlers)
+- Idempotency key is `(logical_id, task_message_code)` — same `logical_id` with different codes processes both
+- `SmartRetryWithBlacklistMiddleware` prevents retries on `DuplicateTaskMessageError` — the exception still propagates as a failure
+
+### Enqueuing with BaseTaskMessage
+
+```python
+from uuid import uuid4
+
+# Pass Pydantic model directly to .kiq()
+await hello_world_task.kiq(body=HelloWorldTaskMessage(logical_id=uuid4()))
+```
+
+### Alembic Setup
+
+Add `import libs.taskiq_ext.models  # noqa: F401` to `migrations/env.py` so Alembic discovers `ProcessedTaskMessage`. Add `ProcessedTaskMessage` to `autocleared_sqlmodel_tables` in test conftest.
+
+## Task Definition Pattern (background_tasks/tasks.py)
+
+Rules:
 - Always use `async_shared_broker.task()`, never the concrete broker directly
-- Use `Annotated[Context, TaskiqDepends()]` for task context injection
+- Use `Annotated[Context, TaskiqDepends()]` for task context injection when needed (e.g., accessing retry count)
 - Access retry count via `context.message.labels.get("_retries", 0)`
 
 ## Scheduled Tasks
@@ -204,7 +281,7 @@ broker.add_middlewares(
     RequestIdMiddleware(),
     PrometheusMiddleware(server_port=settings.taskiq_metrics_port),
     TimeLimitMiddleware(default_timeout_seconds=60),
-    SmartRetryMiddleware(use_jitter=True),
+    SmartRetryWithBlacklistMiddleware(use_jitter=True),
     TaskLifecycleLogMiddleware(),
 )
 ```
@@ -259,7 +336,8 @@ async def readiness_check() -> dict[str, str]:
 |-----------|--------|---------|
 | `RequestIdMiddleware` | `libs/taskiq_ext/middlewares.py` | Propagates `request_id` from HTTP context into worker tasks via labels |
 | `TimeLimitMiddleware` | `libs/taskiq_ext/middlewares.py` | Sets default `timeout` label (60s) on tasks without one |
-| `SmartRetryMiddleware` | `taskiq` (built-in) | Exponential backoff with jitter for retries |
+| `SmartRetryWithBlacklistMiddleware` | `libs/taskiq_ext/middlewares.py` | `SmartRetryMiddleware` + skips retries for `DuplicateTaskMessageError` |
+| `TaskLifecycleLogMiddleware` | `libs/taskiq_ext/middlewares.py` | Logs task completion and failure |
 
 `RequestIdMiddleware` must be registered **first** — before other middlewares that might log.
 
