@@ -48,7 +48,7 @@ services             (depends on: libs, messaging_contracts, rabbitmq_topology)
 | `FaststreamSettingsMixin`    | `libs/faststream_ext/settings.py`                | `from libs.faststream_ext.settings import FaststreamSettingsMixin`          |
 | `RequestIdMiddleware`        | `libs/faststream_ext/middlewares.py`             | `from libs.faststream_ext.middlewares import RequestIdMiddleware`           |
 | `TimeLimitMiddleware`        | `libs/faststream_ext/middlewares.py`             | `from libs.faststream_ext.middlewares import TimeLimitMiddleware`           |
-| Topology entities            | `rabbitmq_topology/entities.py`                  | `from rabbitmq_topology.entities import HELLO_WORLD_QUEUE, HELLO_WORLD_DLQ` |
+| Topology entities            | `rabbitmq_topology/resources.py`                  | `from rabbitmq_topology.resources import HELLO_WORLD_QUEUE, HELLO_WORLD_DLQ` |
 | `get_exchange_for_message()` | `rabbitmq_topology/services.py`                  | `from rabbitmq_topology.services import get_exchange_for_message`           |
 | Event definitions            | `messaging_contracts/events.py`                  | `from messaging_contracts.events import HelloWorldEvent`                    |
 
@@ -92,6 +92,7 @@ Two semantic types, both frozen Pydantic DTOs inheriting `BaseMessage`:
 `BaseMessage` provides:
 
 - `code: ClassVar[int]` — stable numeric identifier, used for exchange naming and message filtering. Every concrete subclass must define a unique `code`. Enforced by `__init_subclass__` at import time.
+- `persistent: ClassVar[bool]` — controls RabbitMQ `delivery_mode`. `True` = survives broker restart (written to disk), `False` = transient (memory only, better throughput). Every concrete subclass must define it. Enforced by `__init_subclass__` at import time.
 - `logical_id: UUID` — required, used for idempotency (unique per message)
 - `created_at: datetime` — auto-set to `utc_now()`
 - `model_serializer` injects `code` into serialized body
@@ -105,6 +106,7 @@ from messaging_contracts.common import Event
 
 class HelloWorldEvent(Event):
     code: ClassVar[int] = 1
+    persistent: ClassVar[bool] = False
     message: str
 
 # Usage — logical_id is always required
@@ -114,30 +116,36 @@ event = HelloWorldEvent(logical_id=uuid4(), message="Hello!")
 Rules:
 
 - All messages are frozen Pydantic DTOs (`extra="forbid"`)
-- Every concrete message class must define `code: ClassVar[int]` with a unique integer
+- Every concrete message class must define `code: ClassVar[int]` with a unique integer and `persistent: ClassVar[bool]`
 - Always pass `logical_id=uuid4()` when constructing messages
 - Message classes live in `messaging_contracts/`
 - New message modules must be imported in `messaging_contracts/__init__.py` to trigger registration
 
 ## Topology
 
-One fanout exchange per message type. Exchange name = `msg-{code}`. One queue per consuming service.
+One fanout exchange per message type. Exchange name = `msg-{code}`. One queue per consuming service. All exchanges and queues are **durable** (`durable=True`) — definitions survive broker restart. FastStream defaults `durable` to `False`, so always set it explicitly.
 
 ```python
-# rabbitmq_topology/entities.py
+# rabbitmq_topology/resources.py
 HELLO_WORLD_EVENT_EXCHANGE = RabbitExchange(
     name=get_exchange_name(message_class=HelloWorldEvent),
     type=ExchangeType.FANOUT,
+    durable=True,
 )
 
-HELLO_WORLD_DLQ = RabbitQueue(name="hello-world.dlq")
-DEAD_LETTER_QUEUES: list[RabbitQueue] = [HELLO_WORLD_DLQ]
+HELLO_WORLD_DLQ = RabbitQueue(
+    name="hello-world.dlq",
+    durable=True,
+    arguments={"x-message-ttl": SEVEN_DAYS_IN_MS},
+)
 
 HELLO_WORLD_QUEUE = RabbitQueue(
     name="hello-world",
+    durable=True,
     arguments={
         "x-dead-letter-exchange": "",
         "x-dead-letter-routing-key": HELLO_WORLD_DLQ.name,
+        "x-message-ttl": THREE_DAYS_IN_MS,
     },
 )
 
@@ -148,7 +156,7 @@ BINDINGS: list[RabbitBinding] = [
 
 Apply topology locally: `RABBITMQ_URL=amqp://guest:guest@localhost:15672/ poetry run python -m rabbitmq_topology.apply`
 
-All operations are **idempotent**. Adding `arguments` to existing queues requires deleting and recreating them (queue arguments are immutable).
+All operations are **idempotent**. Adding `arguments` or changing `durable` on existing queues/exchanges requires deleting and recreating them (these properties are immutable after declaration).
 
 ## Publishing
 
@@ -161,7 +169,7 @@ event = HelloWorldEvent(logical_id=uuid4(), message="Hello!")
 await publish(broker=faststream_broker, message=event)
 ```
 
-`publish()` automatically looks up the exchange via `get_exchange_for_message()`, propagates `X-Request-ID` from ContextVar, and publishes once to the exchange.
+`publish()` automatically looks up the exchange via `get_exchange_for_message()`, propagates `X-Request-ID` from ContextVar, sets `persist=message.persistent` (RabbitMQ `delivery_mode`), and publishes once to the exchange. Retry republishing (`publish_to_delayed_retry_queue`) reads `delivery_mode` from the incoming `raw_message` to preserve the original persistence setting.
 
 ### Publisher-Only Services (e.g., api_gateway)
 
@@ -184,7 +192,7 @@ from faststream import AckPolicy
 from faststream.rabbit import RabbitQueue, RabbitRouter
 from libs.faststream_ext import message_type_filter
 from messaging_contracts.events import HelloWorldEvent
-from rabbitmq_topology.entities import HELLO_WORLD_QUEUE
+from rabbitmq_topology.resources import HELLO_WORLD_QUEUE
 
 router = RabbitRouter()
 _QUEUE = RabbitQueue(name=HELLO_WORLD_QUEUE.name, declare=False)
@@ -267,7 +275,8 @@ class Settings(SentrySettingsMixin, FaststreamSettingsMixin, BaseAppSettings):
 | Message base class   | Inherit `Event` or `AsyncCommand`, never `BaseMessage` directly                           |
 | Exchange naming      | `msg-{code}` via `get_exchange_name()`                                                    |
 | Exchange type        | Always `FANOUT`                                                                           |
-| Topology management  | Centralized in `rabbitmq_topology/entities.py`, applied by k8s Job                        |
+| Durability           | Always `durable=True` on exchanges and queues (FastStream defaults to `False`)            |
+| Topology management  | Centralized in `rabbitmq_topology/resources.py`, applied by k8s Job                        |
 | Publishing           | Always `publish(broker, message)`, never `broker.publish()` directly                      |
 | Ack policy           | Always `ack_policy=AckPolicy.ACK` on subscriber                                           |
 | DLQ naming           | `<queue-name>.dlq`                                                                        |
@@ -279,6 +288,7 @@ class Settings(SentrySettingsMixin, FaststreamSettingsMixin, BaseAppSettings):
 | Worker deployment    | `<service>-messaging` on port 8001 (HTTP uses 8000)                                       |
 | Scale strategy       | Horizontal via k8s replicas, not uvicorn workers                                          |
 | Idempotent handlers  | `ProcessedMessageRepository.save(session, logical_id, message_code)` first in transaction |
+| Message persistence  | `persistent: ClassVar[bool]` — `True` for critical data, `False` for ephemeral/debug     |
 | Message `logical_id` | Always `logical_id=uuid4()` — required field on all messages                              |
 | RabbitMQ secret      | Centralized `rabbitmq-auth` ExternalSecret, referenced via `secretKeyRef`                 |
 

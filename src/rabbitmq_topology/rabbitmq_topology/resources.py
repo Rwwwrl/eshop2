@@ -10,15 +10,18 @@ from rabbitmq_topology.utils import get_exchange_name
 HELLO_WORLD_EVENT_EXCHANGE = RabbitExchange(
     name=get_exchange_name(message_class=HelloWorldEvent),
     type=ExchangeType.FANOUT,
+    durable=True,
 )
 HELLO_WORLD_ASYNC_COMMAND_EXCHANGE = RabbitExchange(
     name=get_exchange_name(message_class=HelloWorldAsyncCommand),
     type=ExchangeType.FANOUT,
+    durable=True,
 )
 
 OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE = RabbitExchange(
     name=get_exchange_name(message_class=OpenHealthResultReceivedEvent),
     type=ExchangeType.FANOUT,
+    durable=True,
 )
 
 EXCHANGES: list[RabbitExchange] = [
@@ -29,10 +32,12 @@ EXCHANGES: list[RabbitExchange] = [
 
 HELLO_WORLD_DLQ = RabbitQueue(
     name="hello-world.dlq",
+    durable=True,
     arguments={"x-message-ttl": SEVEN_DAYS_IN_MS},
 )
 WEARABLES_DLQ = RabbitQueue(
     name="wearables.dlq",
+    durable=True,
     arguments={"x-message-ttl": SEVEN_DAYS_IN_MS},
 )
 
@@ -43,6 +48,7 @@ DEAD_LETTER_QUEUES: list[RabbitQueue] = [
 
 HELLO_WORLD_QUEUE = RabbitQueue(
     name="hello-world",
+    durable=True,
     arguments={
         "x-dead-letter-exchange": "",
         "x-dead-letter-routing-key": HELLO_WORLD_DLQ.name,
@@ -51,6 +57,7 @@ HELLO_WORLD_QUEUE = RabbitQueue(
 )
 WEARABLES_QUEUE = RabbitQueue(
     name="wearables",
+    durable=True,
     arguments={
         "x-dead-letter-exchange": "",
         "x-dead-letter-routing-key": WEARABLES_DLQ.name,
@@ -65,6 +72,7 @@ QUEUES: list[RabbitQueue] = [
 
 HELLO_WORLD_DELAYED_RETRY = RabbitQueue(
     name=f"{HELLO_WORLD_QUEUE.name}.delayed-retry",
+    durable=True,
     arguments={
         "x-dead-letter-exchange": "",
         "x-dead-letter-routing-key": HELLO_WORLD_QUEUE.name,
@@ -72,6 +80,7 @@ HELLO_WORLD_DELAYED_RETRY = RabbitQueue(
 )
 WEARABLES_DELAYED_RETRY = RabbitQueue(
     name=f"{WEARABLES_QUEUE.name}.delayed-retry",
+    durable=True,
     arguments={
         "x-dead-letter-exchange": "",
         "x-dead-letter-routing-key": WEARABLES_QUEUE.name,

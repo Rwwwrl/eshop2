@@ -13,6 +13,7 @@ class BaseMessage(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     code: ClassVar[int]
+    persistent: ClassVar[bool]
 
     logical_id: UUID
     created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
@@ -25,8 +26,9 @@ class BaseMessage(BaseModel):
 
         try:
             code = cls.code
+            _ = cls.persistent
         except AttributeError:
-            raise TypeError(f"{cls.__qualname__} must define a `code` class attribute") from None
+            raise TypeError(f"{cls.__qualname__} must define a `code` and `persistent` class attributes")
 
         if code in _MESSAGE_CODE_REGISTRY:
             existing = _MESSAGE_CODE_REGISTRY[code]
