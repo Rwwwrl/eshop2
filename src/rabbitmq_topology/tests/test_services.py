@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from aio_pika import DeliveryMode
 from faststream.rabbit import RabbitQueue
 from messaging_contracts.common import BaseMessage
 from messaging_contracts.events import HelloWorldEvent
@@ -13,6 +14,7 @@ from rabbitmq_topology.utils import get_delayed_retry_queue_name, get_exchange_f
 
 class _UnregisteredMessage(BaseMessage):
     code: ClassVar[int] = 999
+    persistent: ClassVar[bool] = False
 
 
 def test_get_exchange_for_message_when_message_class_is_registered() -> None:
@@ -51,6 +53,7 @@ async def test_publish_resolves_exchange_and_delegates() -> None:
         message=message,
         exchange=HELLO_WORLD_EVENT_EXCHANGE,
         headers=headers,
+        persist=False,
     )
 
 
@@ -60,6 +63,7 @@ async def test_publish_to_delayed_retry_queue_sends_to_correct_queue() -> None:
     rabbit_message = MagicMock()
     rabbit_message.body = b'{"message": "test"}'
     rabbit_message.headers = {"X-Request-ID": "abc"}
+    rabbit_message.raw_message.delivery_mode = DeliveryMode.PERSISTENT
     extra_headers = {"x-retry-attempt": "1"}
 
     await publish_to_delayed_retry_queue(
@@ -76,4 +80,5 @@ async def test_publish_to_delayed_retry_queue_sends_to_correct_queue() -> None:
         routing_key="hello-world.delayed-retry",
         headers={**rabbit_message.headers, **extra_headers},
         expiration=5,
+        persist=True,
     )
