@@ -1,12 +1,13 @@
-from logging import getLogger
-
 from faststream import AckPolicy
 from faststream.rabbit import RabbitQueue, RabbitRouter
 from libs.faststream_ext import message_type_filter
+from libs.faststream_ext.exceptions import DuplicateMessageError
+from libs.faststream_ext.repositories import ProcessedMessageRepository
+from libs.sqlmodel_ext import Session
+from libs.utils import execute_business_logic
 from messaging_contracts.events import HelloWorldEvent
 from rabbitmq_topology.resources import WEARABLES_QUEUE
-
-_logger = getLogger(__name__)
+from sqlalchemy.exc import IntegrityError
 
 router = RabbitRouter()
 
@@ -17,4 +18,10 @@ subscriber = router.subscriber(queue=_QUEUE, ack_policy=AckPolicy.ACK)
 
 @subscriber(filter=message_type_filter(HelloWorldEvent))
 async def handle_hello_world_event(body: HelloWorldEvent) -> None:
-    _logger.info("Wearables received HelloWorldEvent: %s", body)
+    async with Session() as session, session.begin():
+        try:
+            await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
+        except IntegrityError:
+            raise DuplicateMessageError
+
+        await execute_business_logic(session=session, body=body)
