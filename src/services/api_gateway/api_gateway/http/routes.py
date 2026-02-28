@@ -6,6 +6,7 @@ from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
 from libs.faststream_ext import publish
 from libs.rabbitmq_ext.utils import health_check as rabbitmq_health_check
+from libs.utils import generate_deterministic_uuid
 from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
 from starlette.responses import Response
@@ -64,7 +65,10 @@ async def publish_hello_world_async_command() -> dict[str, str]:
 
 @router.post("/open-health/result-webhook", status_code=status.HTTP_202_ACCEPTED)
 async def open_health_result_webhook(body: OpenHealthResultWebhookPayload) -> Response:
-    event = OpenHealthResultReceivedEvent(logical_id=uuid4(), result_id=body.result_id)
+    event = OpenHealthResultReceivedEvent(
+        logical_id=generate_deterministic_uuid(key=(body.result_id,)),
+        result_id=body.result_id,
+    )
     await publish(broker=faststream_broker, message=event)
 
     return Response(status_code=status.HTTP_202_ACCEPTED)
