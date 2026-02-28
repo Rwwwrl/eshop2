@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "myeshop-libs"
-version = "0.28.0"
+version = "0.29.0"
 description = "Shared library for MyEshop microservices"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "libs" }]
@@ -23,7 +23,11 @@ prometheus-client = "^0.24.1"
 prometheus-fastapi-instrumentator = "^7.1.0"
 faststream = {extras = ["rabbit", "cli", "prometheus"], version = "^0.6.6"}
 myeshop-messaging-contracts = "^0.10.0"
-myeshop-rabbitmq-topology = "^0.9.0"
+myeshop-rabbitmq-topology = "^0.10.0"
+psycopg = "^3.3.3"
+psycopg-binary = "^3.3.3"
+
+[tool.poetry.group.dev.dependencies]
 
 [build-system]
 requires = ["poetry-core"]
