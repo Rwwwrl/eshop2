@@ -10,8 +10,9 @@ class ProcessedMessage(BaseSqlModel, table=True):
     __tablename__ = "processed_message"
     __table_args__ = (
         PrimaryKeyConstraint("id"),
-        UniqueConstraint("logical_id"),
+        UniqueConstraint("logical_id", "message_code"),
     )
 
     id: int | None = Field(default=None, sa_column=Column(Integer, Identity()))
     logical_id: UUID
+    message_code: int

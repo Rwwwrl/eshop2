@@ -23,7 +23,11 @@ subscriber = router.subscriber(queue=_QUEUE, ack_policy=AckPolicy.ACK)
 async def handle_hello_world_event(body: HelloWorldEvent) -> None:
     async with Session() as session, session.begin():
         try:
-            await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
+            await ProcessedMessageRepository.save(
+                session=session,
+                logical_id=body.logical_id,
+                message_code=body.code,
+            )
         except IntegrityError as exc:
             raise DuplicateMessageError from exc
 
@@ -34,7 +38,11 @@ async def handle_hello_world_event(body: HelloWorldEvent) -> None:
 async def handle_hello_world_async_command(body: HelloWorldAsyncCommand) -> None:
     async with Session() as session, session.begin():
         try:
-            await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
+            await ProcessedMessageRepository.save(
+                session=session,
+                logical_id=body.logical_id,
+                message_code=body.code,
+            )
         except IntegrityError as exc:
             raise DuplicateMessageError from exc
 
@@ -46,7 +54,11 @@ async def handle_hello_world_async_command(body: HelloWorldAsyncCommand) -> None
 async def handle_open_health_result_received(body: OpenHealthResultReceivedEvent, context: ContextRepoDep) -> None:
     async with Session() as session, session.begin():
         try:
-            await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
+            await ProcessedMessageRepository.save(
+                session=session,
+                logical_id=body.logical_id,
+                message_code=body.code,
+            )
         except IntegrityError as exc:
             raise DuplicateMessageError from exc
 

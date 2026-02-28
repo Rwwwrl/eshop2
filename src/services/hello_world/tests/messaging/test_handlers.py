@@ -45,6 +45,21 @@ async def test_handle_hello_world_event_when_duplicate_published(
 
 
 @pytest.mark.asyncio(loop_scope="session")
+async def test_handle_hello_world_event_when_same_logical_id_but_different_message_code(
+    test_broker: TestRabbitBroker, sqlmodel_engine: AsyncEngine
+) -> None:
+    logical_id = uuid4()
+    event = HelloWorldEvent(logical_id=logical_id, message="Hello from test!")
+    command = HelloWorldAsyncCommand(logical_id=logical_id, greeting="Hello from test!")
+
+    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+        await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name)
+        await test_broker.publish(message=command, queue=HELLO_WORLD_QUEUE.name)
+
+        assert mock_business.call_count == 2
+
+
+@pytest.mark.asyncio(loop_scope="session")
 async def test_handle_hello_world_async_command_when_command_published(
     test_broker: TestRabbitBroker, sqlmodel_engine: AsyncEngine
 ) -> None:

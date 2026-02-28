@@ -66,4 +66,5 @@ async def publish_hello_world_async_command() -> dict[str, str]:
 async def open_health_result_webhook(body: OpenHealthResultWebhookPayload) -> Response:
     event = OpenHealthResultReceivedEvent(logical_id=uuid4(), result_id=body.result_id)
     await publish(broker=faststream_broker, message=event)
+
     return Response(status_code=status.HTTP_202_ACCEPTED)

@@ -23,8 +23,9 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("id", sa.Integer(), sa.Identity(always=False), nullable=False),
         sa.Column("logical_id", sa.Uuid(), nullable=False),
+        sa.Column("message_code", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("logical_id"),
+        sa.UniqueConstraint("logical_id", "message_code"),
     )
 
 

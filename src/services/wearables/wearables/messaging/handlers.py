@@ -20,7 +20,11 @@ subscriber = router.subscriber(queue=_QUEUE, ack_policy=AckPolicy.ACK)
 async def handle_hello_world_event(body: HelloWorldEvent) -> None:
     async with Session() as session, session.begin():
         try:
-            await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
+            await ProcessedMessageRepository.save(
+                session=session,
+                logical_id=body.logical_id,
+                message_code=body.code,
+            )
         except IntegrityError as exc:
             raise DuplicateMessageError from exc
 
