@@ -2,22 +2,22 @@ from faststream.rabbit import RabbitExchange, RabbitQueue
 from faststream.rabbit.schemas import ExchangeType
 from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
 from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
-from messaging_contracts.utils import get_message_full_class_path
 
 from rabbitmq_topology.consts import SEVEN_DAYS_IN_MS, THREE_DAYS_IN_MS
 from rabbitmq_topology.schemas.dtos import RabbitBinding
+from rabbitmq_topology.utils import get_exchange_name
 
 HELLO_WORLD_EVENT_EXCHANGE = RabbitExchange(
-    name=get_message_full_class_path(message_class=HelloWorldEvent),
+    name=get_exchange_name(message_class=HelloWorldEvent),
     type=ExchangeType.FANOUT,
 )
 HELLO_WORLD_ASYNC_COMMAND_EXCHANGE = RabbitExchange(
-    name=get_message_full_class_path(message_class=HelloWorldAsyncCommand),
+    name=get_exchange_name(message_class=HelloWorldAsyncCommand),
     type=ExchangeType.FANOUT,
 )
 
 OPEN_HEALTH_RESULT_RECEIVED_EVENT_EXCHANGE = RabbitExchange(
-    name=get_message_full_class_path(message_class=OpenHealthResultReceivedEvent),
+    name=get_exchange_name(message_class=OpenHealthResultReceivedEvent),
     type=ExchangeType.FANOUT,
 )
 
@@ -97,3 +97,9 @@ BINDINGS: list[RabbitBinding] = [
         queues=[HELLO_WORLD_QUEUE],
     ),
 ]
+
+EXCHANGE_BY_NAME: dict[str, RabbitExchange] = {ex.name: ex for ex in EXCHANGES}
+
+DELAYED_RETRY_QUEUE_BY_ORIGINAL: dict[str, str] = {
+    q.arguments["x-dead-letter-routing-key"]: q.name for q in DELAYED_RETRY_QUEUES
+}

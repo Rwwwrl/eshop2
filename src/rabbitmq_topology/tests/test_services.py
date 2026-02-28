@@ -1,3 +1,4 @@
+from typing import ClassVar
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -11,7 +12,7 @@ from rabbitmq_topology.utils import get_delayed_retry_queue_name, get_exchange_f
 
 
 class _UnregisteredMessage(BaseMessage):
-    pass
+    code: ClassVar[int] = 999
 
 
 def test_get_exchange_for_message_when_message_class_is_registered() -> None:
@@ -42,7 +43,7 @@ def test_get_delayed_retry_queue_name_for_unregistered_queue() -> None:
 async def test_publish_resolves_exchange_and_delegates() -> None:
     broker = AsyncMock()
     message = HelloWorldEvent(logical_id=uuid4(), message="test")
-    headers = {"x-message-class": "messaging_contracts.events.HelloWorldEvent"}
+    headers: dict[str, str] = {}
 
     await publish(broker=broker, message=message, headers=headers)
 
@@ -58,7 +59,7 @@ async def test_publish_to_delayed_retry_queue_sends_to_correct_queue() -> None:
     broker = AsyncMock()
     rabbit_message = MagicMock()
     rabbit_message.body = b'{"message": "test"}'
-    rabbit_message.headers = {"x-message-class": "messaging_contracts.events.HelloWorldEvent", "X-Request-ID": "abc"}
+    rabbit_message.headers = {"X-Request-ID": "abc"}
     extra_headers = {"x-retry-attempt": "1"}
 
     await publish_to_delayed_retry_queue(
