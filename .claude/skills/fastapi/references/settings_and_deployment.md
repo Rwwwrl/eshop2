@@ -47,7 +47,7 @@ rabbitmq_url: "amqp://guest:guest@localhost:15672/"
 All services share this structure:
 
 ```dockerfile
-FROM python:3.14-slim
+FROM python:3.14-slim-bookworm
 WORKDIR /app
 ENV POETRY_VERSION=1.8.3
 RUN pip install poetry==$POETRY_VERSION
