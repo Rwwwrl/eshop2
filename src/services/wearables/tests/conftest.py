@@ -5,6 +5,7 @@ import pytest_asyncio
 from fastapi import FastAPI
 from faststream.rabbit import TestRabbitBroker
 from httpx import ASGITransport, AsyncClient
+from libs.faststream_ext.models import ProcessedMessage
 from libs.sqlmodel_ext import BaseSqlModel, Session
 from sqlalchemy.ext.asyncio import AsyncEngine
 from taskiq import AsyncBroker, InMemoryBroker
@@ -23,7 +24,7 @@ def settings() -> Settings:
 
 @pytest.fixture(scope="session")
 def autocleared_sqlmodel_tables() -> list[type[BaseSqlModel]]:
-    return [WearableEvent]
+    return [WearableEvent, ProcessedMessage]
 
 
 @pytest_asyncio.fixture(scope="session")

@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import httpx
 from fastapi import APIRouter, status
 from libs.consts import REQUEST_ID_HEADER
@@ -48,20 +50,20 @@ async def get_hello_world_host() -> dict:
 
 @router.post("/debug/publish-hello-world", status_code=status.HTTP_202_ACCEPTED)
 async def publish_hello_world() -> dict[str, str]:
-    event = HelloWorldEvent(message="Hello from API Gateway!")
+    event = HelloWorldEvent(logical_id=uuid4(), message="Hello from API Gateway!")
     await publish(broker=faststream_broker, message=event)
     return {"status": "published"}
 
 
 @router.post("/debug/publish-hello-world-async-command", status_code=status.HTTP_202_ACCEPTED)
 async def publish_hello_world_async_command() -> dict[str, str]:
-    command = HelloWorldAsyncCommand(greeting="Greetings from API Gateway!")
+    command = HelloWorldAsyncCommand(logical_id=uuid4(), greeting="Greetings from API Gateway!")
     await publish(broker=faststream_broker, message=command)
     return {"status": "published"}
 
 
 @router.post("/open-health/result-webhook", status_code=status.HTTP_202_ACCEPTED)
 async def open_health_result_webhook(body: OpenHealthResultWebhookPayload) -> Response:
-    event = OpenHealthResultReceivedEvent(result_id=body.result_id)
+    event = OpenHealthResultReceivedEvent(logical_id=uuid4(), result_id=body.result_id)
     await publish(broker=faststream_broker, message=event)
     return Response(status_code=status.HTTP_202_ACCEPTED)
