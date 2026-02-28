@@ -1,4 +1,5 @@
 import libs.faststream_ext.models  # noqa: F401
+import libs.taskiq_ext.models  # noqa: F401
 import wearables.models  # noqa: F401
 from libs.alembic_ext.env_helpers import run_async_alembic
 from libs.sqlmodel_ext import BaseSqlModel

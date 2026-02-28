@@ -256,7 +256,7 @@ trio = ["trio (>=0.31.0)", "trio (>=0.32.0)"]
 
 [[package]]
 name = "api-gateway"
-version = "0.21.0"
+version = "0.22.0"
 description = "API Gateway FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -267,7 +267,7 @@ develop = true
 fastapi = "^0.128.0"
 faststream = {version = "^0.6.6", extras = ["rabbit"]}
 httpx = "^0.28.0"
-myeshop-libs = "^0.27.0"
+myeshop-libs = "^0.28.0"
 myeshop-messaging-contracts = "^0.10.0"
 myeshop-rabbitmq-topology = "^0.9.0"
 pytest = "^9.0.2"
@@ -1453,7 +1453,7 @@ files = [
 
 [[package]]
 name = "hello-world"
-version = "0.21.0"
+version = "0.22.0"
 description = "Simple Hello World FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -1463,7 +1463,7 @@ develop = true
 [package.dependencies]
 fastapi = "^0.128.0"
 faststream = {version = "^0.6.6", extras = ["cli", "rabbit"]}
-myeshop-libs = "^0.27.0"
+myeshop-libs = "^0.28.0"
 myeshop-messaging-contracts = "^0.10.0"
 myeshop-rabbitmq-topology = "^0.9.0"
 pytest = "^9.0.2"
@@ -2032,7 +2032,7 @@ files = [
 
 [[package]]
 name = "myeshop-libs"
-version = "0.27.0"
+version = "0.28.0"
 description = "Shared library for MyEshop microservices"
 optional = false
 python-versions = "^3.14"
@@ -3531,7 +3531,7 @@ files = [
 
 [[package]]
 name = "wearables"
-version = "0.26.0"
+version = "0.27.0"
 description = "Wearables webhook ingestion microservice"
 optional = false
 python-versions = "^3.14"
@@ -3542,7 +3542,7 @@ develop = true
 fastapi = "^0.128.0"
 faststream = {version = "^0.6.6", extras = ["rabbit"]}
 httpx = "^0.28.0"
-myeshop-libs = "^0.27.0"
+myeshop-libs = "^0.28.0"
 myeshop-messaging-contracts = "^0.10.0"
 myeshop-rabbitmq-topology = "^0.9.0"
 pydantic = "^2.11.0"

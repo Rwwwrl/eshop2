@@ -10,8 +10,13 @@ from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 from libs.sqlmodel_ext.utils import health_check as sqlmodel_health_check
 from libs.taskiq_ext.health_server import HealthServer
-from libs.taskiq_ext.middlewares import RequestIdMiddleware, TaskLifecycleLogMiddleware, TimeLimitMiddleware
-from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqScheduler, TaskiqState
+from libs.taskiq_ext.middlewares import (
+    RequestIdMiddleware,
+    SmartRetryWithBlacklistMiddleware,
+    TaskLifecycleLogMiddleware,
+    TimeLimitMiddleware,
+)
+from taskiq import TaskiqEvents, TaskiqScheduler, TaskiqState
 from taskiq.brokers.shared_broker import async_shared_broker
 from taskiq.middlewares.prometheus_middleware import PrometheusMiddleware
 from taskiq.schedule_sources import LabelScheduleSource
@@ -37,7 +42,7 @@ broker.add_middlewares(
     RequestIdMiddleware(),
     PrometheusMiddleware(server_port=settings.taskiq_metrics_port),
     TimeLimitMiddleware(default_timeout_seconds=60),
-    SmartRetryMiddleware(use_jitter=True),
+    SmartRetryWithBlacklistMiddleware(use_jitter=True),
     TaskLifecycleLogMiddleware(),
 )
 
