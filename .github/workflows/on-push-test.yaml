@@ -62,6 +62,8 @@ jobs:
       service_name: api-gateway
       service_path: src/services/api_gateway
       run_postgres_migrations: false
+      run_background_tasks_deployment: false
+      run_faststream_deployment: false
 
     secrets: inherit
 
@@ -72,7 +74,8 @@ jobs:
       environment: test-eu
       service_name: hello-world
       service_path: src/services/hello_world
-      run_postgres_migrations: false
+      run_postgres_migrations: true
+      run_background_tasks_deployment: false
       run_faststream_deployment: true
 
     secrets: inherit
