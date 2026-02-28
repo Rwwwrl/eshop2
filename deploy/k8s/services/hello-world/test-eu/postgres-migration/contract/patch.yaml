@@ -1,0 +1,11 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hello-world-postgres-contract-migration
+spec:
+  template:
+    spec:
+      containers:
+        - name: migration
+          image: hello-world
+          imagePullPolicy: Always
