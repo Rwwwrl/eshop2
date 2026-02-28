@@ -13,11 +13,11 @@ Workers run as **separate processes** from HTTP servers: own `messaging/` folder
 
 Three layers with strict knowledge boundaries:
 
-| Layer | Responsibility | Knows |
-|---|---|---|
-| **Topology** (k8s Job) | Declares exchanges, queues, bindings | Everything |
-| **Publisher** | Sends message to exchange | Only the exchange (resolved via `rabbitmq_topology`) |
-| **Consumer** | Reads from queue, dispatches by filter | Only the queue name |
+| Layer                  | Responsibility                         | Knows                                                |
+| ---------------------- | -------------------------------------- | ---------------------------------------------------- |
+| **Topology** (k8s Job) | Declares exchanges, queues, bindings   | Everything                                           |
+| **Publisher**          | Sends message to exchange              | Only the exchange (resolved via `rabbitmq_topology`) |
+| **Consumer**           | Reads from queue, dispatches by filter | Only the queue name                                  |
 
 ### Dependency Graph
 
@@ -33,24 +33,24 @@ services             (depends on: libs, messaging_contracts, rabbitmq_topology)
 
 ## Quick Reference
 
-| Component | Location | Import |
-|-----------|----------|--------|
-| `Event`, `AsyncCommand` | `messaging_contracts/common/base_messages.py` | `from messaging_contracts.common import Event, AsyncCommand` |
-| `get_exchange_name()` | `messaging_contracts/common/base_messages.py` | `from messaging_contracts.common import get_exchange_name` |
-| `publish()` | `libs/faststream_ext/utils.py` | `from libs.faststream_ext import publish` |
-| `message_type_filter()` | `libs/faststream_ext/utils.py` | `from libs.faststream_ext import message_type_filter` |
-| `dlq()` | `libs/faststream_ext/decorators.py` | `from libs.faststream_ext.decorators import dlq` |
-| `retry()` | `libs/faststream_ext/rabbitmq_ext/decorators.py` | `from libs.faststream_ext.rabbitmq_ext.decorators import retry` |
-| `RETRY_ATTEMPT_HEADER` | `libs/faststream_ext/consts.py` | `from libs.faststream_ext.consts import RETRY_ATTEMPT_HEADER` |
-| `ProcessedMessage` | `libs/faststream_ext/models.py` | `from libs.faststream_ext.models import ProcessedMessage` |
-| `ProcessedMessageRepository` | `libs/faststream_ext/repositories.py` | `from libs.faststream_ext.repositories import ProcessedMessageRepository` |
-| `DuplicateMessageError` | `libs/faststream_ext/exceptions.py` | `from libs.faststream_ext.exceptions import DuplicateMessageError` |
-| `FaststreamSettingsMixin` | `libs/faststream_ext/settings.py` | `from libs.faststream_ext.settings import FaststreamSettingsMixin` |
-| `RequestIdMiddleware` | `libs/faststream_ext/middlewares.py` | `from libs.faststream_ext.middlewares import RequestIdMiddleware` |
-| `TimeLimitMiddleware` | `libs/faststream_ext/middlewares.py` | `from libs.faststream_ext.middlewares import TimeLimitMiddleware` |
-| Topology entities | `rabbitmq_topology/entities.py` | `from rabbitmq_topology.entities import HELLO_WORLD_QUEUE, HELLO_WORLD_DLQ` |
-| `get_exchange_for_message()` | `rabbitmq_topology/services.py` | `from rabbitmq_topology.services import get_exchange_for_message` |
-| Event definitions | `messaging_contracts/events.py` | `from messaging_contracts.events import HelloWorldEvent` |
+| Component                    | Location                                         | Import                                                                      |
+| ---------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------- |
+| `Event`, `AsyncCommand`      | `messaging_contracts/common/base_messages.py`    | `from messaging_contracts.common import Event, AsyncCommand`                |
+| `get_exchange_name()`        | `messaging_contracts/common/base_messages.py`    | `from messaging_contracts.common import get_exchange_name`                  |
+| `publish()`                  | `libs/faststream_ext/utils.py`                   | `from libs.faststream_ext import publish`                                   |
+| `message_type_filter()`      | `libs/faststream_ext/utils.py`                   | `from libs.faststream_ext import message_type_filter`                       |
+| `dlq()`                      | `libs/faststream_ext/decorators.py`              | `from libs.faststream_ext.decorators import dlq`                            |
+| `retry()`                    | `libs/faststream_ext/rabbitmq_ext/decorators.py` | `from libs.faststream_ext.rabbitmq_ext.decorators import retry`             |
+| `RETRY_ATTEMPT_HEADER`       | `libs/faststream_ext/consts.py`                  | `from libs.faststream_ext.consts import RETRY_ATTEMPT_HEADER`               |
+| `ProcessedMessage`           | `libs/faststream_ext/models.py`                  | `from libs.faststream_ext.models import ProcessedMessage`                   |
+| `ProcessedMessageRepository` | `libs/faststream_ext/repositories.py`            | `from libs.faststream_ext.repositories import ProcessedMessageRepository`   |
+| `DuplicateMessageError`      | `libs/faststream_ext/exceptions.py`              | `from libs.faststream_ext.exceptions import DuplicateMessageError`          |
+| `FaststreamSettingsMixin`    | `libs/faststream_ext/settings.py`                | `from libs.faststream_ext.settings import FaststreamSettingsMixin`          |
+| `RequestIdMiddleware`        | `libs/faststream_ext/middlewares.py`             | `from libs.faststream_ext.middlewares import RequestIdMiddleware`           |
+| `TimeLimitMiddleware`        | `libs/faststream_ext/middlewares.py`             | `from libs.faststream_ext.middlewares import TimeLimitMiddleware`           |
+| Topology entities            | `rabbitmq_topology/entities.py`                  | `from rabbitmq_topology.entities import HELLO_WORLD_QUEUE, HELLO_WORLD_DLQ` |
+| `get_exchange_for_message()` | `rabbitmq_topology/services.py`                  | `from rabbitmq_topology.services import get_exchange_for_message`           |
+| Event definitions            | `messaging_contracts/events.py`                  | `from messaging_contracts.events import HelloWorldEvent`                    |
 
 ## File Structure
 
@@ -84,12 +84,13 @@ src/services/<service>/
 
 Two semantic types, both frozen Pydantic DTOs inheriting `BaseMessage`:
 
-| Type | Use case |
-|------|----------|
-| `Event` | Broadcast to multiple consumers via fanout exchange |
-| `AsyncCommand` | Targeted command sent to a specific consumer |
+| Type           | Use case                                            |
+| -------------- | --------------------------------------------------- |
+| `Event`        | Broadcast to multiple consumers via fanout exchange |
+| `AsyncCommand` | Targeted command sent to a specific consumer        |
 
 `BaseMessage` provides:
+
 - `code: ClassVar[int]` — stable numeric identifier, used for exchange naming and message filtering. Every concrete subclass must define a unique `code`. Enforced by `__init_subclass__` at import time.
 - `logical_id: UUID` — required, used for idempotency (unique per message)
 - `created_at: datetime` — auto-set to `utc_now()`
@@ -111,6 +112,7 @@ event = HelloWorldEvent(logical_id=uuid4(), message="Hello!")
 ```
 
 Rules:
+
 - All messages are frozen Pydantic DTOs (`extra="forbid"`)
 - Every concrete message class must define `code: ClassVar[int]` with a unique integer
 - Always pass `logical_id=uuid4()` when constructing messages
@@ -192,13 +194,16 @@ subscriber = router.subscriber(queue=_QUEUE, ack_policy=AckPolicy.ACK)
 async def handle_hello_world_event(body: HelloWorldEvent) -> None:
     async with Session() as session, session.begin():
         try:
-            await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
+            await ProcessedMessageRepository.save(
+                session=session, logical_id=body.logical_id, message_code=body.code,
+            )
         except IntegrityError as exc:
             raise DuplicateMessageError from exc
         # Business logic here — runs inside the same transaction
 ```
 
 Rules:
+
 - `RabbitRouter()` in `handlers.py`, included via `broker.include_router(router)` in `main.py`
 - `declare=False` — fail-fast if topology Job hasn't run
 - `ack_policy=AckPolicy.ACK` — always ack (overrides FastStream default `REJECT_ON_ERROR`)
@@ -208,9 +213,10 @@ Rules:
 
 ## Idempotent Handlers
 
-Every handler must be idempotent. `ProcessedMessage` table (unique on `logical_id`) ensures each message is processed exactly once. The save happens inside the same DB transaction as business logic.
+Every handler must be idempotent. `ProcessedMessage` table (unique on `(logical_id, message_code)`) ensures each message is processed exactly once. The composite key allows a retryable handler to publish downstream events with the same `logical_id` — they won't conflict because different message types have different `code` values.
 
-- `ProcessedMessageRepository.save()` **must** be the first operation inside the transaction
+- `ProcessedMessageRepository.save(session, logical_id, message_code)` **must** be the first operation inside the transaction
+- Pass `message_code=body.code` to extract the numeric code from the message class
 - `IntegrityError` → `DuplicateMessageError` (passed through by `@retry()`, never retried)
 - `ack_policy=AckPolicy.ACK` means duplicates are acked (no redelivery loop)
 
@@ -249,32 +255,32 @@ class Settings(SentrySettingsMixin, FaststreamSettingsMixin, BaseAppSettings):
     model_config = SettingsConfigDict(yaml_file=str(_BASE_DIR / "env.yaml"), extra="ignore")
 ```
 
-| Setting | Type | Default | Purpose |
-|---------|------|---------|---------|
-| `rabbitmq_url` | `str` | required | RabbitMQ AMQP connection URL |
-| `faststream_graceful_timeout` | `float` | `65.0` | Broker wait for in-flight messages on shutdown |
+| Setting                       | Type    | Default  | Purpose                                        |
+| ----------------------------- | ------- | -------- | ---------------------------------------------- |
+| `rabbitmq_url`                | `str`   | required | RabbitMQ AMQP connection URL                   |
+| `faststream_graceful_timeout` | `float` | `65.0`   | Broker wait for in-flight messages on shutdown |
 
 ## Conventions
 
-| Rule | Detail |
-|------|--------|
-| Message base class | Inherit `Event` or `AsyncCommand`, never `BaseMessage` directly |
-| Exchange naming | `msg-{code}` via `get_exchange_name()` |
-| Exchange type | Always `FANOUT` |
-| Topology management | Centralized in `rabbitmq_topology/entities.py`, applied by k8s Job |
-| Publishing | Always `publish(broker, message)`, never `broker.publish()` directly |
-| Ack policy | Always `ack_policy=AckPolicy.ACK` on subscriber |
-| DLQ naming | `<queue-name>.dlq` |
-| Retry queue naming | `<queue-name>.delayed-retry` |
-| Consumer queue | `declare=False` — fail-fast if topology not applied |
-| Type discrimination | `message_type_filter(MessageClass)` reads `code` from body |
-| Router pattern | `RabbitRouter()` in `handlers.py`, included via `broker.include_router(router)` |
-| Worker command | `uvicorn <service>.messaging.main:app --host 0.0.0.0 --port 8001 --workers 1` |
-| Worker deployment | `<service>-messaging` on port 8001 (HTTP uses 8000) |
-| Scale strategy | Horizontal via k8s replicas, not uvicorn workers |
-| Idempotent handlers | `ProcessedMessageRepository.save()` first in transaction |
-| Message `logical_id` | Always `logical_id=uuid4()` — required field on all messages |
-| RabbitMQ secret | Centralized `rabbitmq-auth` ExternalSecret, referenced via `secretKeyRef` |
+| Rule                 | Detail                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| Message base class   | Inherit `Event` or `AsyncCommand`, never `BaseMessage` directly                           |
+| Exchange naming      | `msg-{code}` via `get_exchange_name()`                                                    |
+| Exchange type        | Always `FANOUT`                                                                           |
+| Topology management  | Centralized in `rabbitmq_topology/entities.py`, applied by k8s Job                        |
+| Publishing           | Always `publish(broker, message)`, never `broker.publish()` directly                      |
+| Ack policy           | Always `ack_policy=AckPolicy.ACK` on subscriber                                           |
+| DLQ naming           | `<queue-name>.dlq`                                                                        |
+| Retry queue naming   | `<queue-name>.delayed-retry`                                                              |
+| Consumer queue       | `declare=False` — fail-fast if topology not applied                                       |
+| Type discrimination  | `message_type_filter(MessageClass)` reads `code` from body                                |
+| Router pattern       | `RabbitRouter()` in `handlers.py`, included via `broker.include_router(router)`           |
+| Worker command       | `uvicorn <service>.messaging.main:app --host 0.0.0.0 --port 8001 --workers 1`             |
+| Worker deployment    | `<service>-messaging` on port 8001 (HTTP uses 8000)                                       |
+| Scale strategy       | Horizontal via k8s replicas, not uvicorn workers                                          |
+| Idempotent handlers  | `ProcessedMessageRepository.save(session, logical_id, message_code)` first in transaction |
+| Message `logical_id` | Always `logical_id=uuid4()` — required field on all messages                              |
+| RabbitMQ secret      | Centralized `rabbitmq-auth` ExternalSecret, referenced via `secretKeyRef`                 |
 
 ## Detailed Reference
 

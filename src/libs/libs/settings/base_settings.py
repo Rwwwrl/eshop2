@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import ClassVar
 
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict, YamlConfigSettingsSource
 
@@ -10,6 +11,8 @@ class BaseAppSettings(LoggingSettingsMixin, BaseSettings):
     model_config = SettingsConfigDict(
         extra="ignore",
     )
+
+    env_dev_yaml: ClassVar[Path]
 
     environment: EnvironmentEnum
 
@@ -25,7 +28,7 @@ class BaseAppSettings(LoggingSettingsMixin, BaseSettings):
         # NOTE @sosov: YAML source is conditional on file existence. In production, config is injected
         # via K8s env vars (ConfigMap + Secret), so no env.yaml exists. In local dev, env.dev.yaml provides values.
         sources: list[PydanticBaseSettingsSource] = [init_settings, env_settings]
-        if Path("env.dev.yaml").exists():
-            sources.append(YamlConfigSettingsSource(settings_cls=settings_cls, yaml_file="env.dev.yaml"))
+        if cls.env_dev_yaml.exists():
+            sources.append(YamlConfigSettingsSource(settings_cls=settings_cls, yaml_file=cls.env_dev_yaml))
 
         return tuple(sources)
