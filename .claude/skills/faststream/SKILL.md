@@ -45,6 +45,9 @@ services             (depends on: libs, messaging_contracts, rabbitmq_topology)
 | `RETRY_ATTEMPT_HEADER` | `libs/faststream_ext/consts.py` | `from libs.faststream_ext.consts import RETRY_ATTEMPT_HEADER` |
 | `publish_to_delayed_retry_queue()` | `rabbitmq_topology/services.py` | `from rabbitmq_topology.services import publish_to_delayed_retry_queue` |
 | `get_delayed_retry_queue_name()` | `rabbitmq_topology/utils.py` | `from rabbitmq_topology.utils import get_delayed_retry_queue_name` |
+| `ProcessedMessage` | `libs/faststream_ext/models.py` | `from libs.faststream_ext.models import ProcessedMessage` |
+| `ProcessedMessageRepository` | `libs/faststream_ext/repositories.py` | `from libs.faststream_ext.repositories import ProcessedMessageRepository` |
+| `DuplicateMessageError` | `libs/faststream_ext/exceptions.py` | `from libs.faststream_ext.exceptions import DuplicateMessageError` |
 | `FaststreamSettingsMixin` | `libs/faststream_ext/settings.py` | `from libs.faststream_ext.settings import FaststreamSettingsMixin` |
 | `RequestIdMiddleware` | `libs/faststream_ext/middlewares.py` | `from libs.faststream_ext.middlewares import RequestIdMiddleware` |
 | `TimeLimitMiddleware` | `libs/faststream_ext/middlewares.py` | `from libs.faststream_ext.middlewares import TimeLimitMiddleware` |
@@ -93,6 +96,10 @@ Two semantic types, both frozen Pydantic DTOs inheriting `BaseMessage`:
 | `Event` | Broadcast to multiple consumers via fanout exchange |
 | `AsyncCommand` | Targeted command sent to a specific consumer |
 
+`BaseMessage` provides two fields inherited by all messages:
+- `logical_id: UUID` — required, used for idempotency (unique per message)
+- `created_at: datetime` — auto-set to `utc_now()`, no need to pass explicitly
+
 ### Defining Messages
 
 ```python
@@ -100,10 +107,14 @@ from messaging_contracts.common import Event
 
 class HelloWorldEvent(Event):
     message: str
+
+# Usage — logical_id is always required
+event = HelloWorldEvent(logical_id=uuid4(), message="Hello!")
 ```
 
 Rules:
 - All messages are frozen Pydantic DTOs (`extra="forbid"`)
+- Always pass `logical_id=uuid4()` when constructing messages
 - No decorator needed — exchange routing is defined in `rabbitmq_topology/entities.py`
 - Message classes live in `messaging_contracts/`
 
@@ -198,7 +209,13 @@ subscriber = router.subscriber(queue=_QUEUE, ack_policy=AckPolicy.ACK)
 
 @subscriber(filter=message_type_filter(HelloWorldEvent))
 async def handle_hello_world_event(body: HelloWorldEvent) -> None:
-    _logger.info("Received HelloWorldEvent: %s", body)
+    async with Session() as session, session.begin():
+        try:
+            await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
+        except IntegrityError as exc:
+            raise DuplicateMessageError from exc
+
+        # Business logic here — runs inside the same transaction
 ```
 
 Rules:
@@ -210,6 +227,53 @@ Rules:
 - Multiple handlers can share one subscriber (different message types on the same queue)
 - `ack_policy` is per-subscriber, not per-handler — all handlers on one subscriber share the same policy
 - **Zero knowledge of exchanges or bindings** in consumer code
+
+## Idempotent Handlers
+
+Every handler must be idempotent. The `ProcessedMessage` table (unique on `logical_id`) ensures each message is processed exactly once. The save happens inside the same DB transaction as the business logic — if business logic fails, the `ProcessedMessage` row is rolled back too.
+
+### Handler Pattern
+
+```python
+from libs.faststream_ext.exceptions import DuplicateMessageError
+from libs.faststream_ext.repositories import ProcessedMessageRepository
+from libs.sqlmodel_ext import Session
+from sqlalchemy.exc import IntegrityError
+
+@subscriber(filter=message_type_filter(HelloWorldEvent))
+async def handle_hello_world_event(body: HelloWorldEvent) -> None:
+    async with Session() as session, session.begin():
+        try:
+            await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
+        except IntegrityError as exc:
+            raise DuplicateMessageError from exc
+
+        # Business logic here — runs inside the same transaction
+```
+
+Rules:
+- `ProcessedMessageRepository.save()` **must** be the first operation inside the transaction
+- `IntegrityError` (unique constraint violation) is chained into `DuplicateMessageError`
+- `DuplicateMessageError` is passed through by `@retry()` — duplicates are never retried
+- `ack_policy=AckPolicy.ACK` means duplicates are acked (no redelivery loop)
+
+### Setup for New Services
+
+1. Create an expand migration for `processed_message` table:
+   ```bash
+   cd src/services/<service>
+   poetry run alembic -c alembic.ini revision --head expand@head -m "add processed_message table"
+   ```
+2. The migration creates the table defined by `libs.faststream_ext.models.ProcessedMessage` (id, logical_id with unique constraint, created_at, updated_at)
+3. Add `ProcessedMessage` to `autocleared_sqlmodel_tables` in `tests/conftest.py`:
+   ```python
+   from libs.faststream_ext.models import ProcessedMessage
+
+   @pytest.fixture(scope="session")
+   def autocleared_sqlmodel_tables() -> list[type[BaseSqlModel]]:
+       return [ProcessedMessage]  # add alongside other tables
+   ```
+4. Worker `main.py` must init the DB engine and bind `Session` in lifespan (see Worker Setup)
 
 ## Dead Letter Queue (DLQ)
 
@@ -413,16 +477,45 @@ async def test_broker() -> AsyncGenerator[TestRabbitBroker]:
 ### Handler Tests
 
 ```python
-from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER
-from libs.utils import get_class_full_path
-from rabbitmq_topology.entities import HELLO_WORLD_QUEUE
+from uuid import uuid4
+from unittest.mock import AsyncMock, patch
 
-async def test_handle_hello_world_event(test_broker: TestRabbitBroker) -> None:
-    event = HelloWorldEvent(message="Hello from test!")
+from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER
+from libs.faststream_ext.exceptions import DuplicateMessageError
+from libs.utils import get_class_full_path
+from rabbitmq_topology.resources import HELLO_WORLD_QUEUE
+from sqlalchemy.ext.asyncio import AsyncEngine
+
+async def test_handle_hello_world_event(
+    test_broker: TestRabbitBroker, sqlmodel_engine: AsyncEngine
+) -> None:
+    event = HelloWorldEvent(logical_id=uuid4(), message="Hello from test!")
     headers = {MESSAGE_CLASS_HEADER: get_class_full_path(cls=HelloWorldEvent)}
 
-    await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name, headers=headers)
-    handle_hello_world_event.mock.assert_called_once()
+    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+        await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name, headers=headers)
+
+        handle_hello_world_event.mock.assert_called_once()
+        mock_business.assert_called_once()
+```
+
+### Duplicate Rejection Tests
+
+```python
+async def test_handle_hello_world_event_when_duplicate_published(
+    test_broker: TestRabbitBroker, sqlmodel_engine: AsyncEngine
+) -> None:
+    logical_id = uuid4()
+    event = HelloWorldEvent(logical_id=logical_id, message="Hello from test!")
+    headers = {MESSAGE_CLASS_HEADER: get_class_full_path(cls=HelloWorldEvent)}
+
+    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+        await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name, headers=headers)
+
+        with pytest.raises(DuplicateMessageError):
+            await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name, headers=headers)
+
+        mock_business.assert_called_once()  # business logic ran only on first delivery
 ```
 
 ### Publisher Tests
@@ -443,6 +536,9 @@ async def test_publish_event(async_client: AsyncClient, test_broker: TestRabbitB
 - Header value = `get_class_full_path(cls=MessageClass)`
 - Queue name from topology: `HELLO_WORLD_QUEUE.name`, `WEARABLES_QUEUE.name`
 - Handler gains `.mock` attribute inside `TestRabbitBroker` context
+- Always pass `logical_id=uuid4()` when constructing messages in tests
+- Handler tests require `sqlmodel_engine: AsyncEngine` fixture (DB needed for `ProcessedMessage`)
+- Duplicate tests: publish same `logical_id` twice, assert `DuplicateMessageError` on second, assert business logic ran once
 
 ## Kubernetes
 
@@ -494,6 +590,8 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for deployment 
 9. Add exchange + bindings in `rabbitmq_topology/entities.py`
 10. Add k8s manifests: `base/messaging/deployment.yaml`, `kustomization.yaml`, plus environment overlays
 11. Add `test_broker` fixture to service `tests/conftest.py`
+12. Create `processed_message` expand migration: `poetry run alembic -c alembic.ini revision --head expand@head -m "add processed_message table"`
+13. Add `ProcessedMessage` to `autocleared_sqlmodel_tables` in `tests/conftest.py`
 
 ### Adding a New Message Type
 
@@ -539,5 +637,7 @@ FASTSTREAM_CLI_RICH_MODE=none poetry run faststream run <service>.messaging.main
 | Worker command | `uvicorn <service>.messaging.main:app --host 0.0.0.0 --port 8001 --workers 1` |
 | Worker deployment | `<service>-messaging` on port 8001 (HTTP uses 8000) |
 | Scale strategy | Horizontal via k8s replicas, not uvicorn workers |
+| Idempotent handlers | `ProcessedMessageRepository.save()` first in transaction, `IntegrityError` → `DuplicateMessageError` |
+| Message `logical_id` | Always `logical_id=uuid4()` — required field on all messages |
 | Test broker | `TestRabbitBroker` — function-scoped, in-memory |
 | RabbitMQ secret | Centralized `rabbitmq-auth` ExternalSecret, referenced via `secretKeyRef` |
