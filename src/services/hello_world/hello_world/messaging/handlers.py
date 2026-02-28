@@ -24,8 +24,8 @@ async def handle_hello_world_event(body: HelloWorldEvent) -> None:
     async with Session() as session, session.begin():
         try:
             await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
-        except IntegrityError:
-            raise DuplicateMessageError
+        except IntegrityError as exc:
+            raise DuplicateMessageError from exc
 
         await execute_business_logic(session=session, body=body)
 
@@ -35,8 +35,8 @@ async def handle_hello_world_async_command(body: HelloWorldAsyncCommand) -> None
     async with Session() as session, session.begin():
         try:
             await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
-        except IntegrityError:
-            raise DuplicateMessageError
+        except IntegrityError as exc:
+            raise DuplicateMessageError from exc
 
         await execute_business_logic(session=session, body=body)
 
@@ -47,8 +47,8 @@ async def handle_open_health_result_received(body: OpenHealthResultReceivedEvent
     async with Session() as session, session.begin():
         try:
             await ProcessedMessageRepository.save(session=session, logical_id=body.logical_id)
-        except IntegrityError:
-            raise DuplicateMessageError
+        except IntegrityError as exc:
+            raise DuplicateMessageError from exc
 
         await execute_business_logic(session=session, body=body)
         raise RuntimeError("Simulated failure for retry test")
