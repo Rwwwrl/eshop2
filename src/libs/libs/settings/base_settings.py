@@ -8,7 +8,6 @@ from libs.logging.settings import LoggingSettingsMixin
 
 class BaseAppSettings(LoggingSettingsMixin, BaseSettings):
     model_config = SettingsConfigDict(
-        yaml_file="env.yaml",
         extra="ignore",
     )
 
@@ -24,10 +23,9 @@ class BaseAppSettings(LoggingSettingsMixin, BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         # NOTE @sosov: YAML source is conditional on file existence. In production, config is injected
-        # via K8s env vars (ConfigMap + Secret), so no env.yaml exists. In local dev, env.yaml provides values.
+        # via K8s env vars (ConfigMap + Secret), so no env.yaml exists. In local dev, env.dev.yaml provides values.
         sources: list[PydanticBaseSettingsSource] = [init_settings, env_settings]
-        yaml_file = cls.model_config.get("yaml_file")
-        if yaml_file and Path(yaml_file).exists():
-            sources.append(YamlConfigSettingsSource(settings_cls=settings_cls))
+        if Path("env.dev.yaml").exists():
+            sources.append(YamlConfigSettingsSource(settings_cls=settings_cls, yaml_file="env.dev.yaml"))
 
         return tuple(sources)

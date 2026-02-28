@@ -101,7 +101,7 @@ jobs:
           kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
           kubectl delete job/${{ inputs.service_name }}-postgres-expand-migration --ignore-not-found
           kustomize build . | kubectl apply -f -
-          kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-expand-migration --timeout=120s
+          kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-expand-migration --timeout=300s
 
       - name: Deploy background tasks
         if: ${{ inputs.run_background_tasks_deployment }}
@@ -153,7 +153,7 @@ jobs:
           kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
           kubectl delete job/${{ inputs.service_name }}-postgres-contract-migration --ignore-not-found
           kustomize build . | kubectl apply -f -
-          kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-contract-migration --timeout=120s
+          kubectl wait --for=condition=complete job/${{ inputs.service_name }}-postgres-contract-migration --timeout=300s
 
       - name: Show postgres expand migration logs on failure
         if: failure() && steps.expand_migrations.outcome == 'failure'

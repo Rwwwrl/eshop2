@@ -179,5 +179,4 @@ scripts/sync_env/test-eu/**
 !scripts/sync_env/test-eu/.gitkeep
 
 ######## SERVICE CONFIG ########
-env.yaml
 *.dev.*
