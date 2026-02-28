@@ -7,6 +7,7 @@ from faststream.exceptions import AckMessage, NackMessage, RejectMessage
 from rabbitmq_topology.services import publish_to_delayed_retry_queue
 
 from libs.faststream_ext.consts import RETRY_ATTEMPT_HEADER
+from libs.faststream_ext.exceptions import DuplicateMessageError
 
 
 def retry(
@@ -21,7 +22,7 @@ def retry(
             try:
                 return await func(*args, **kwargs)
 
-            except (AckMessage, NackMessage, RejectMessage):
+            except (AckMessage, NackMessage, RejectMessage, DuplicateMessageError):
                 raise
 
             except exceptions:

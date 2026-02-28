@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 from faststream.rabbit import RabbitQueue
@@ -40,7 +41,7 @@ def test_get_delayed_retry_queue_name_for_unregistered_queue() -> None:
 @pytest.mark.asyncio(loop_scope="session")
 async def test_publish_resolves_exchange_and_delegates() -> None:
     broker = AsyncMock()
-    message = HelloWorldEvent(message="test")
+    message = HelloWorldEvent(logical_id=uuid4(), message="test")
     headers = {"x-message-class": "messaging_contracts.events.HelloWorldEvent"}
 
     await publish(broker=broker, message=message, headers=headers)

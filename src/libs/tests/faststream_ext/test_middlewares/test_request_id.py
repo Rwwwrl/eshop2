@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, patch
+from uuid import uuid4
 
 import pytest
 from faststream import ContextRepo
@@ -57,7 +58,7 @@ async def test_publish_includes_request_id_header_when_set() -> None:
 
     try:
         with patch.object(broker, "publish", new_callable=AsyncMock) as mock_publish:
-            await publish(broker=broker, message=HelloWorldEvent(message="hello"))
+            await publish(broker=broker, message=HelloWorldEvent(logical_id=uuid4(), message="hello"))
 
         mock_publish.assert_awaited_once()
         headers = mock_publish.call_args.kwargs["headers"]
@@ -72,7 +73,7 @@ async def test_publish_omits_request_id_header_when_not_set() -> None:
     broker = RabbitBroker()
 
     with patch.object(broker, "publish", new_callable=AsyncMock) as mock_publish:
-        await publish(broker=broker, message=HelloWorldEvent(message="hello"))
+        await publish(broker=broker, message=HelloWorldEvent(logical_id=uuid4(), message="hello"))
 
     mock_publish.assert_awaited_once()
     headers = mock_publish.call_args.kwargs["headers"]

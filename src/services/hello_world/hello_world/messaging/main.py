@@ -11,10 +11,12 @@ from libs.faststream_ext.middlewares import RequestIdMiddleware, TimeLimitMiddle
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
+from libs.sqlmodel_ext import Session
 from prometheus_client import CollectorRegistry, make_asgi_app
 
 from hello_world.messaging.handlers import router
 from hello_world.settings import settings
+from hello_world.utils import init_sqlmodel_engine
 
 _registry = CollectorRegistry()
 
@@ -31,7 +33,13 @@ async def lifespan(context: ContextRepo) -> AsyncGenerator[None, None]:
     setup_logging(settings=settings, service_name=ServiceNameEnum.HELLO_WORLD, process_type=ProcessTypeEnum.FASTSTREAM)
     setup_sentry(settings=settings, release=version("hello-world"))
 
+    db_url = settings.postgres_pooler_db_url or settings.postgres_direct_db_url
+    engine = init_sqlmodel_engine(db_url=db_url)
+    Session.configure(bind=engine)
+
     yield
+
+    await engine.dispose()
 
 
 app = AsgiFastStream(
