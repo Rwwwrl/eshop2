@@ -55,12 +55,14 @@ Then:
 ```python
 import <service>.models  # noqa: F401  — registers models with metadata
 
-from libs.alembic_ext.env_helpers import run_async_alembic
+from libs.alembic_ext.env_helpers import run_alembic
 from libs.sqlmodel_ext import BaseSqlModel
 from <service>.settings import settings
 
-run_async_alembic(settings_url=settings.postgres_db_url, target_metadata=BaseSqlModel.metadata)
+run_alembic(settings_url=settings.postgres_direct_db_url, target_metadata=BaseSqlModel.metadata)
 ```
+
+`run_alembic()` uses sync psycopg (not async asyncpg) — it replaces `+asyncpg` with `+psycopg` in the URL automatically. This avoids `asyncio.run()` hanging on shutdown due to SSL transport cleanup bugs in asyncpg.
 
 The model import is critical — without it, `BaseSqlModel.metadata` has no tables and autogenerate produces empty migrations.
 

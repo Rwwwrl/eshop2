@@ -1,6 +1,4 @@
-# NOTE @sosov: Pinned to Bookworm to avoid asyncpg SSL hang with OpenSSL 3.2+
-# (Trixie ships OpenSSL 3.5 which breaks asyncio SSL transport cleanup).
-FROM python:3.14-slim-bookworm
+FROM python:3.14-slim
 WORKDIR /app
 
 ENV POETRY_VERSION=1.8.3
