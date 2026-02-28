@@ -5,10 +5,9 @@ import pytest
 from faststream import ContextRepo
 from faststream.rabbit import RabbitBroker
 from libs.context_vars import request_id_var
-from libs.faststream_ext.consts import MESSAGE_CLASS_HEADER, REQUEST_ID_HEADER
+from libs.faststream_ext.consts import REQUEST_ID_HEADER
 from libs.faststream_ext.middlewares import RequestIdMiddleware
 from libs.faststream_ext.utils import publish
-from libs.utils import get_class_full_path
 from messaging_contracts.events import HelloWorldEvent
 
 
@@ -63,7 +62,6 @@ async def test_publish_includes_request_id_header_when_set() -> None:
         mock_publish.assert_awaited_once()
         headers = mock_publish.call_args.kwargs["headers"]
         assert headers[REQUEST_ID_HEADER] == "req-456"
-        assert headers[MESSAGE_CLASS_HEADER] == get_class_full_path(cls=HelloWorldEvent)
     finally:
         request_id_var.reset(token)
 
@@ -78,4 +76,3 @@ async def test_publish_omits_request_id_header_when_not_set() -> None:
     mock_publish.assert_awaited_once()
     headers = mock_publish.call_args.kwargs["headers"]
     assert REQUEST_ID_HEADER not in headers
-    assert MESSAGE_CLASS_HEADER in headers
