@@ -16,5 +16,6 @@ spec:
         queueName: taskiq-wearables
         mode: QueueLength
         value: "300"
+        vhostName: yuqoowqn
       authenticationRef:
         name: rabbitmq-trigger-auth
