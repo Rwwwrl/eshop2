@@ -138,11 +138,22 @@ Catches all unhandled exceptions. Logs with structured extras (`exception_type`,
 ## Test Fixture Pattern
 
 ```python
+from <service>.http.v1 import v1_router
+
 @pytest.fixture(scope="session")
 def fastapi_app() -> FastAPI:
     app = FastAPI()
     app.add_middleware(UnhandledExceptionMiddleware)
-    app.include_router(router=router)
+
+    @app.get("/health")
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get("/readiness_check")
+    async def readiness_check() -> dict[str, str]:
+        return {"status": "ok"}
+
+    app.include_router(router=v1_router, prefix="/v1")
     return app
 
 @pytest_asyncio.fixture(scope="session")
@@ -152,6 +163,8 @@ async def async_client(fastapi_app: FastAPI) -> AsyncGenerator[AsyncClient]:
         yield client
 ```
 
-Test apps are minimal — no lifespan, no Sentry, no logging. Only include middleware needed for tests (typically `UnhandledExceptionMiddleware`). Session-scoped app and client.
+Test apps are minimal — no lifespan, no Sentry, no logging. Only include middleware needed for tests (typically `UnhandledExceptionMiddleware`). Health/readiness defined inline on the test app. v1_router included with `/v1` prefix. Session-scoped app and client.
 
 For DB services, the `fastapi_app` fixture depends on `sqlmodel_engine` to bind `Session` before yielding.
+
+Mock patch targets for readiness checks use `<service>.http.main.rabbitmq_health_check` (since probes live in `main.py`).

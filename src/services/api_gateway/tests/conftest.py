@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from api_gateway.http.routes import router
+from api_gateway.http.v1 import v1_router
 from api_gateway.messaging.main import broker as faststream_broker
 from fastapi import FastAPI
 from faststream.rabbit import TestRabbitBroker
@@ -14,7 +14,7 @@ from libs.fastapi_ext.middlewares import UnhandledExceptionMiddleware
 def fastapi_app() -> FastAPI:
     app = FastAPI()
     app.add_middleware(UnhandledExceptionMiddleware)
-    app.include_router(router=router)
+    app.include_router(router=v1_router, prefix="/v1")
     return app
 
 

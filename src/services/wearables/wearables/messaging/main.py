@@ -14,7 +14,7 @@ from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 from prometheus_client import CollectorRegistry, make_asgi_app
 
-from wearables.messaging.handlers import router
+from wearables.messaging.v1 import v1_router
 from wearables.settings import settings
 from wearables.utils import init_sqlmodel_engine
 
@@ -25,7 +25,7 @@ broker = RabbitBroker(
     graceful_timeout=settings.faststream_graceful_timeout,
     middlewares=[RabbitPrometheusMiddleware(registry=_registry), RequestIdMiddleware, TimeLimitMiddleware],
 )
-broker.include_router(router)
+broker.include_router(v1_router)
 
 
 @asynccontextmanager

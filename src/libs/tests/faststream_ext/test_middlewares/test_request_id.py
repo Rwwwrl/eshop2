@@ -8,7 +8,7 @@ from libs.context_vars import request_id_var
 from libs.faststream_ext.consts import REQUEST_ID_HEADER
 from libs.faststream_ext.middlewares import RequestIdMiddleware
 from libs.faststream_ext.utils import publish
-from messaging_contracts.events import HelloWorldEvent
+from messaging_contracts.v1.events import HelloWorldEvent
 
 
 class _StubMessage:

@@ -68,7 +68,7 @@ spec:
       terminationGracePeriodSeconds: 80
       containers:
         - name: wearables-background-tasks
-          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.background_tasks.main:broker", "wearables.background_tasks.tasks"]
+          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.background_tasks.main:broker", "wearables.background_tasks.v1.tasks"]
           livenessProbe:
             exec:
               command:
@@ -133,7 +133,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: wearables-scheduler
-          command: ["poetry", "run", "taskiq", "scheduler", "wearables.background_tasks.main:scheduler", "wearables.background_tasks.tasks", "--skip-first-run"]
+          command: ["poetry", "run", "taskiq", "scheduler", "wearables.background_tasks.main:scheduler", "wearables.background_tasks.v1.tasks", "--skip-first-run"]
           resources:
             requests:
               cpu: "25m"
@@ -147,7 +147,7 @@ Rules:
 - **Exactly 1 replica** — multiple schedulers = duplicate task dispatches
 - **`strategy: Recreate`** — prevents two schedulers running during rollout
 - **`--skip-first-run`** — on startup, the scheduler checks for overdue tasks and would fire them all immediately. This flag waits for the next natural cron tick instead, preventing a burst on every deploy/restart
-- Task modules must be passed as CLI args (e.g., `wearables.background_tasks.tasks`) so the scheduler can read `schedule=[...]` labels
+- Task modules must be passed as CLI args (e.g., `wearables.background_tasks.v1.tasks`) so the scheduler can read `schedule=[...]` labels
 - Lightweight resources — scheduler only polls schedule sources and calls `.kiq()`, no task execution
 - No `WORKER_STARTUP`/`WORKER_SHUTDOWN` events fire in the scheduler process — those are worker-only
 

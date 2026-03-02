@@ -1,7 +1,7 @@
 from faststream.rabbit import RabbitExchange, RabbitQueue
 from faststream.rabbit.schemas import ExchangeType
-from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
-from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
+from messaging_contracts.v1.events import HelloWorldEvent, OpenHealthResultReceivedEvent
+from messaging_contracts.v1.hello_world.async_commands import HelloWorldAsyncCommand
 
 from rabbitmq_topology.consts import SEVEN_DAYS_IN_MS, THREE_DAYS_IN_MS
 from rabbitmq_topology.schemas.dtos import RabbitBinding

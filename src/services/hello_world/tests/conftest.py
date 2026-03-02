@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from faststream.rabbit import TestRabbitBroker
-from hello_world.http.routes import router
+from hello_world.http.v1 import v1_router
 from hello_world.messaging.main import broker as faststream_broker
 from hello_world.settings import Settings
 from hello_world.settings import settings as hello_world_settings
@@ -28,7 +28,7 @@ def autocleared_sqlmodel_tables() -> list[type[BaseSqlModel]]:
 def fastapi_app() -> FastAPI:
     app = FastAPI()
     app.add_middleware(UnhandledExceptionMiddleware)
-    app.include_router(router=router)
+    app.include_router(router=v1_router, prefix="/v1")
     return app
 
 

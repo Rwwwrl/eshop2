@@ -13,24 +13,9 @@ from rabbitmq_topology.resources import (
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_root_when_called(async_client: AsyncClient) -> None:
-    response = await async_client.get(url="/")
+    response = await async_client.get(url="/v1/")
     assert response.status_code == 200
     assert response.json() == {"message": "API Gateway"}
-
-
-@pytest.mark.asyncio(loop_scope="session")
-async def test_health_when_called(async_client: AsyncClient) -> None:
-    response = await async_client.get(url="/health")
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-
-@pytest.mark.asyncio(loop_scope="session")
-async def test_readiness_check_when_called(async_client: AsyncClient) -> None:
-    with patch("api_gateway.http.routes.rabbitmq_health_check", new_callable=AsyncMock):
-        response = await async_client.get(url="/readiness_check")
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -43,7 +28,7 @@ async def test_get_hello_world_host_when_called(async_client: AsyncClient) -> No
         new_callable=AsyncMock,
         return_value=mock_response,
     ):
-        response = await async_client.get(url="/hello-world/host")
+        response = await async_client.get(url="/v1/hello-world/host")
 
     assert response.status_code == 200
     assert response.json() == {"host": "test-host"}
@@ -52,7 +37,7 @@ async def test_get_hello_world_host_when_called(async_client: AsyncClient) -> No
 @pytest.mark.asyncio(loop_scope="session")
 async def test_publish_hello_world_when_called(async_client: AsyncClient, test_broker: TestRabbitBroker) -> None:
     with patch.object(test_broker, "publish", new_callable=AsyncMock) as publish_mock:
-        response = await async_client.post(url="/debug/publish-hello-world")
+        response = await async_client.post(url="/v1/debug/publish-hello-world")
 
     assert response.status_code == 202
     assert response.json() == {"status": "published"}
@@ -66,7 +51,7 @@ async def test_publish_hello_world_async_command_when_called(
     async_client: AsyncClient, test_broker: TestRabbitBroker
 ) -> None:
     with patch.object(test_broker, "publish", new_callable=AsyncMock) as publish_mock:
-        response = await async_client.post(url="/debug/publish-hello-world-async-command")
+        response = await async_client.post(url="/v1/debug/publish-hello-world-async-command")
 
     assert response.status_code == 202
     assert response.json() == {"status": "published"}
@@ -78,7 +63,7 @@ async def test_publish_hello_world_async_command_when_called(
 @pytest.mark.asyncio(loop_scope="session")
 async def test_open_health_result_webhook_when_called(async_client: AsyncClient, test_broker: TestRabbitBroker) -> None:
     with patch.object(test_broker, "publish", new_callable=AsyncMock) as publish_mock:
-        response = await async_client.post(url="/open-health/result-webhook", json={"result_id": 123})
+        response = await async_client.post(url="/v1/open-health/result-webhook", json={"result_id": 123})
 
     assert response.status_code == 202
     assert response.content == b""

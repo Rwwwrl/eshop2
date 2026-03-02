@@ -10,7 +10,7 @@ _ABSTRACT_SUBCLASS_NAMES = frozenset({"Event", "AsyncCommand"})
 
 
 class BaseMessage(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     code: ClassVar[int]
     persistent: ClassVar[bool]

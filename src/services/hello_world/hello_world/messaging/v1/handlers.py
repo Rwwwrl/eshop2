@@ -7,8 +7,8 @@ from libs.faststream_ext.rabbitmq_ext.decorators import retry
 from libs.faststream_ext.repositories import ProcessedMessageRepository
 from libs.sqlmodel_ext import Session
 from libs.utils import execute_business_logic
-from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
-from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
+from messaging_contracts.v1.events import HelloWorldEvent, OpenHealthResultReceivedEvent
+from messaging_contracts.v1.hello_world.async_commands import HelloWorldAsyncCommand
 from rabbitmq_topology.resources import HELLO_WORLD_QUEUE
 from sqlalchemy.exc import IntegrityError
 

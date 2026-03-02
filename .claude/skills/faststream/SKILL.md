@@ -50,7 +50,7 @@ services             (depends on: libs, messaging_contracts, rabbitmq_topology)
 | `TimeLimitMiddleware`        | `libs/faststream_ext/middlewares.py`             | `from libs.faststream_ext.middlewares import TimeLimitMiddleware`           |
 | Topology entities            | `rabbitmq_topology/resources.py`                  | `from rabbitmq_topology.resources import HELLO_WORLD_QUEUE, HELLO_WORLD_DLQ` |
 | `get_exchange_for_message()` | `rabbitmq_topology/services.py`                  | `from rabbitmq_topology.services import get_exchange_for_message`           |
-| Event definitions            | `messaging_contracts/events.py`                  | `from messaging_contracts.events import HelloWorldEvent`                    |
+| Event definitions            | `messaging_contracts/v1/events.py`               | `from messaging_contracts.v1.events import HelloWorldEvent`                 |
 
 ## File Structure
 
@@ -59,11 +59,13 @@ src/messaging_contracts/         # Message definitions (no libs dependency)
     messaging_contracts/
         common/
             __init__.py          # Exports BaseMessage, Event, AsyncCommand
-            base_messages.py     # Message base classes (frozen Pydantic DTOs)
+            base_messages.py     # Message base classes (frozen Pydantic DTOs, extra="allow")
         __init__.py              # Imports all message modules to trigger code uniqueness validation
-        events.py                # Event classes (e.g., HelloWorldEvent)
-        hello_world/
-            async_commands.py    # AsyncCommand classes
+        v1/
+            __init__.py
+            events.py            # Event classes (e.g., HelloWorldEvent)
+            hello_world/
+                async_commands.py # AsyncCommand classes
 
 src/rabbitmq_topology/           # Exchange/queue/binding declarations + apply script
     rabbitmq_topology/
@@ -76,7 +78,9 @@ src/services/<service>/
     messaging/
         __init__.py
         main.py                  # Broker config, AsgiFastStream app, lifespan
-        handlers.py              # RabbitRouter, subscribers, handler functions
+        v1/
+            __init__.py          # Exports v1_router
+            handlers.py          # RabbitRouter, subscribers, handler functions
     settings.py                  # Mixes in FaststreamSettingsMixin
 ```
 
@@ -96,7 +100,7 @@ Two semantic types, both frozen Pydantic DTOs inheriting `BaseMessage`:
 - `logical_id: UUID` — required, used for idempotency (unique per message)
 - `created_at: datetime` — auto-set to `utc_now()`
 - `model_serializer` injects `code` into serialized body
-- `model_validator` strips `code` from input (needed because `extra="forbid"`)
+- `model_validator` strips `code` from input (prevents `code` leaking into extras)
 
 ### Defining Messages
 
@@ -115,11 +119,20 @@ event = HelloWorldEvent(logical_id=uuid4(), message="Hello!")
 
 Rules:
 
-- All messages are frozen Pydantic DTOs (`extra="forbid"`)
+- All messages are frozen Pydantic DTOs (`extra="allow"` for forward compatibility — old consumers silently accept new fields)
 - Every concrete message class must define `code: ClassVar[int]` with a unique integer and `persistent: ClassVar[bool]`
 - Always pass `logical_id=uuid4()` when constructing messages
-- Message classes live in `messaging_contracts/`
+- Message classes live in `messaging_contracts/v1/` (versioned subdirectory)
 - New message modules must be imported in `messaging_contracts/__init__.py` to trigger registration
+
+### Versioning
+
+Messages use schema evolution within a version folder. `extra="allow"` enables forward compatibility — old consumers silently accept unknown fields from newer publishers.
+
+- **Add field:** make it `Optional` with `Field(default=None)`, patch in handler if needed, remove optionality after all old messages drain (TTL = 7 days)
+- **Remove field:** remove from consumer first, then publisher. `extra="allow"` handles the extra field during transition
+- **Rename field:** = add new + remove old
+- **Completely new schema:** create new message class with new code (e.g., `UserUpdatedPersonalInfoV2`), place handler in `v2/` folder. Old v1 handler stays until all v1 messages drain
 
 ## Topology
 
@@ -191,7 +204,7 @@ await faststream_broker.stop()
 from faststream import AckPolicy
 from faststream.rabbit import RabbitQueue, RabbitRouter
 from libs.faststream_ext import message_type_filter
-from messaging_contracts.events import HelloWorldEvent
+from messaging_contracts.v1.events import HelloWorldEvent
 from rabbitmq_topology.resources import HELLO_WORLD_QUEUE
 
 router = RabbitRouter()
@@ -212,7 +225,7 @@ async def handle_hello_world_event(body: HelloWorldEvent) -> None:
 
 Rules:
 
-- `RabbitRouter()` in `handlers.py`, included via `broker.include_router(router)` in `main.py`
+- `RabbitRouter()` in `v1/handlers.py`, included via `broker.include_router(v1_router)` in `main.py`
 - `declare=False` — fail-fast if topology Job hasn't run
 - `ack_policy=AckPolicy.ACK` — always ack (overrides FastStream default `REJECT_ON_ERROR`)
 - `message_type_filter(MessageClass)` reads `code` from body for type discrimination
@@ -240,7 +253,7 @@ broker = RabbitBroker(
     graceful_timeout=settings.faststream_graceful_timeout,
     middlewares=[RabbitPrometheusMiddleware(registry=_registry), RequestIdMiddleware, TimeLimitMiddleware],
 )
-broker.include_router(router)
+broker.include_router(v1_router)
 
 app = AsgiFastStream(
     broker,
@@ -283,7 +296,7 @@ class Settings(SentrySettingsMixin, FaststreamSettingsMixin, BaseAppSettings):
 | Retry queue naming   | `<queue-name>.delayed-retry`                                                              |
 | Consumer queue       | `declare=False` — fail-fast if topology not applied                                       |
 | Type discrimination  | `message_type_filter(MessageClass)` reads `code` from body                                |
-| Router pattern       | `RabbitRouter()` in `handlers.py`, included via `broker.include_router(router)`           |
+| Router pattern       | `RabbitRouter()` in `v1/handlers.py`, included via `broker.include_router(v1_router)`    |
 | Worker command       | `uvicorn <service>.messaging.main:app --host 0.0.0.0 --port 8001 --workers 1`             |
 | Worker deployment    | `<service>-messaging` on port 8001 (HTTP uses 8000)                                       |
 | Scale strategy       | Horizontal via k8s replicas, not uvicorn workers                                          |

@@ -9,7 +9,7 @@ from libs.utils import execute_business_logic
 from sqlalchemy.exc import IntegrityError
 from taskiq.brokers.shared_broker import async_shared_broker
 
-from wearables.schemas.task_messages import HelloWorldTaskMessage
+from wearables.background_tasks.v1.schemas.task_messages import HelloWorldTaskMessage
 
 _logger = getLogger(__name__)
 

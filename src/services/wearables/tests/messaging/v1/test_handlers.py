@@ -4,10 +4,10 @@ from uuid import uuid4
 import pytest
 from faststream.rabbit import TestRabbitBroker
 from libs.faststream_ext.exceptions import DuplicateMessageError
-from messaging_contracts.events import HelloWorldEvent
+from messaging_contracts.v1.events import HelloWorldEvent
 from rabbitmq_topology.resources import WEARABLES_QUEUE
 from sqlalchemy.ext.asyncio import AsyncEngine
-from wearables.messaging.handlers import handle_hello_world_event
+from wearables.messaging.v1.handlers import handle_hello_world_event
 
 
 @pytest.mark.asyncio(loop_scope="session")
@@ -16,7 +16,7 @@ async def test_handle_hello_world_event_when_event_published(
 ) -> None:
     event = HelloWorldEvent(logical_id=uuid4(), message="Hello from test!")
 
-    with patch("wearables.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+    with patch("wearables.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
         await test_broker.publish(message=event, queue=WEARABLES_QUEUE.name)
 
         handle_hello_world_event.mock.assert_called_once()
@@ -30,7 +30,7 @@ async def test_handle_hello_world_event_when_duplicate_published(
     logical_id = uuid4()
     event = HelloWorldEvent(logical_id=logical_id, message="Hello from test!")
 
-    with patch("wearables.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+    with patch("wearables.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
         await test_broker.publish(message=event, queue=WEARABLES_QUEUE.name)
 
         with pytest.raises(DuplicateMessageError):

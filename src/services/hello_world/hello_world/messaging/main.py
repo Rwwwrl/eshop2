@@ -14,7 +14,7 @@ from libs.sentry_ext import setup_sentry
 from libs.sqlmodel_ext import Session
 from prometheus_client import CollectorRegistry, make_asgi_app
 
-from hello_world.messaging.handlers import router
+from hello_world.messaging.v1 import v1_router
 from hello_world.settings import settings
 from hello_world.utils import init_sqlmodel_engine
 
@@ -25,7 +25,7 @@ broker = RabbitBroker(
     graceful_timeout=settings.faststream_graceful_timeout,
     middlewares=[RabbitPrometheusMiddleware(registry=_registry), RequestIdMiddleware, TimeLimitMiddleware],
 )
-broker.include_router(router)
+broker.include_router(v1_router)
 
 
 @asynccontextmanager

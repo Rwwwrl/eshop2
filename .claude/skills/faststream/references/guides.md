@@ -7,7 +7,7 @@
 3. Mix `FaststreamSettingsMixin` into the service `Settings` class
 4. Add `rabbitmq_url` to `env.yaml`
 5. Add `RABBITMQ_URL` to the service's ExternalSecret (mapped from `rabbitmq-url` GCP secret)
-6. Create `messaging/__init__.py`, `messaging/main.py`, `messaging/handlers.py`
+6. Create `messaging/__init__.py`, `messaging/main.py`, `messaging/v1/__init__.py`, `messaging/v1/handlers.py`
 7. Copy broker + `AsgiFastStream` setup from an existing service (e.g., `hello_world`)
 8. Define message types in `messaging_contracts/` (or reuse existing ones)
 9. Add exchange + bindings in `rabbitmq_topology/entities.py`
@@ -18,7 +18,7 @@
 
 ## Adding a New Message Type
 
-1. Define the message class in `messaging_contracts/` (inherit `Event` or `AsyncCommand`), assign a unique `code: ClassVar[int]`
+1. Define the message class in `messaging_contracts/v1/` (inherit `Event` or `AsyncCommand`), assign a unique `code: ClassVar[int]`
 2. Import the new module in `messaging_contracts/__init__.py` to trigger registration
 3. Add exchange in `rabbitmq_topology/resources.py` using `get_exchange_name()`
 4. Add binding(s) to connect the exchange to consumer queue(s)
