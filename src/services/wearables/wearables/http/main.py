@@ -14,13 +14,15 @@ from libs.fastapi_ext.middlewares import (
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 from libs.prometheus_ext import setup_fastapi_prometheus
+from libs.rabbitmq_ext.utils import health_check as rabbitmq_health_check
 from libs.sentry_ext import setup_sentry
 from libs.settings import is_data_sensitive_env
 from libs.sqlmodel_ext import Session
+from libs.sqlmodel_ext.utils import health_check as postgres_health_check
 from taskiq.brokers.shared_broker import async_shared_broker
 
 from wearables.background_tasks.main import broker
-from wearables.http.routes import router
+from wearables.http.v1 import v1_router
 from wearables.settings import settings
 from wearables.utils import init_sqlmodel_engine
 
@@ -62,6 +64,19 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestResponseLoggingMiddleware)
 app.add_middleware(RequestIdMiddleware)
 
-app.include_router(router=router)
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/readiness_check")
+async def readiness_check() -> dict[str, str]:
+    await postgres_health_check()
+    await rabbitmq_health_check(rabbitmq_url=settings.rabbitmq_url)
+    return {"status": "ok"}
+
+
+app.include_router(router=v1_router, prefix="/v1")
 
 setup_fastapi_prometheus(app=app)

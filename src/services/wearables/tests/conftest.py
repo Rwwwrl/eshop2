@@ -11,7 +11,7 @@ from libs.taskiq_ext.models import ProcessedTaskMessage
 from sqlalchemy.ext.asyncio import AsyncEngine
 from taskiq import AsyncBroker, InMemoryBroker
 from taskiq.brokers.shared_broker import async_shared_broker
-from wearables.http.routes import router
+from wearables.http.v1 import v1_router
 from wearables.messaging.main import broker as faststream_broker
 from wearables.models import WearableEvent
 from wearables.settings import Settings
@@ -42,7 +42,16 @@ async def taskiq_broker(sqlmodel_engine: AsyncEngine) -> AsyncGenerator[AsyncBro
 async def fastapi_app(sqlmodel_engine: AsyncEngine, taskiq_broker: AsyncBroker) -> AsyncGenerator[FastAPI]:
     app = FastAPI()
     app.state.sqlmodel_engine = sqlmodel_engine
-    app.include_router(router=router)
+
+    @app.get("/health")
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
+    @app.get("/readiness_check")
+    async def readiness_check() -> dict[str, str]:
+        return {"status": "ok"}
+
+    app.include_router(router=v1_router, prefix="/v1")
     yield app
 
 

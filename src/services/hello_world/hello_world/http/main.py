@@ -15,7 +15,7 @@ from libs.prometheus_ext import setup_fastapi_prometheus
 from libs.sentry_ext import setup_sentry
 from libs.settings import is_data_sensitive_env
 
-from hello_world.http.routes import router
+from hello_world.http.v1 import v1_router
 from hello_world.settings import settings
 
 
@@ -42,6 +42,17 @@ app.add_middleware(UnhandledExceptionMiddleware)
 app.add_middleware(RequestResponseLoggingMiddleware)
 app.add_middleware(RequestIdMiddleware)
 
-app.include_router(router=router)
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/readiness_check")
+async def readiness_check() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+app.include_router(router=v1_router, prefix="/v1")
 
 setup_fastapi_prometheus(app=app)

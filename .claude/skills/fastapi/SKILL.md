@@ -5,7 +5,7 @@ description: Guides FastAPI HTTP service development in MyEshop. Use when creati
 
 # FastAPI
 
-Async HTTP layer using **FastAPI** with **uvicorn**. Each service has an `http/` folder with `main.py` (app setup) and `routes.py` (endpoints). Shared middleware and schemas live in `libs.fastapi_ext`.
+Async HTTP layer using **FastAPI** with **uvicorn**. Each service has an `http/` folder with `main.py` (app setup, health/readiness probes) and versioned subdirectories (`v1/`, `v2/`, ...) for business routes. Shared middleware and schemas live in `libs.fastapi_ext`.
 
 ## Quick Reference
 
@@ -33,16 +33,20 @@ src/services/<service>/
         utils.py                 # Engine init (if DB needed)
         http/
             __init__.py
-            main.py              # FastAPI app, lifespan, middleware
-            routes.py            # APIRouter, endpoints
-            schemas/
-                __init__.py
-                request_schemas.py
-                response_schemas.py
+            main.py              # FastAPI app, lifespan, middleware, health/readiness probes
+            v1/
+                __init__.py      # Exports v1_router
+                routes.py        # APIRouter, versioned business endpoints
+                schemas/
+                    __init__.py
+                    request_schemas.py
+                    response_schemas.py
         schemas/
             dtos.py              # Domain DTOs (shared across protocols)
     env.yaml                     # Local dev settings
 ```
+
+Health/readiness probes live in `main.py` (version-agnostic). Business endpoints live in `v1/routes.py` (versioned under `/v1` prefix).
 
 ## App Setup (`http/main.py`)
 
@@ -66,7 +70,7 @@ from libs.prometheus_ext.utils import setup_fastapi_prometheus
 from libs.sentry_ext.config import setup_sentry
 from libs.settings.utils import is_data_sensitive_env
 
-from <service>.http.routes import router
+from <service>.http.v1 import v1_router
 from <service>.settings import settings
 
 
@@ -95,7 +99,21 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestResponseLoggingMiddleware)
 app.add_middleware(RequestIdMiddleware)
 
-app.include_router(router=router)
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/readiness_check")
+async def readiness_check() -> dict[str, str]:
+    # Add infra checks here if needed:
+    # await postgres_health_check()
+    # await rabbitmq_health_check(rabbitmq_url=settings.rabbitmq_url)
+    return {"status": "ok"}
+
+
+app.include_router(router=v1_router, prefix="/v1")
 setup_fastapi_prometheus(app=app)
 ```
 
@@ -109,31 +127,37 @@ Middleware order matters (Starlette processes in reverse of `add_middleware` cal
 
 Simple services (e.g., `hello_world`) may omit `SecurityHeadersMiddleware` and `RequestBodyLimitMiddleware`.
 
-## Routes (`http/routes.py`)
+## Versioned Routes (`http/v1/`)
+
+### `v1/__init__.py`
+
+```python
+from <service>.http.v1.routes import router as v1_router
+
+__all__ = ["v1_router"]
+```
+
+### `v1/routes.py`
 
 ```python
 from fastapi import APIRouter, status
 from starlette.responses import Response
 
-from <service>.http.schemas import request_schemas
+from <service>.http.v1.schemas import request_schemas
 
 router = APIRouter()
 
 
-@router.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
-
-
-@router.get("/readiness_check")
-async def readiness_check() -> dict[str, str]:
-    return {"status": "ok"}
+@router.post("/webhook", status_code=status.HTTP_201_CREATED)
+async def handle_webhook(payload: request_schemas.WebhookEventPayload) -> Response:
+    ...
 ```
 
 Rules:
-- Single `APIRouter()` per service, no prefix or tags
-- Include via `app.include_router(router=router)` with keyword arg
-- Every service has `/health` (liveness) and `/readiness_check` (readiness)
+- Health/readiness probes live in `main.py` (version-agnostic, no prefix)
+- Business endpoints live in `v1/routes.py` (served under `/v1` prefix)
+- Single `APIRouter()` per version, no prefix on the router itself — prefix set at inclusion: `app.include_router(router=v1_router, prefix="/v1")`
+- Every service has `/health` (liveness) and `/readiness_check` (readiness) on `main.py`
 - Readiness checks infrastructure dependencies (DB, RabbitMQ) if the service has them
 - Status codes set in decorator: `@router.post("/webhook", status_code=status.HTTP_201_CREATED)`
 - Use `starlette.responses.Response` for bodyless responses: `return Response(status_code=status.HTTP_201_CREATED)`
@@ -145,7 +169,7 @@ Three-tier hierarchy: `DTO` → `BaseRequestSchema` / `BaseResponseSchema` → s
 All inherit `frozen=True` and `extra="forbid"` from `DTO`.
 
 ```python
-# <service>/http/schemas/request_schemas.py
+# <service>/http/v1/schemas/request_schemas.py
 from libs.fastapi_ext.schemas.base_schemas import BaseRequestSchema
 
 class WebhookEventPayload(BaseRequestSchema):
@@ -170,7 +194,7 @@ class BaseWearableEventDTO(DTO):
 Schema import convention (from same context, import the module):
 
 ```python
-from <service>.http.schemas import request_schemas
+from <service>.http.v1.schemas import request_schemas
 async def handle_webhook(payload: request_schemas.WebhookEventPayload) -> Response: ...
 ```
 
@@ -262,21 +286,23 @@ Key points:
 1. Create service directory: `src/services/<name>/<name>/`
 2. Add `settings.py` with mixin composition and `settings = Settings()` singleton
 3. Add `env.yaml` with `environment: "dev"` and `log_level: "DEBUG"`
-4. Create `http/__init__.py`, `http/main.py`, `http/routes.py`
-5. Copy app template from above, update service name and imports
-6. Add `/health` and `/readiness_check` endpoints
-7. Add `ServiceNameEnum` value in `libs/logging/enums.py`
-8. Add `pyproject.toml` with dependencies on `myeshop-libs`
-9. Register in root `pyproject.toml`, run `poetry lock --no-update && poetry install`
-10. Add `.importlinter` contracts
-11. Add Dockerfile (copy from existing service)
-12. Add K8s manifests: `deploy/k8s/services/<name>/base/http/deployment.yaml`
+4. Create `http/__init__.py`, `http/main.py`
+5. Create `http/v1/__init__.py` (exports `v1_router`), `http/v1/routes.py`
+6. Copy app template from above, update service name and imports
+7. Add `/health` and `/readiness_check` endpoints in `main.py`
+8. Add business endpoints in `v1/routes.py`
+9. Add `ServiceNameEnum` value in `libs/logging/enums.py`
+10. Add `pyproject.toml` with dependencies on `myeshop-libs`
+11. Register in root `pyproject.toml`, run `poetry lock --no-update && poetry install`
+12. Add `.importlinter` contracts
+13. Add Dockerfile (copy from existing service)
+14. Add K8s manifests: `deploy/k8s/services/<name>/base/http/deployment.yaml`
 
 ## Step-by-Step: Adding an Endpoint
 
-1. Define request schema in `http/schemas/request_schemas.py` (extend `BaseRequestSchema`)
+1. Define request schema in `http/v1/schemas/request_schemas.py` (extend `BaseRequestSchema`)
 2. Define domain DTO in `schemas/dtos.py` if needed (extend `DTO`)
-3. Add route in `http/routes.py` with explicit `status_code`
+3. Add route in `http/v1/routes.py` with explicit `status_code`
 4. Convert request schema to DTO with keyword arguments (no serializer layer)
 5. Use `Session()` context manager for DB operations
 6. Return `Response(status_code=...)` for bodyless or `dict` for JSON responses
@@ -287,9 +313,10 @@ Key points:
 |------|--------|
 | App creation | Module-level `FastAPI(...)` with conditional docs |
 | Lifespan | `@asynccontextmanager`, acquire before `yield`, release after |
-| Router | Single `APIRouter()`, no prefix/tags, keyword arg inclusion |
+| Versioning | Business routes in `v1/routes.py`, included with `prefix="/v1"` |
+| Router | Single `APIRouter()` per version, no prefix on router itself |
 | Middleware | Shared library, consistent stack order across services |
-| Health endpoints | `/health` (liveness), `/readiness_check` (readiness with infra checks) |
+| Health endpoints | `/health` and `/readiness_check` on `main.py` (version-agnostic) |
 | Schemas | `DTO` → `BaseRequestSchema`/`BaseResponseSchema`, frozen + extra forbid |
 | No `Depends()` | Module singletons, ContextVars, direct context managers |
 | Status codes | Named constants from `fastapi.status` |
