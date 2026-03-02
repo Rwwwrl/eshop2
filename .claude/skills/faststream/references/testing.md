@@ -30,7 +30,7 @@ async def test_handle_hello_world_event(
 ) -> None:
     event = HelloWorldEvent(logical_id=uuid4(), message="Hello from test!")
 
-    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+    with patch("hello_world.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
         await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name)
 
         handle_hello_world_event.mock.assert_called_once()
@@ -46,7 +46,7 @@ async def test_handle_hello_world_event_when_duplicate_published(
     logical_id = uuid4()
     event = HelloWorldEvent(logical_id=logical_id, message="Hello from test!")
 
-    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+    with patch("hello_world.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
         await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name)
 
         with pytest.raises(DuplicateMessageError):

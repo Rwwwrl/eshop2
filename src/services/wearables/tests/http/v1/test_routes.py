@@ -1,25 +1,8 @@
-from unittest.mock import AsyncMock, patch
-
 import pytest
 from httpx import AsyncClient
 from libs.sqlmodel_ext import Session
 from sqlalchemy import select
 from wearables.models import WearableEvent
-
-
-@pytest.mark.asyncio(loop_scope="session")
-async def test_health_when_service_running(async_client: AsyncClient) -> None:
-    response = await async_client.get(url="/health")
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
-
-
-@pytest.mark.asyncio(loop_scope="session")
-async def test_readiness_check_when_service_running(async_client: AsyncClient) -> None:
-    with patch("wearables.http.main.rabbitmq_health_check", new_callable=AsyncMock):
-        response = await async_client.get(url="/readiness_check")
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
 
 
 @pytest.mark.asyncio(loop_scope="session")

@@ -4,11 +4,11 @@ run-http:
 
 [group('run')]
 run-taskiq-worker:
-    poetry run taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 wearables.background_tasks.main:broker wearables.background_tasks.tasks
+    poetry run taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 wearables.background_tasks.main:broker wearables.background_tasks.v1.tasks
 
 [group('run')]
 run-taskiq-scheduler:
-    poetry run taskiq scheduler wearables.background_tasks.main:scheduler wearables.background_tasks.tasks --skip-first-run
+    poetry run taskiq scheduler wearables.background_tasks.main:scheduler wearables.background_tasks.v1.tasks --skip-first-run
 
 [group('run')]
 run-faststream-worker:

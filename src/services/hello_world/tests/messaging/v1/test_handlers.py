@@ -3,14 +3,14 @@ from uuid import uuid4
 
 import pytest
 from faststream.rabbit import TestRabbitBroker
-from hello_world.messaging.handlers import (
+from hello_world.messaging.v1.handlers import (
     handle_hello_world_async_command,
     handle_hello_world_event,
     handle_open_health_result_received,
 )
 from libs.faststream_ext.exceptions import DuplicateMessageError
-from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
-from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
+from messaging_contracts.v1.events import HelloWorldEvent, OpenHealthResultReceivedEvent
+from messaging_contracts.v1.hello_world.async_commands import HelloWorldAsyncCommand
 from rabbitmq_topology.resources import HELLO_WORLD_QUEUE
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -21,7 +21,7 @@ async def test_handle_hello_world_event_when_event_published(
 ) -> None:
     event = HelloWorldEvent(logical_id=uuid4(), message="Hello from test!")
 
-    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+    with patch("hello_world.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
         await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name)
 
         handle_hello_world_event.mock.assert_called_once()
@@ -35,7 +35,7 @@ async def test_handle_hello_world_event_when_duplicate_published(
     logical_id = uuid4()
     event = HelloWorldEvent(logical_id=logical_id, message="Hello from test!")
 
-    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+    with patch("hello_world.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
         await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name)
 
         with pytest.raises(DuplicateMessageError):
@@ -52,7 +52,7 @@ async def test_handle_hello_world_event_when_same_logical_id_but_different_messa
     event = HelloWorldEvent(logical_id=logical_id, message="Hello from test!")
     command = HelloWorldAsyncCommand(logical_id=logical_id, greeting="Hello from test!")
 
-    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+    with patch("hello_world.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
         await test_broker.publish(message=event, queue=HELLO_WORLD_QUEUE.name)
         await test_broker.publish(message=command, queue=HELLO_WORLD_QUEUE.name)
 
@@ -65,7 +65,7 @@ async def test_handle_hello_world_async_command_when_command_published(
 ) -> None:
     command = HelloWorldAsyncCommand(logical_id=uuid4(), greeting="Hello from test!")
 
-    with patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
+    with patch("hello_world.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business:
         await test_broker.publish(message=command, queue=HELLO_WORLD_QUEUE.name)
 
         handle_hello_world_async_command.mock.assert_called_once()
@@ -79,7 +79,7 @@ async def test_handle_open_health_result_received_when_event_published(
     event = OpenHealthResultReceivedEvent(logical_id=uuid4(), result_id=42)
 
     with (
-        patch("hello_world.messaging.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business,
+        patch("hello_world.messaging.v1.handlers.execute_business_logic", new_callable=AsyncMock) as mock_business,
         patch("libs.faststream_ext.rabbitmq_ext.decorators.publish_to_delayed_retry_queue") as mock_publish,
         pytest.raises(RuntimeError, match="Simulated failure for retry test"),
     ):

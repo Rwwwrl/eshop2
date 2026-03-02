@@ -12,7 +12,7 @@ Async task queue (like Celery, but async-native). Uses RabbitMQ as broker via `t
 | Component | Location | Import |
 |-----------|----------|--------|
 | Broker setup | `<service>/background_tasks/main.py` | — |
-| Task definitions | `<service>/background_tasks/tasks.py` | `from taskiq.brokers.shared_broker import async_shared_broker` |
+| Task definitions | `<service>/background_tasks/v1/tasks.py` | `from taskiq.brokers.shared_broker import async_shared_broker` |
 | Settings mixin | `libs/taskiq_ext/settings.py` | `from libs.taskiq_ext import TaskiqSettingsMixin` |
 | BaseTaskMessage | `libs/taskiq_ext/schemas/task_messages.py` | `from libs.taskiq_ext.schemas.task_messages import BaseTaskMessage` |
 | ProcessedTaskMessage | `libs/taskiq_ext/models.py` | `from libs.taskiq_ext.models import ProcessedTaskMessage` |
@@ -31,7 +31,12 @@ Async task queue (like Celery, but async-native). Uses RabbitMQ as broker via `t
     background_tasks/
         __init__.py
         main.py          # Broker config, worker lifecycle
-        tasks.py         # Task functions (@async_shared_broker.task)
+        v1/
+            __init__.py
+            tasks.py     # Task functions (@async_shared_broker.task)
+            schemas/
+                __init__.py
+                task_messages.py  # Task message DTOs
     settings.py          # Mixes in TaskiqSettingsMixin
 ```
 
@@ -123,10 +128,10 @@ TaskIQ uses at-least-once delivery. `BaseTaskMessage` + `ProcessedTaskMessage` +
 
 ### BaseTaskMessage
 
-Frozen Pydantic model — all task messages subclass it. Mirrors `messaging_contracts/common/base_messages.py`. Define subclasses in `<service>/schemas/task_messages.py` (not in `tasks.py`):
+Frozen Pydantic model — all task messages subclass it. Mirrors `messaging_contracts/common/base_messages.py`. Define subclasses in `<service>/background_tasks/v1/schemas/task_messages.py` (not in `tasks.py`):
 
 ```python
-# wearables/schemas/task_messages.py
+# wearables/background_tasks/v1/schemas/task_messages.py
 from typing import ClassVar
 from uuid import UUID
 
@@ -145,7 +150,7 @@ class Process5MinBatchTaskMessage(BaseTaskMessage):
 Rules:
 - Every subclass must define a unique `code: ClassVar[int]` — registry enforces uniqueness at class definition time
 - `logical_id: UUID` and `created_at: datetime` are inherited
-- Frozen, `extra="forbid"` — immutable after creation
+- Frozen, `extra="allow"` — immutable after creation, accepts unknown fields for backward compatibility
 - `code` is injected into serialization output and stripped from input (same as `BaseMessage`)
 - TaskIQ handles Pydantic natively: `model_dump()` on send, `TypeAdapter.validate_python()` on receive
 - Scheduler tasks (cron/interval) don't use `BaseTaskMessage` — they run on every tick and don't need idempotency
@@ -153,14 +158,14 @@ Rules:
 ### Idempotent Task Handler Pattern
 
 ```python
-# wearables/background_tasks/tasks.py
+# wearables/background_tasks/v1/tasks.py
 from libs.sqlmodel_ext import Session
 from libs.taskiq_ext.exceptions import DuplicateTaskMessageError
 from libs.taskiq_ext.repositories import ProcessedTaskMessageRepository
 from libs.utils import execute_business_logic
 from sqlalchemy.exc import IntegrityError
 from taskiq.brokers.shared_broker import async_shared_broker
-from wearables.schemas.task_messages import HelloWorldTaskMessage
+from wearables.background_tasks.v1.schemas.task_messages import HelloWorldTaskMessage
 
 
 @async_shared_broker.task(retry_on_error=True, max_retries=3)
@@ -226,7 +231,7 @@ Schedule dict keys: `cron` | `interval` | `time` (one-shot). Optional: `args`, `
 Rules:
 - The scheduler process must import task modules to read labels — pass them as CLI args
 - `--skip-first-run` prevents burst of overdue tasks on deploy/restart
-- Scheduler command: `taskiq scheduler <service>.background_tasks.main:scheduler <service>.background_tasks.tasks --skip-first-run`
+- Scheduler command: `taskiq scheduler <service>.background_tasks.main:scheduler <service>.background_tasks.v1.tasks --skip-first-run`
 
 ## Bulk Dispatch Pattern
 
@@ -257,7 +262,7 @@ Rules:
 ## Enqueuing from HTTP Routes
 
 ```python
-from wearables.background_tasks.tasks import hello_world_task
+from wearables.background_tasks.v1.tasks import hello_world_task
 
 @router.post("/debug/kiq-hello-world", status_code=status.HTTP_202_ACCEPTED)
 async def kiq_hello_world() -> dict[str, str]:
@@ -310,7 +315,7 @@ Adds `rabbitmq_url: str` to the settings (shared with FastStream).
 1. Add dependencies: `poetry add taskiq taskiq-aio-pika`
 2. Mix `TaskiqSettingsMixin` into the service's `Settings` class
 3. Add `rabbitmq_url` to `env.yaml` (shared with FastStream if also used)
-4. Create `background_tasks/__init__.py`, `background_tasks/main.py`, `background_tasks/tasks.py`
+4. Create `background_tasks/__init__.py`, `background_tasks/main.py`, `background_tasks/v1/__init__.py`, `background_tasks/v1/tasks.py`, `background_tasks/v1/schemas/__init__.py`, `background_tasks/v1/schemas/task_messages.py`
 5. Copy broker setup pattern from wearables — adjust service name in logging/sentry calls
 6. Add k8s manifests: `base/background-tasks/workers-deployment.yaml`, `scheduler-deployment.yaml`, `kustomization.yaml`, plus environment overlays
 7. Set `run_background_tasks_deployment: true` in CI/CD workflow call
@@ -382,6 +387,15 @@ Rules:
 
 See [references/k8s_deployment.md](references/k8s_deployment.md) for the full deployment manifest and shutdown details.
 
+## Versioning
+
+Background tasks need only backward compatibility (consumer always deploys before publisher within the same service). Task definitions and task messages live in versioned `v1/` subdirectories.
+
+- **Add field:** make it `Optional` with `Field(default=None)`, remove optionality after all old messages drain
+- **Remove field:** just remove from task message. `extra="allow"` handles the extra field during transition
+- **Rename field:** = add new + remove old
+- **Completely new schema:** create new task message class with new code, place task in `v2/` folder
+
 ## Conventions
 
 | Rule | Detail |
@@ -391,8 +405,8 @@ See [references/k8s_deployment.md](references/k8s_deployment.md) for the full de
 | Context injection | `context: Annotated[Context, TaskiqDepends()]` |
 | Retry count access | `context.message.labels.get("_retries", 0)` |
 | Enqueue method | `.kiq()` returns awaitable with `.task_id` |
-| Worker command | `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.background_tasks.main:broker <service>.background_tasks.tasks` |
-| Scheduler command | `taskiq scheduler <service>.background_tasks.main:scheduler <service>.background_tasks.tasks --skip-first-run` |
+| Worker command | `taskiq worker --workers 1 --max-async-tasks 4 --wait-tasks-timeout 65 --shutdown-timeout 10 <service>.background_tasks.main:broker <service>.background_tasks.v1.tasks` |
+| Scheduler command | `taskiq scheduler <service>.background_tasks.main:scheduler <service>.background_tasks.v1.tasks --skip-first-run` |
 | Worker deployment name | `<service>-background-tasks` |
 | Scheduler deployment name | `<service>-scheduler` |
 | Worker liveness probe | Heartbeat file at `/tmp/taskiq_heartbeat` |

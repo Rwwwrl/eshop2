@@ -5,7 +5,7 @@ from libs.faststream_ext.exceptions import DuplicateMessageError
 from libs.faststream_ext.repositories import ProcessedMessageRepository
 from libs.sqlmodel_ext import Session
 from libs.utils import execute_business_logic
-from messaging_contracts.events import HelloWorldEvent
+from messaging_contracts.v1.events import HelloWorldEvent
 from rabbitmq_topology.resources import WEARABLES_QUEUE
 from sqlalchemy.exc import IntegrityError
 

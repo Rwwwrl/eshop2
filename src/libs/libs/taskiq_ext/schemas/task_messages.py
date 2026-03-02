@@ -10,7 +10,7 @@ _TASK_MESSAGE_CODE_REGISTRY: dict[int, type] = {}
 
 
 class BaseTaskMessage(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     code: ClassVar[int]
 

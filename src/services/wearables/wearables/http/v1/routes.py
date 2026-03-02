@@ -4,7 +4,7 @@ from fastapi import APIRouter, Response, status
 from libs.sqlmodel_ext import Session
 
 from wearables import repositories
-from wearables.background_tasks.tasks import hello_world_task
+from wearables.background_tasks.v1.tasks import hello_world_task
 from wearables.http.v1.schemas import request_schemas
 from wearables.schemas import dtos
 

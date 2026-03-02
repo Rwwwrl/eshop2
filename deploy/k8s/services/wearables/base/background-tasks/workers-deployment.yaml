@@ -25,7 +25,7 @@ spec:
       terminationGracePeriodSeconds: 80
       containers:
         - name: wearables-background-tasks
-          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.background_tasks.main:broker", "wearables.background_tasks.tasks"]
+          command: ["poetry", "run", "taskiq", "worker", "--workers", "1", "--max-async-tasks", "4", "--wait-tasks-timeout", "65", "--shutdown-timeout", "10", "wearables.background_tasks.main:broker", "wearables.background_tasks.v1.tasks"]
           envFrom:
             - configMapRef:
                 name: wearables-config

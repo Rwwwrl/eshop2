@@ -42,15 +42,6 @@ async def taskiq_broker(sqlmodel_engine: AsyncEngine) -> AsyncGenerator[AsyncBro
 async def fastapi_app(sqlmodel_engine: AsyncEngine, taskiq_broker: AsyncBroker) -> AsyncGenerator[FastAPI]:
     app = FastAPI()
     app.state.sqlmodel_engine = sqlmodel_engine
-
-    @app.get("/health")
-    async def health() -> dict[str, str]:
-        return {"status": "ok"}
-
-    @app.get("/readiness_check")
-    async def readiness_check() -> dict[str, str]:
-        return {"status": "ok"}
-
     app.include_router(router=v1_router, prefix="/v1")
     yield app
 

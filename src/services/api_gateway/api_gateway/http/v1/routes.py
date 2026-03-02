@@ -6,8 +6,8 @@ from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
 from libs.faststream_ext import publish
 from libs.utils import generate_deterministic_uuid
-from messaging_contracts.events import HelloWorldEvent, OpenHealthResultReceivedEvent
-from messaging_contracts.hello_world.async_commands import HelloWorldAsyncCommand
+from messaging_contracts.v1.events import HelloWorldEvent, OpenHealthResultReceivedEvent
+from messaging_contracts.v1.hello_world.async_commands import HelloWorldAsyncCommand
 from starlette.responses import Response
 
 from api_gateway.http.v1.schemas.request_schemas import OpenHealthResultWebhookPayload

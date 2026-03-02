@@ -14,15 +14,6 @@ from libs.fastapi_ext.middlewares import UnhandledExceptionMiddleware
 def fastapi_app() -> FastAPI:
     app = FastAPI()
     app.add_middleware(UnhandledExceptionMiddleware)
-
-    @app.get("/health")
-    async def health() -> dict[str, str]:
-        return {"status": "ok"}
-
-    @app.get("/readiness_check")
-    async def readiness_check() -> dict[str, str]:
-        return {"status": "ok"}
-
     app.include_router(router=v1_router, prefix="/v1")
     return app
 
