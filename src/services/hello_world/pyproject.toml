@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hello-world"
-version = "0.26.0"
+version = "0.27.0"
 description = "Simple Hello World microservice"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "hello_world" }]
@@ -11,7 +11,7 @@ grpcio = "^1.78.0"
 grpcio-health-checking = "^1.78.0"
 uvicorn = {extras = ["standard"], version = "^0.40.0"}
 faststream = {extras = ["rabbit", "cli"], version = "^0.6.6"}
-myeshop-libs = "^0.32.0"
+myeshop-libs = "^0.33.0"
 myeshop-messaging-contracts = "^0.12.0"
 myeshop-rabbitmq-topology = "^0.12.0"
 myeshop-grpc-protos = "^0.1.0"
