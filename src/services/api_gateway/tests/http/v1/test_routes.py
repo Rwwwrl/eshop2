@@ -1,8 +1,8 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 from faststream.rabbit import TestRabbitBroker
+from grpc_protos.v1.hello_world import hello_world_pb2, hello_world_pb2_grpc
 from httpx import AsyncClient
 from rabbitmq_topology.resources import (
     HELLO_WORLD_ASYNC_COMMAND_EXCHANGE,
@@ -20,14 +20,11 @@ async def test_root_when_called(async_client: AsyncClient) -> None:
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_hello_world_host_when_called(async_client: AsyncClient) -> None:
-    mock_response = httpx.Response(status_code=200, json={"host": "test-host"})
+    mock_response = hello_world_pb2.GetHostResponse(host="test-host")
+    mock_stub = MagicMock()
+    mock_stub.GetHost = AsyncMock(return_value=mock_response)
 
-    with patch.object(
-        httpx.AsyncClient,
-        "get",
-        new_callable=AsyncMock,
-        return_value=mock_response,
-    ):
+    with patch.object(hello_world_pb2_grpc, "HelloWorldServiceStub", return_value=mock_stub):
         response = await async_client.get(url="/v1/hello-world/host")
 
     assert response.status_code == 200

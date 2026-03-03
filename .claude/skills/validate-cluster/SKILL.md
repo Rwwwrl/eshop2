@@ -108,7 +108,7 @@ Run: `kubectl get pods -A`
 | HPA | min=2, max=4, CPU target=70 | `kubectl get hpa hello-world-http` |
 | HPA metrics | TARGETS not `<unknown>` | `kubectl get hpa hello-world-http` |
 | Node pool | `default-pool` | `kubectl get pods -l app=hello-world-http -o wide` |
-| Anti-affinity | Preferred (weight 100) — warn if co-located, don't fail | Check hostnames |
+| Anti-affinity | Required (hard) — pods must be on different nodes, FAIL if co-located | Check hostnames |
 | Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | jsonpath check |
 | Strategy | RollingUpdate | jsonpath check |
 | Health | Probes passing, no restarts | No restart count incrementing |
@@ -122,6 +122,20 @@ Run: `kubectl get pods -A`
 | Strategy | RollingUpdate | jsonpath check |
 | Graceful shutdown | terminationGracePeriodSeconds=75 | jsonpath check |
 | Liveness probe | HTTP GET `/health` port 8001, initialDelay=30, period=10 | jsonpath check |
+| Health | Probes passing, no restarts | No restart count incrementing |
+
+### hello-world-grpc
+
+| Check | Expected | How to verify |
+|-------|----------|---------------|
+| Replicas | >= 2 (HPA) | `kubectl get deployment hello-world-grpc -o jsonpath='{.status.readyReplicas}'` >= 2 |
+| HPA | min=2, max=4, CPU target=70 | `kubectl get hpa hello-world-grpc` |
+| HPA metrics | TARGETS not `<unknown>` | `kubectl get hpa hello-world-grpc` |
+| Node pool | `default-pool` | `kubectl get pods -l app=hello-world-grpc -o wide` |
+| Anti-affinity | Required (hard) — pods must be on different nodes, FAIL if co-located | Check hostnames — two pods on different nodes is the project convention for gRPC deployments |
+| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | jsonpath check |
+| Strategy | RollingUpdate | jsonpath check |
+| gRPC health | `grpc_health_probe -addr=:50051` passes | Check pod logs or exec into pod |
 | Health | Probes passing, no restarts | No restart count incrementing |
 
 ### wearables-http
@@ -218,7 +232,7 @@ curl -sk -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/he
 | Check | Expected |
 |-------|----------|
 | api-gateway-http ClusterIP | Port 80 -> 8000 via `kubectl get svc api-gateway-http` |
-| hello-world-http ClusterIP | Port 80 -> 8000 via `kubectl get svc hello-world-http` |
+| hello-world-grpc ClusterIP | Port 50051 -> 50051 via `kubectl get svc hello-world-grpc` |
 | wearables-http ClusterIP | Port 80 -> 8000 via `kubectl get svc wearables-http` |
 | pgbouncer ClusterIP | Port 5432 -> 5432 via `kubectl get svc pgbouncer` |
 | Internal DNS | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup api-gateway-http.default.svc.cluster.local` (skip if impractical) |
@@ -232,6 +246,7 @@ Verify: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.contain
 | api-gateway-http | 50m | 128Mi | 200m | 256Mi |
 | hello-world-http | 50m | 128Mi | 200m | 256Mi |
 | hello-world-messaging | 50m | 128Mi | 200m | 256Mi |
+| hello-world-grpc | 50m | 128Mi | 200m | 256Mi |
 | wearables-http | 50m | 128Mi | 200m | 256Mi |
 | wearables-messaging | 50m | 128Mi | 200m | 256Mi |
 | wearables-background-tasks | 50m | 205Mi | 200m | 430Mi |

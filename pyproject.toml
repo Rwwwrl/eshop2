@@ -13,6 +13,7 @@ wearables = { path = "src/services/wearables", develop = true }
 myeshop-libs = { path = "src/libs", develop = true }
 myeshop-messaging-contracts = { path = "src/messaging_contracts", develop = true }
 myeshop-rabbitmq-topology = { path = "src/rabbitmq_topology", develop = true }
+myeshop-grpc-protos = { path = "src/grpc_protos", develop = true }
 pre-commit = "^4.5.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -36,6 +37,7 @@ env = [
     "POSTGRES_DIRECT_DB_URL=postgresql+asyncpg://postgres:postgres@localhost:15432/postgres",
     # NOTE @sosov: No pooler in CI — reuse direct URL to satisfy the required setting.
     "POSTGRES_POOLER_DB_URL=postgresql+asyncpg://postgres:postgres@localhost:15432/postgres",
+    "HELLO_WORLD_GRPC_URL=localhost:50051",
 ]
 testpaths = [
     "src/libs/tests",
@@ -77,6 +79,9 @@ exclude = [
     "*.po",
     "*.mo",
     "*.pot",
+    "*_pb2.py",
+    "*_pb2_grpc.py",
+    "*_pb2.pyi",
 ]
 line-length = 120
 target-version = "py314"

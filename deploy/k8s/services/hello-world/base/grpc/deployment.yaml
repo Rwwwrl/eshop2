@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-grpc
+spec:
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: hello-world-grpc
+  template:
+    metadata:
+      labels:
+        app: hello-world-grpc
+    spec:
+      terminationGracePeriodSeconds: 60
+      nodeSelector:
+        cloud.google.com/gke-nodepool: default-pool
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: hello-world-grpc
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: hello-world
+          command: ["poetry", "run", "python", "-m", "hello_world.grpc.main"]
+          envFrom:
+            - configMapRef:
+                name: hello-world-config
+            - secretRef:
+                name: hello-world-secrets
+          ports:
+            - containerPort: 50051
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          livenessProbe:
+            grpc:
+              port: 50051
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            grpc:
+              port: 50051
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1

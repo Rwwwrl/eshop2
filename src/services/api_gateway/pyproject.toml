@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "api-gateway"
-version = "0.24.0"
+version = "0.26.0"
 description = "API Gateway FastAPI microservice"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "api_gateway" }]
@@ -9,11 +9,12 @@ packages = [{ include = "api_gateway" }]
 python = "^3.14"
 fastapi = "^0.128.0"
 uvicorn = {extras = ["standard"], version = "^0.40.0"}
-httpx = "^0.28.0"
+grpcio = "^1.78.0"
 faststream = {extras = ["rabbit"], version = "^0.6.6"}
-myeshop-libs = "^0.30.0"
-myeshop-messaging-contracts = "^0.11.0"
-myeshop-rabbitmq-topology = "^0.11.0"
+myeshop-libs = "^0.32.0"
+myeshop-messaging-contracts = "^0.12.0"
+myeshop-rabbitmq-topology = "^0.12.0"
+myeshop-grpc-protos = "^0.1.0"
 pytest = "^9.0.2"
 ruff = "^0.14.14"
 

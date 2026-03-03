@@ -7,3 +7,4 @@ data:
   LOG_LEVEL: "INFO"
   SENTRY_SEND_PII: "true"
   SENTRY_TRACES_SAMPLE_RATE: "1.0"
+  HELLO_WORLD_GRPC_URL: "hello-world:50051"

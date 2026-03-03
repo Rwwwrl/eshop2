@@ -17,4 +17,4 @@ COPY alembic.ini ./
 COPY migrations/ ./migrations/
 RUN poetry install --only main
 
-EXPOSE 8000
+EXPOSE 50051

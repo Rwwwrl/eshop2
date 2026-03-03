@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "myeshop-grpc-protos"
+version = "0.1.0"
+description = "Shared gRPC proto definitions for MyEshop"
+authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
+packages = [{ include = "grpc_protos" }]
+
+[tool.poetry.dependencies]
+python = "^3.14"
+grpcio = "^1.78.0"
+protobuf = "^6.0"
+
+[tool.poetry.group.dev.dependencies]
+grpcio-tools = "^1.78.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
