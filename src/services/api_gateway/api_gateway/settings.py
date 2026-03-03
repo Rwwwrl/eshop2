@@ -11,5 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 class Settings(SentrySettingsMixin, FaststreamSettingsMixin, BaseAppSettings):
     env_dev_yaml: ClassVar[Path] = BASE_DIR / "env.dev.yaml"
 
+    hello_world_grpc_url: str
+
 
 settings = Settings()

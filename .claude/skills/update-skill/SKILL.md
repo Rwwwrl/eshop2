@@ -14,6 +14,7 @@ You are a specialist for creating and updating Claude Code skills in this projec
 |-------|------|----------------|
 | `code-conventions` | `.claude/skills/code-conventions/SKILL.md` | No |
 | `faststream` | `.claude/skills/faststream/SKILL.md` | No |
+| `grpc` | `.claude/skills/grpc/SKILL.md` | No |
 | `postgres` | `.claude/skills/postgres/SKILL.md` | No |
 | `task-iq` | `.claude/skills/task-iq/SKILL.md` | No |
 | `testing` | `.claude/skills/testing/SKILL.md` | No |

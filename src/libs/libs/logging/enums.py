@@ -13,3 +13,4 @@ class ProcessTypeEnum(str, Enum):
     FASTAPI = "fastapi"
     TASKIQ = "taskiq"
     FASTSTREAM = "faststream"
+    GRPC = "grpc"

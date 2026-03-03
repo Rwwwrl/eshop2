@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package grpc_protos.v1.hello_world;
+
+service HelloWorldService {
+  rpc GetHost (GetHostRequest) returns (GetHostResponse);
+}
+
+message GetHostRequest {}
+
+message GetHostResponse {
+  string host = 1;
+}

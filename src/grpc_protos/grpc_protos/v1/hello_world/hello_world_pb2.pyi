@@ -1,0 +1,15 @@
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from typing import ClassVar as _ClassVar, Optional as _Optional
+
+DESCRIPTOR: _descriptor.FileDescriptor
+
+class GetHostRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class GetHostResponse(_message.Message):
+    __slots__ = ("host",)
+    HOST_FIELD_NUMBER: _ClassVar[int]
+    host: str
+    def __init__(self, host: _Optional[str] = ...) -> None: ...

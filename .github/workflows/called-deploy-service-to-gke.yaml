@@ -24,6 +24,14 @@ on:
         required: false
         type: boolean
         default: false
+      run_http_deployment:
+        required: false
+        type: boolean
+        default: true
+      run_grpc_deployment:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build-and-deploy:
@@ -133,6 +141,7 @@ jobs:
           kubectl rollout status deployment/${{ inputs.service_name }}-messaging --timeout=300s
 
       - name: Deploy http
+        if: ${{ inputs.run_http_deployment }}
         env:
           REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
         run: |
@@ -141,7 +150,21 @@ jobs:
           kustomize build . | kubectl apply -f -
 
       - name: Wait for http rollout
+        if: ${{ inputs.run_http_deployment }}
         run: kubectl rollout status deployment/${{ inputs.service_name }}-http --timeout=300s
+
+      - name: Deploy grpc
+        if: ${{ inputs.run_grpc_deployment }}
+        env:
+          REGISTRY: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.GCP_ARTIFACT_REGISTRY_NAME }}
+        run: |
+          cd deploy/k8s/services/${{ inputs.service_name }}/${{ inputs.environment }}/grpc
+          kustomize edit set image ${{ inputs.service_name }}=${REGISTRY}/${{ inputs.service_name }}:${{ steps.version.outputs.service_version }}
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for grpc rollout
+        if: ${{ inputs.run_grpc_deployment }}
+        run: kubectl rollout status deployment/${{ inputs.service_name }}-grpc --timeout=300s
 
       - name: Run postgres contract migrations
         id: contract_migrations

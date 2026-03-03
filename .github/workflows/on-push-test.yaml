@@ -24,6 +24,14 @@ jobs:
       package_path: src/messaging_contracts
     secrets: inherit
 
+  publish-grpc-protos:
+    needs: [apply-infrastructure-secrets]
+    uses: ./.github/workflows/called-publish-python-package.yaml
+    with:
+      environment: test-eu
+      package_path: src/grpc_protos
+    secrets: inherit
+
   publish-rabbitmq-topology:
     needs: [publish-messaging-contracts]
     uses: ./.github/workflows/called-publish-python-package.yaml
@@ -55,7 +63,7 @@ jobs:
     secrets: inherit
 
   deploy-api-gateway:
-    needs: [deploy-rabbitmq-topology, publish-libs]
+    needs: [deploy-rabbitmq-topology, publish-libs, publish-grpc-protos]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
@@ -68,7 +76,7 @@ jobs:
     secrets: inherit
 
   deploy-hello-world:
-    needs: [deploy-rabbitmq-topology, publish-libs]
+    needs: [deploy-rabbitmq-topology, publish-libs, publish-grpc-protos]
     uses: ./.github/workflows/called-deploy-service-to-gke.yaml
     with:
       environment: test-eu
@@ -77,6 +85,8 @@ jobs:
       run_postgres_migrations: true
       run_background_tasks_deployment: false
       run_faststream_deployment: true
+      run_http_deployment: false
+      run_grpc_deployment: true
 
     secrets: inherit
 

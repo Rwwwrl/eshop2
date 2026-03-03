@@ -1,9 +1,7 @@
 from uuid import uuid4
 
-import httpx
-from fastapi import APIRouter, status
-from libs.consts import REQUEST_ID_HEADER
-from libs.context_vars import request_id_var
+from fastapi import APIRouter, Request, status
+from grpc_protos.v1.hello_world import hello_world_pb2, hello_world_pb2_grpc
 from libs.faststream_ext import publish
 from libs.utils import generate_deterministic_uuid
 from messaging_contracts.v1.events import HelloWorldEvent, OpenHealthResultReceivedEvent
@@ -14,8 +12,6 @@ from api_gateway.http.v1.schemas.request_schemas import OpenHealthResultWebhookP
 from api_gateway.messaging.main import broker as faststream_broker
 
 router = APIRouter()
-
-_HELLO_WORLD_SERVICE_URL = "http://hello-world"
 
 
 @router.get("/")
@@ -29,11 +25,10 @@ async def debug_error() -> None:
 
 
 @router.get("/hello-world/host")
-async def get_hello_world_host() -> dict:
-    headers = {REQUEST_ID_HEADER: request_id_var.get()}
-    async with httpx.AsyncClient() as client:
-        response = await client.get(f"{_HELLO_WORLD_SERVICE_URL}/v1/host", headers=headers)
-        return response.json()
+async def get_hello_world_host(request: Request) -> dict:
+    stub = hello_world_pb2_grpc.HelloWorldServiceStub(channel=request.app.state.hello_world_grpc_channel)
+    response = await stub.GetHost(request=hello_world_pb2.GetHostRequest())
+    return {"host": response.host}
 
 
 @router.post("/debug/publish-hello-world", status_code=status.HTTP_202_ACCEPTED)

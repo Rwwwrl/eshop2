@@ -1,0 +1,14 @@
+[group('grpc')]
+generate-protos:
+    poetry run python -m grpc_tools.protoc \
+        --proto_path=grpc_protos/v1/hello_world \
+        --python_out=grpc_protos/v1/hello_world \
+        --grpc_python_out=grpc_protos/v1/hello_world \
+        --pyi_out=grpc_protos/v1/hello_world \
+        grpc_protos/v1/hello_world/hello_world.proto
+    # NOTE @sosov: protoc generates a bare `import hello_world_pb2` in the grpc file, which breaks
+    # as a relative import when the package is installed. Rewrite to the absolute package path.
+    # .bak suffix makes -i portable across BSD (macOS) and GNU (Linux) sed.
+    sed -i.bak 's/^import hello_world_pb2/from grpc_protos.v1.hello_world import hello_world_pb2/' \
+        grpc_protos/v1/hello_world/hello_world_pb2_grpc.py
+    rm grpc_protos/v1/hello_world/hello_world_pb2_grpc.py.bak

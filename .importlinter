@@ -6,6 +6,7 @@ root_packages =
     libs
     messaging_contracts
     rabbitmq_topology
+    grpc_protos
 
 [importlinter:contract:messaging-contracts-no-libs]
 name = messaging_contracts must not import libs
@@ -51,6 +52,18 @@ forbidden_modules =
     hello_world
     api_gateway
     wearables
+
+[importlinter:contract:grpc-protos-isolation]
+name = grpc_protos must not import libs, services, messaging_contracts, or rabbitmq_topology
+type = forbidden
+source_modules = grpc_protos
+forbidden_modules =
+    libs
+    hello_world
+    api_gateway
+    wearables
+    messaging_contracts
+    rabbitmq_topology
 
 [importlinter:contract:services-independence]
 name = Services must not import each other

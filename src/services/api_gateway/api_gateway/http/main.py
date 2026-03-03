@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 
+import grpc
 from fastapi import FastAPI
 from libs.common.enums import ServiceNameEnum
 from libs.fastapi_ext.middlewares import (
@@ -30,8 +31,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     await faststream_broker.connect()
 
+    hello_world_grpc_channel = grpc.aio.insecure_channel(target=settings.hello_world_grpc_url)
+    app.state.hello_world_grpc_channel = hello_world_grpc_channel
+
     yield
 
+    await hello_world_grpc_channel.close()
     await faststream_broker.stop()
 
 
