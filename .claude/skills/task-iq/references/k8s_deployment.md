@@ -105,7 +105,7 @@ Rules:
 - No Service resource needed (worker doesn't receive traffic)
 - Always set `terminationGracePeriodSeconds` to cover full shutdown (wait-tasks + shutdown + buffer)
 - Always set `--wait-tasks-timeout` and `--shutdown-timeout` explicitly
-- Base includes `strategy: Recreate`, `nodeSelector`, and `topologySpreadConstraints` (without `maxSkew`) — overlays set `replicas`, `maxSkew`, and `image`
+- Base includes `strategy: RollingUpdate`, `nodeSelector`, and `topologySpreadConstraints` (with `labelSelector`) — overlays must repeat the full constraint including `maxSkew` and `labelSelector` (kustomize replaces the entire list)
 
 ## Scheduler Deployment
 

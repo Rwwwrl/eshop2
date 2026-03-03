@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "myeshop-rabbitmq-topology"
-version = "0.12.0"
+version = "0.12.1"
 description = "RabbitMQ topology definitions for MyEshop"
 authors = ["Aleksei Sosov <forgithublesh@yandex.ru>"]
 packages = [{ include = "rabbitmq_topology" }]

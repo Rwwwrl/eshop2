@@ -133,7 +133,8 @@ Run: `kubectl get pods -A`
 | HPA | min=2, max=4, CPU target=70 | `kubectl get hpa wearables-http` |
 | HPA metrics | TARGETS not `<unknown>` | `kubectl get hpa wearables-http` |
 | Node pool | `wearables-pool` | `kubectl get pods -l app=wearables-http -o wide` |
-| Topology spread | maxSkew <= 1 across hostnames | Count pods per node |
+| Topology spread config | maxSkew=1, DoNotSchedule, labelSelector app=wearables-http | `kubectl get deployment wearables-http -o jsonpath='{.spec.template.spec.topologySpreadConstraints}'` |
+| Topology spread actual | Pods on different nodes | Count pods per node — FAIL if co-located |
 | Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | jsonpath check |
 | Strategy | RollingUpdate | jsonpath check |
 | Health | Probes passing, no restarts | No restart count incrementing |
@@ -165,7 +166,8 @@ Run: `kubectl get pods -A`
 |-------|----------|---------------|
 | Replicas | >= 2 (KEDA) | `kubectl get deployment wearables-background-tasks -o jsonpath='{.status.readyReplicas}'` >= 2 |
 | Node pool | `wearables-pool` | `kubectl get pods -l app=wearables-background-tasks -o wide` |
-| Topology spread | maxSkew <= 1 across hostnames | Count pods per node |
+| Topology spread config | maxSkew=1, DoNotSchedule, labelSelector app=wearables-background-tasks | `kubectl get deployment wearables-background-tasks -o jsonpath='{.spec.template.spec.topologySpreadConstraints}'` |
+| Topology spread actual | Pods on different nodes | Count pods per node — FAIL if co-located |
 | Strategy | RollingUpdate | jsonpath check |
 | Graceful shutdown | terminationGracePeriodSeconds=80 | jsonpath check |
 | Liveness probe | HTTP GET `/health-check` port 8081, initialDelay=30, period=10, failure=3, timeout=5 | jsonpath check |

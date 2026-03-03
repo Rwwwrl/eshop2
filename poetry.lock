@@ -256,7 +256,7 @@ trio = ["trio (>=0.31.0)", "trio (>=0.32.0)"]
 
 [[package]]
 name = "api-gateway"
-version = "0.27.0"
+version = "0.27.1"
 description = "API Gateway FastAPI microservice"
 optional = false
 python-versions = "^3.14"
@@ -1545,7 +1545,7 @@ files = [
 
 [[package]]
 name = "hello-world"
-version = "0.27.0"
+version = "0.27.1"
 description = "Simple Hello World microservice"
 optional = false
 python-versions = "^3.14"
@@ -2143,7 +2143,7 @@ url = "src/grpc_protos"
 
 [[package]]
 name = "myeshop-libs"
-version = "0.33.0"
+version = "0.33.1"
 description = "Shared library for MyEshop microservices"
 optional = false
 python-versions = "^3.14"
@@ -2177,7 +2177,7 @@ url = "src/libs"
 
 [[package]]
 name = "myeshop-messaging-contracts"
-version = "0.12.0"
+version = "0.12.1"
 description = "Cross-service messaging contracts for MyEshop"
 optional = false
 python-versions = "^3.14"
@@ -2193,7 +2193,7 @@ url = "src/messaging_contracts"
 
 [[package]]
 name = "myeshop-rabbitmq-topology"
-version = "0.12.0"
+version = "0.12.1"
 description = "RabbitMQ topology definitions for MyEshop"
 optional = false
 python-versions = "^3.14"
@@ -3741,7 +3741,7 @@ files = [
 
 [[package]]
 name = "wearables"
-version = "0.31.0"
+version = "0.31.1"
 description = "Wearables webhook ingestion microservice"
 optional = false
 python-versions = "^3.14"

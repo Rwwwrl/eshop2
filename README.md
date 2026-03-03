@@ -82,6 +82,12 @@ The idempotency record is saved *before* executing business logic, within the sa
 
 When a handler fails with a transient error, it doesn't just retry immediately. Instead, the retry decorator publishes the message to a `.delayed-retry` queue with a TTL. When the TTL expires, RabbitMQ's dead-letter exchange routes the message back to the original queue. This gives the downstream system time to recover. After exhausting retries, the message lands in a `.dlq` (dead-letter queue) with a 7-day TTL for manual inspection.
 
+#### TTL, Timeouts, and Durability
+
+Messages have a default TTL of **3 days** on main queues and **7 days** on dead-letter queues. Handler execution is capped at **60 seconds** by `TimeLimitMiddleware` — if a handler exceeds this, the message is treated as failed.
+
+Durability is partial by design. All exchanges and queues are **durable**. Message durability is controlled **per message class** via a `persistent` class variable: `True` writes to disk, `False` keeps messages in memory only for better throughput. Every message class must explicitly declare its persistence strategy.
+
 ---
 
 ## Background Tasks — TaskIQ
@@ -89,6 +95,8 @@ When a handler fails with a transient error, it doesn't just retry immediately. 
 The Wearables service runs a TaskIQ worker backed by RabbitMQ for background job processing. Tasks follow the same idempotency pattern as message consumers — each task message has a `logical_id` and `code`, tracked in a `ProcessedTaskMessage` table. Tasks also use ACK-always semantics — failed tasks are retried explicitly, not redelivered by the broker.
 
 Background task schemas use `extra="allow"` for backward compatibility, but unlike messaging schemas, they don't need forward compatibility. The reason is deployment order: background task workers always deploy before the publishers that dispatch tasks. So a new task field is always understood by the worker before any publisher starts sending it.
+
+Task execution is capped at **60 seconds** by `TimeLimitMiddleware`. Unlike messaging, TaskIQ has **full durability** — exchanges, queues, and messages are all durable.
 
 ---
 
