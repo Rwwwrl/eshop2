@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator
 import grpc
 import pytest_asyncio
 from grpc_protos.v1.hello_world import hello_world_pb2_grpc
+
 from hello_world.grpc.main import HelloWorldServiceServicer
 
 
@@ -58,3 +59,4 @@ async def test_get_host_when_called(hello_world_grpc_channel: grpc.aio.Channel) 
 - `@pytest.mark.asyncio(loop_scope="session")` — consistent with project-wide pytest-asyncio setting.
 - Create a stub per test, not per fixture — stubs are lightweight wrappers.
 - Do NOT include the `HealthServicer` in the test server — tests call procedures directly, not health checks.
+- Do NOT add interceptors to the test server — interceptors are tested in isolation in `libs/tests/grpc_ext/`.

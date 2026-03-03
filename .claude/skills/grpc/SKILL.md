@@ -13,7 +13,8 @@ description: Guides gRPC service development in MyEshop. Use when adding a new g
 | Generated code      | same directory as proto                     | `from grpc_protos.v1.<service> import <service>_pb2`         |
 | Server entry point  | `<service>/grpc/main.py`                    | `python -m <service>.grpc.main`                              |
 | Procedures          | `<service>/grpc/v1/procedures.py`           | called from servicer in `grpc/main.py`                       |
-| gRPC client channel | `<service>/http/main.py` (lifespan)         | `grpc.aio.insecure_channel(target=...)`                      |
+| gRPC client channel | `<service>/http/main.py` (lifespan)         | `grpc.aio.insecure_channel(target=..., interceptors=[...])`  |
+| Request ID interc.  | `libs/grpc_ext/interceptors/request_id.py`  | `RequestIdClientInterceptor`, `RequestIdServerInterceptor`   |
 | Code generation     | `src/grpc_protos/justfile`                  | `just --justfile src/grpc_protos/justfile generate-protos`   |
 | Test server         | `tests/grpc/conftest.py`                    | real `grpc.aio.server()` on port `0`                         |
 | K8s manifests       | `deploy/k8s/services/<service>/base/grpc/`  | —                                                            |
@@ -120,6 +121,7 @@ import signal
 import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_protos.v1.hello_world import hello_world_pb2, hello_world_pb2_grpc
+from libs.grpc_ext.interceptors.request_id import RequestIdServerInterceptor
 
 from hello_world.grpc.v1.procedures import get_host_procedure
 from hello_world.settings import settings
@@ -137,7 +139,7 @@ class HelloWorldServiceServicer(hello_world_pb2_grpc.HelloWorldServiceServicer):
 async def _serve() -> None:
     # setup_logging, setup_sentry, DB engine init go here — see references/server.md
 
-    server = grpc.aio.server()
+    server = grpc.aio.server(interceptors=[RequestIdServerInterceptor()])
 
     hello_world_pb2_grpc.add_HelloWorldServiceServicer_to_server(
         servicer=HelloWorldServiceServicer(), server=server,
@@ -214,10 +216,14 @@ Rules:
 # In the consuming service's http/main.py lifespan:
 import grpc
 from grpc_protos.v1.hello_world import hello_world_pb2, hello_world_pb2_grpc
+from libs.grpc_ext.interceptors.request_id import RequestIdClientInterceptor
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    channel = grpc.aio.insecure_channel(target=settings.hello_world_grpc_url)
+    channel = grpc.aio.insecure_channel(
+        target=settings.hello_world_grpc_url,
+        interceptors=[RequestIdClientInterceptor()],
+    )
     app.state.hello_world_grpc_channel = channel
     yield
     await channel.close()
@@ -238,6 +244,18 @@ Rules:
 - Create a new stub per request — stubs are lightweight wrappers around a channel.
 - The URL setting is `HELLO_WORLD_GRPC_URL: "hello-world:50051"` in the k8s ConfigMap.
 - Use `insecure_channel` for in-cluster traffic — TLS termination is at the ingress layer.
+- Always pass `interceptors=[RequestIdClientInterceptor()]` — propagates `request_id_var` to outgoing gRPC metadata.
+
+---
+
+## Interceptors
+
+`libs.grpc_ext.interceptors.request_id` provides two interceptors that propagate `X-Request-ID` across gRPC calls:
+
+- **`RequestIdClientInterceptor`** — reads `request_id_var` from context and injects `x-request-id` into outgoing gRPC metadata. Add to `grpc.aio.insecure_channel(interceptors=[...])`.
+- **`RequestIdServerInterceptor`** — extracts `x-request-id` from incoming metadata and sets `request_id_var`. Add to `grpc.aio.server(interceptors=[...])`.
+
+This mirrors the same two-phase pattern used by FastStream's `RequestIdMiddleware` and TaskIQ's `RequestIdMiddleware`.
 
 ---
 
@@ -270,6 +288,7 @@ Rules:
 - Bind to port `0` — the OS assigns a free port, preventing conflicts in CI.
 - All gRPC fixtures are `scope="session"` — one server for the entire test run.
 - Do NOT register `HealthServicer` in the test server.
+- Do NOT add interceptors to the test server — interceptors are tested in isolation in `libs/tests/grpc_ext/`.
 
 See [references/tests.md](references/tests.md) for the full fixture and test file implementations.
 

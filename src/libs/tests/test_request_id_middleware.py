@@ -5,8 +5,8 @@ import pytest
 import pytest_asyncio
 from fastapi import APIRouter, FastAPI
 from httpx import ASGITransport, AsyncClient
-from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
+from libs.fastapi_ext.consts import REQUEST_ID_HEADER
 from libs.fastapi_ext.middlewares import RequestIdMiddleware
 
 

@@ -100,19 +100,6 @@ Run: `kubectl get pods -A`
 | Strategy | RollingUpdate | `kubectl get deployment api-gateway-http -o jsonpath='{.spec.strategy.type}'` |
 | Health | Probes passing, no restarts | No restart count incrementing |
 
-### hello-world-http
-
-| Check | Expected | How to verify |
-|-------|----------|---------------|
-| Replicas | >= 2 (HPA) | `kubectl get deployment hello-world-http -o jsonpath='{.status.readyReplicas}'` >= 2 |
-| HPA | min=2, max=4, CPU target=70 | `kubectl get hpa hello-world-http` |
-| HPA metrics | TARGETS not `<unknown>` | `kubectl get hpa hello-world-http` |
-| Node pool | `default-pool` | `kubectl get pods -l app=hello-world-http -o wide` |
-| Anti-affinity | Required (hard) — pods must be on different nodes, FAIL if co-located | Check hostnames |
-| Graceful shutdown | terminationGracePeriodSeconds=95, preStop sleep 10 | jsonpath check |
-| Strategy | RollingUpdate | jsonpath check |
-| Health | Probes passing, no restarts | No restart count incrementing |
-
 ### hello-world-messaging
 
 | Check | Expected | How to verify |
@@ -220,11 +207,11 @@ Both must return **301** (NGINX Inc ingress controller default).
 
 ### TLS Endpoints
 
-test-eu uses Let's Encrypt **staging** — `--insecure` required:
+test-eu uses Let's Encrypt **production**:
 
 ```bash
-curl -sk -o /dev/null -w "%{http_code}" https://test.eshop-test.com/health          # expect 200
-curl -sk -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/health # expect 200
+curl -s -o /dev/null -w "%{http_code}" https://test.eshop-test.com/health          # expect 200
+curl -s -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/health # expect 200
 ```
 
 ## 7. Services & DNS
@@ -232,10 +219,11 @@ curl -sk -o /dev/null -w "%{http_code}" https://wearables-test.eshop-test.com/he
 | Check | Expected |
 |-------|----------|
 | api-gateway-http ClusterIP | Port 80 -> 8000 via `kubectl get svc api-gateway-http` |
-| hello-world-grpc ClusterIP | Port 50051 -> 50051 via `kubectl get svc hello-world-grpc` |
+| hello-world ClusterIP | Port 50051 -> 50051 via `kubectl get svc hello-world` |
 | wearables-http ClusterIP | Port 80 -> 8000 via `kubectl get svc wearables-http` |
 | pgbouncer ClusterIP | Port 5432 -> 5432 via `kubectl get svc pgbouncer` |
 | Internal DNS | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup api-gateway-http.default.svc.cluster.local` (skip if impractical) |
+| Internal gRPC DNS | `kubectl run dns-test --image=busybox:1.36 --rm -it --restart=Never -- nslookup hello-world.default.svc.cluster.local` (skip if impractical) |
 
 ## 8. Resource Requests & Limits
 
@@ -244,7 +232,6 @@ Verify: `kubectl get deployment <name> -o jsonpath='{.spec.template.spec.contain
 | Deployment | CPU Req | Mem Req | CPU Limit | Mem Limit |
 |------------|---------|---------|-----------|-----------|
 | api-gateway-http | 50m | 128Mi | 200m | 256Mi |
-| hello-world-http | 50m | 128Mi | 200m | 256Mi |
 | hello-world-messaging | 50m | 128Mi | 200m | 256Mi |
 | hello-world-grpc | 50m | 128Mi | 200m | 256Mi |
 | wearables-http | 50m | 128Mi | 200m | 256Mi |

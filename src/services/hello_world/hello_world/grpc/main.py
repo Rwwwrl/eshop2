@@ -7,6 +7,7 @@ import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_protos.v1.hello_world import hello_world_pb2, hello_world_pb2_grpc
 from libs.common.enums import ServiceNameEnum
+from libs.grpc_ext.interceptors.request_id import RequestIdServerInterceptor
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 from libs.sentry_ext import setup_sentry
@@ -34,7 +35,7 @@ async def _serve() -> None:
     engine = init_sqlmodel_engine(db_url=db_url)
     Session.configure(bind=engine)
 
-    server = grpc.aio.server()
+    server = grpc.aio.server(interceptors=[RequestIdServerInterceptor()])
 
     hello_world_pb2_grpc.add_HelloWorldServiceServicer_to_server(
         servicer=HelloWorldServiceServicer(),

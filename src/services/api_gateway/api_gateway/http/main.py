@@ -12,6 +12,7 @@ from libs.fastapi_ext.middlewares import (
     SecurityHeadersMiddleware,
     UnhandledExceptionMiddleware,
 )
+from libs.grpc_ext.interceptors.request_id import RequestIdClientInterceptor
 from libs.logging import setup_logging
 from libs.logging.enums import ProcessTypeEnum
 from libs.prometheus_ext import setup_fastapi_prometheus
@@ -31,7 +32,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     await faststream_broker.connect()
 
-    hello_world_grpc_channel = grpc.aio.insecure_channel(target=settings.hello_world_grpc_url)
+    hello_world_grpc_channel = grpc.aio.insecure_channel(
+        target=settings.hello_world_grpc_url,
+        interceptors=[RequestIdClientInterceptor()],
+    )
     app.state.hello_world_grpc_channel = hello_world_grpc_channel
 
     yield

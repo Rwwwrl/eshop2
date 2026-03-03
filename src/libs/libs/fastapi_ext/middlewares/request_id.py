@@ -6,8 +6,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from libs.consts import REQUEST_ID_HEADER
 from libs.context_vars import request_id_var
+from libs.fastapi_ext.consts import REQUEST_ID_HEADER
 
 _MAX_REQUEST_ID_LENGTH = 256
 _VALID_REQUEST_ID_PATTERN = re.compile(r"^[\x20-\x7E]+$")
